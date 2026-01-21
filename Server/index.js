@@ -1,8 +1,9 @@
 const express = require('express');
 const app = express();
 require('dotenv').config();
-
 const {connect} = require('./config/database')
+
+const authRoutes = require("./routes/auth");
 
 const PORT = 4000 || process.env.PORT;
 
@@ -11,6 +12,8 @@ app.use(cookieParser());
 
 connect();
 app.use(express.json());
+
+app.use("/api/auth",authRoutes);
 
 
 
