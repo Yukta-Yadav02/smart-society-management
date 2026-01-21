@@ -1,47 +1,41 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+
+import LandingPage from './pages/common/LandingPage';
 import Login from './pages/common/Login';
 import Signup from './pages/common/Signup';
-import { useState } from 'react';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return !!localStorage.getItem('token');
-  });
+  const [darkMode, setDarkMode] = useState(() =>
+    localStorage.getItem('theme') === 'dark'
+  );
 
-  const handleLogin = (userData) => {
-    setIsAuthenticated(true);
-    localStorage.setItem('token', userData.token); // agar token milta ho
+  const toggleDarkMode = () => {
+    const mode = !darkMode;
+    setDarkMode(mode);
+    localStorage.setItem('theme', mode ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dark', mode);
   };
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+  }, []);
 
   return (
     <Router>
       <Routes>
-        {/* Login Route */}
+        <Route
+          path="/"
+          element={<LandingPage darkMode={darkMode} toggleDarkMode={toggleDarkMode} />}
+        />
         <Route
           path="/login"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/" />
-            ) : (
-              <Login onLogin={handleLogin} />
-            )
-          }
+          element={<Login darkMode={darkMode} toggleDarkMode={toggleDarkMode} />}
         />
-
-        {/* Signup Route */}
         <Route
           path="/signup"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/" />
-            ) : (
-              <Signup />
-            )
-          }
+          element={<Signup darkMode={darkMode} toggleDarkMode={toggleDarkMode} />}
         />
-
-        {/* Default Route */}
-        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </Router>
   );
