@@ -9,14 +9,14 @@ const jwt = require("jsonwebtoken");
 exports.setupAdmin = async (req, res) => {
   try {
     // check if admin already exists
-    const adminExists = await User.findOne({ role: "Admin" });
+    // const adminExists = await User.findOne({ role: "Admin" });
 
-    if (adminExists) {
-      return res.status(400).json({
-        success: false,
-        message: "Admin already exists",
-      });
-    }
+    // if (adminExists) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Admin already exists",
+    //   });
+    // }
 
     const { name, email, password } = req.body;
 
