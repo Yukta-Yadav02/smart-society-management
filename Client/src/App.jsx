@@ -1,47 +1,23 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/common/Login';
-import Signup from './pages/common/Signup';
-import { useState } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ResidentDashboard from './components/resident/ResidentDashboard';
+import Complaints from './components/resident/Complaints';
+import Maintenance from './components/resident/Maintenance';
+import Notices from './components/resident/Notices';
+import Profile from './components/resident/Profile';
+import Layout from './components/Layout';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return !!localStorage.getItem('token');
-  });
-
-  const handleLogin = (userData) => {
-    setIsAuthenticated(true);
-    localStorage.setItem('token', userData.token); // agar token milta ho
-  };
-
   return (
     <Router>
       <Routes>
-        {/* Login Route */}
-        <Route
-          path="/login"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/" />
-            ) : (
-              <Login onLogin={handleLogin} />
-            )
-          }
-        />
-
-        {/* Signup Route */}
-        <Route
-          path="/signup"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/" />
-            ) : (
-              <Signup />
-            )
-          }
-        />
-
-        {/* Default Route */}
-        <Route path="*" element={<Navigate to="/login" />} />
+        <Route path="/" element={<Layout />}>
+          <Route index element={<ResidentDashboard />} />
+          <Route path="complaints" element={<Complaints />} />
+          <Route path="maintenance" element={<Maintenance />} />
+          <Route path="notices" element={<Notices />} />
+          <Route path="profile" element={<Profile />} />
+        </Route>
       </Routes>
     </Router>
   );
