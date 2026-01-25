@@ -9,27 +9,7 @@ const Complaints = () => {
     priority: 'medium'
   });
   
-  const [complaints, setComplaints] = useState([
-    {
-      id: 1,
-      title: 'Water leakage in bathroom',
-      description: 'There is water leakage from the ceiling in my bathroom',
-      category: 'maintenance',
-      priority: 'high',
-      status: 'pending',
-      createdAt: '2024-01-15'
-    },
-    {
-      id: 2,
-      title: 'Noise complaint',
-      description: 'Loud music from neighbor after 10 PM',
-      category: 'noise',
-      priority: 'medium',
-      status: 'resolved',
-      createdAt: '2024-01-10',
-      response: 'Issue has been resolved. Neighbor has been warned.'
-    }
-  ]);
+  const [complaints, setComplaints] = useState([]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

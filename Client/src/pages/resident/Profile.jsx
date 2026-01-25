@@ -3,16 +3,16 @@ import React, { useState } from 'react';
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
-    name: 'Rajesh Kumar',
-    email: 'rajesh.kumar@email.com',
-    phone: '+91 9876543210',
-    flatNumber: 'A-101',
-    wing: 'A',
-    emergencyContact: '+91 9876543211',
-    emergencyName: 'Priya Kumar',
-    relation: 'Wife',
-    occupation: 'Software Engineer',
-    vehicleNumber: 'MH12AB1234'
+    name: '',
+    email: '',
+    phone: '',
+    flatNumber: '',
+    wing: '',
+    emergencyContact: '',
+    emergencyName: '',
+    relation: '',
+    occupation: '',
+    vehicleNumber: ''
   });
 
   const handleSave = () => {

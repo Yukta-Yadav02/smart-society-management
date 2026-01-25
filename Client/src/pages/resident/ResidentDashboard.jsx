@@ -1,21 +1,51 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchDashboardData } from '../../store/slices/residentSlice';
 
 const ResidentDashboard = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  
+  const { complaints, maintenance, notices, loading, error } = useSelector(state => state.resident);
   
   const profile = { wing: 'A', flatNumber: '101' };
-  const complaints = [{ id: 1, status: 'pending' }];
-  const maintenance = [
-    { id: 1, paid: false, amount: 5000 },
-    { id: 2, paid: true, amount: 1500 }
-  ];
-  const notices = [{ id: 1, title: 'Society Meeting' }];
 
-  const pendingComplaints = complaints.filter(c => c.status === 'pending').length;
-  const unpaidMaintenance = maintenance.filter(m => !m.paid).length;
-  const totalDue = maintenance.filter(m => !m.paid).reduce((sum, m) => sum + m.amount, 0);
-  const unreadNotices = notices.length;
+  useEffect(() => {
+    // dispatch(fetchDashboardData()); // Disabled until backend is ready
+  }, [dispatch]);
+
+  const pendingComplaints = complaints?.filter(c => c.status === 'pending').length || 0;
+  const unpaidMaintenance = maintenance?.filter(m => !m.paid).length || 0;
+  const totalDue = maintenance?.filter(m => !m.paid).reduce((sum, m) => sum + m.amount, 0) || 0;
+  const unreadNotices = notices?.length || 0;
+
+  if (loading) {
+    return (
+      <div className="p-8 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Error loading dashboard: {error}</p>
+          <button 
+            onClick={() => dispatch(fetchDashboardData())}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 lg:p-8 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
@@ -122,32 +152,9 @@ const ResidentDashboard = () => {
           <div className="bg-white p-8 rounded-2xl shadow-lg">
             <h3 className="text-2xl font-bold text-gray-800 mb-6">Recent Activity</h3>
             <div className="space-y-4">
-              <div className="flex items-center p-4 bg-blue-50 rounded-xl">
-                <div className="bg-blue-500 p-2 rounded-full mr-4">
-                  <span className="text-white text-sm">✓</span>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-800">Maintenance paid</p>
-                  <p className="text-sm text-gray-500">2 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-center p-4 bg-yellow-50 rounded-xl">
-                <div className="bg-yellow-500 p-2 rounded-full mr-4">
-                  <span className="text-white text-sm">!</span>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-800">New complaint raised</p>
-                  <p className="text-sm text-gray-500">1 day ago</p>
-                </div>
-              </div>
-              <div className="flex items-center p-4 bg-green-50 rounded-xl">
-                <div className="bg-green-500 p-2 rounded-full mr-4">
-                  <span className="text-white text-sm">📢</span>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-800">New notice received</p>
-                  <p className="text-sm text-gray-500">3 days ago</p>
-                </div>
+              {/* Activity will be loaded from API */}
+              <div className="text-center py-8 text-gray-500">
+                <p>No recent activity</p>
               </div>
             </div>
           </div>

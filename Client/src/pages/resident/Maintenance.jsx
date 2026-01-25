@@ -6,29 +6,7 @@ const Maintenance = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [filter, setFilter] = useState('all');
   
-  const [maintenance, setMaintenance] = useState([
-    {
-      id: 1,
-      title: 'Monthly Maintenance',
-      description: 'Regular monthly maintenance charges',
-      amount: 5000,
-      dueDate: '2024-01-31',
-      period: 'January 2024',
-      type: 'monthly',
-      paid: false
-    },
-    {
-      id: 2,
-      title: 'Water Tank Cleaning',
-      description: 'Special charge for water tank cleaning',
-      amount: 1500,
-      dueDate: '2024-01-15',
-      period: 'January 2024',
-      type: 'special',
-      paid: true,
-      paidDate: '2024-01-10'
-    }
-  ]);
+  const [maintenance, setMaintenance] = useState([]);
 
   const filteredMaintenance = maintenance.filter(item => {
     if (filter === 'monthly') return item.type === 'monthly';
