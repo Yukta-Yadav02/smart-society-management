@@ -6,11 +6,46 @@ const Maintenance = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [filter, setFilter] = useState('all');
   
-  const [maintenance, setMaintenance] = useState([]);
+  const [maintenance, setMaintenance] = useState([
+    {
+      id: 1,
+      title: "Monthly Society Maintenance",
+      description: "Regular monthly maintenance charges for common areas, security, and utilities",
+      amount: 3500,
+      type: "monthly",
+      period: "December 2024",
+      dueDate: "2024-12-31",
+      paid: false,
+      urgent: false
+    },
+    {
+      id: 2,
+      title: "Elevator Repair Fund",
+      description: "Special collection for elevator maintenance and repair work",
+      amount: 1200,
+      type: "special",
+      period: "One-time",
+      dueDate: "2024-12-25",
+      paid: false,
+      urgent: true
+    },
+    {
+      id: 3,
+      title: "Emergency Maintenance",
+      description: "Urgent repairs for water pump and electrical issues",
+      amount: 800,
+      type: "emergency",
+      period: "Immediate",
+      dueDate: "2024-12-20",
+      paid: false,
+      urgent: true
+    }
+  ]);
 
   const filteredMaintenance = maintenance.filter(item => {
     if (filter === 'monthly') return item.type === 'monthly';
     if (filter === 'special') return item.type === 'special';
+    if (filter === 'emergency') return item.type === 'emergency';
     return true;
   });
 
@@ -74,7 +109,7 @@ const Maintenance = () => {
                 filter === 'monthly' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              Monthly
+              📅 Monthly
             </button>
             <button 
               onClick={() => setFilter('special')}
@@ -82,7 +117,15 @@ const Maintenance = () => {
                 filter === 'special' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              Special Charges
+              🔧 Special Charges
+            </button>
+            <button 
+              onClick={() => setFilter('emergency')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                filter === 'emergency' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              🚨 Emergency
             </button>
           </div>
         </div>
@@ -90,15 +133,27 @@ const Maintenance = () => {
         <div className="space-y-4 lg:space-y-6">
           {filteredMaintenance.map((item) => (
             <div key={item.id} className={`bg-white p-4 lg:p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow ${
-              item.type === 'special' ? 'border-l-4 border-orange-500' : ''
+              item.type === 'special' ? 'border-l-4 border-orange-500' : 
+              item.type === 'emergency' ? 'border-l-4 border-red-500' :
+              'border-l-4 border-blue-500'
             }`}>
               <div className="flex flex-col lg:flex-row justify-between items-start mb-4 lg:mb-6">
                 <div className="mb-4 lg:mb-0">
                   <div className="flex items-center gap-2 mb-2">
                     <h4 className="text-lg lg:text-xl font-bold text-gray-800">{item.title}</h4>
+                    {item.type === 'monthly' && (
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold">
+                        📅 MONTHLY
+                      </span>
+                    )}
                     {item.type === 'special' && (
                       <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-bold">
-                        🚨 SPECIAL
+                        🔧 SPECIAL
+                      </span>
+                    )}
+                    {item.type === 'emergency' && (
+                      <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-bold animate-pulse">
+                        🚨 EMERGENCY
                       </span>
                     )}
                     {item.urgent && (
