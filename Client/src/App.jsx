@@ -1,39 +1,19 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 
-// Common Pages
-import Login from './pages/common/Login';
-import Signup from './pages/common/Signup';
-
-// Layout
 import Layout from './components/layout/Layout';
 
-// Admin Pages
-import Dashboard from './pages/Dashboard';
-import ManageFlats from './pages/ManageFlats';
-import ManageRequests from './pages/ManageRequests';
-import ManageResidents from './pages/ManageResidents';
-import Complaints from './pages/Complaints';
-import Maintenance from './pages/Maintenance';
-import Notices from './pages/Notices';
-import Profile from './pages/Profile';
+import Dashboard from './pages/admin/Dashboard';
+import ManageFlats from './pages/admin/ManageFlats';
+import ManageRequests from './pages/admin/ManageRequests';
+import ManageResidents from './pages/admin/ManageResidents';
+import Complaints from './pages/admin/Complaints';
+import Maintenance from './pages/admin/Maintenance';
+import Notices from './pages/admin/Notices';
+import Profile from './pages/admin/Profile';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return !!localStorage.getItem('token');
-  });
-
-  const handleLogin = (userData) => {
-    localStorage.setItem('token', userData.token);
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    setIsAuthenticated(false);
-  };
-
   return (
     <Router>
       <Toaster
@@ -52,46 +32,22 @@ function App() {
         }}
       />
 
-      <Routes>
-        {/* ================= AUTH ROUTES ================= */}
-        <Route
-          path="/login"
-          element={
-            isAuthenticated ? <Navigate to="/admin" /> : <Login onLogin={handleLogin} />
-          }
-        />
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Navigate to="/admin" />} />
 
-        <Route
-          path="/signup"
-          element={isAuthenticated ? <Navigate to="/admin" /> : <Signup />}
-        />
+          <Route path="/admin" element={<Dashboard />} />
+          <Route path="/admin/flats" element={<ManageFlats />} />
+          <Route path="/admin/requests" element={<ManageRequests />} />
+          <Route path="/admin/residents" element={<ManageResidents />} />
+          <Route path="/admin/complaints" element={<Complaints />} />
+          <Route path="/admin/maintenance" element={<Maintenance />} />
+          <Route path="/admin/notices" element={<Notices />} />
+          <Route path="/admin/profile" element={<Profile />} />
 
-        {/* ================= ADMIN ROUTES ================= */}
-        <Route
-          path="/admin/*"
-          element={
-            isAuthenticated ? (
-              <Layout onLogout={handleLogout}>
-                <Routes>
-                  <Route path="" element={<Dashboard />} />
-                  <Route path="flats" element={<ManageFlats />} />
-                  <Route path="requests" element={<ManageRequests />} />
-                  <Route path="residents" element={<ManageResidents />} />
-                  <Route path="complaints" element={<Complaints />} />
-                  <Route path="maintenance" element={<Maintenance />} />
-                  <Route path="notices" element={<Notices />} />
-                  <Route path="profile" element={<Profile />} />
-                </Routes>
-              </Layout>
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
-
-        {/* ================= DEFAULT ================= */}
-        <Route path="*" element={<Navigate to="/login" />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/admin" />} />
+        </Routes>
+      </Layout>
     </Router>
   );
 }
