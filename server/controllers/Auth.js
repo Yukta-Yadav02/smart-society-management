@@ -7,11 +7,8 @@ const jwt = require("jsonwebtoken")
    ONE TIME ADMIN SETUP
 ========================= */
 exports.setupAdmin = async (req, res) => {
-  console.log(req.body)
   try {
-    // check if admin already exists
-    const adminExists = await User.findOne({ role: "Admin" });
-
+    const adminExists = await User.findOne({ role: "ADMIN" });
     if (adminExists) {
       return res.status(400).json({
         success: false,
@@ -20,22 +17,27 @@ exports.setupAdmin = async (req, res) => {
     }
 
     const { name, email, password } = req.body;
-
+    if(!name || !email || !password){
+      return res.status(400).json({
+        success:false,
+        message:"All fields are required",
+      })
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const admin = await User.create({
       name,
       email,
       password: hashedPassword,
-      role: "Admin",
+      role: "ADMIN",
+      status: "ACTIVE",
     });
 
     return res.status(201).json({
       success: true,
-      message: "Admin created successfully",
-      data: admin
+      message: "Admin (Secretary) created successfully",
+      data: admin,
     });
-
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -43,47 +45,40 @@ exports.setupAdmin = async (req, res) => {
     });
   }
 };
-
 /* =========================
    ADMIN → CREATE USER
 ========================= */
-exports.signup = async (req, res) =>{
-
+exports.register = async (req, res) => {
   try {
-    // only Admin allowed (assume middleware check)
-    const { name, email, password} = req.body;
+    const { name, email, password } = req.body;
 
-    // check existing user
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    const exists = await User.findOne({ email });
+    if (exists) {
       return res.status(400).json({
         success: false,
         message: "User already exists",
       });
     }
 
-    // hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
-      role:"Resident",
+      role: "RESIDENT",     // public bhi resident hi hai
+      status: "PENDING",    // approval baaki
     });
 
     return res.status(201).json({
       success: true,
-      message: "User created successfully",
-      data:user,
+      message: "Registered successfully. Please request a flat.",
+      data: user,
     });
-    
   } catch (error) {
-    console.log(error);
     return res.status(500).json({
       success: false,
-      message: "User creation failed",
-      error:error.message
+      message: "Registration failed",
     });
   }
 };
@@ -96,8 +91,16 @@ exports.login = async (req, res) => {
 
     const { email, password } = req.body;
 
+    if(!email || !password){
+      return res.status(400).json({
+        success:false,
+        message:"All fields are required"
+      })
+    }
+
     // check user
     const user = await User.findOne({ email });
+    
     if (!user) {
       return res.status(401).json({
         success: false,
