@@ -5,6 +5,8 @@ const cookieParser = require("cookie-parser");
 require("dotenv").config();
 const authRoutes = require("./routes/auth");
 const wingRoutes = require("./routes/Wing")
+const flatRoutes = require("./routes/flat");
+
 
 connect();
 
@@ -15,7 +17,8 @@ app.use(cookieParser())
 
 // api mounting 
 app.use("/api/auth",authRoutes);
-app.use("/api/wing",wingRoutes)
+app.use("/api/wing",wingRoutes);
+app.use("/api/flat",flatRoutes)
 
 app.get("/",(req,res)=>{
     console.log("req is working ")
