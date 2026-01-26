@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
-import { updateComplaintStatus } from '../redux/slices/complaintSlice';
+import { updateComplaintStatus } from '../../redux/slices/complaintSlice';
 
 const Complaints = () => {
     const dispatch = useDispatch();

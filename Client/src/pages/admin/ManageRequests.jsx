@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
-import { updateRequestStatus } from '../redux/slices/requestSlice';
+import { updateRequestStatus } from '../../redux/slices/requestSlice';
 
 const ManageRequests = () => {
     const dispatch = useDispatch();

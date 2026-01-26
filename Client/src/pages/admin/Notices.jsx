@@ -18,7 +18,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import toast from 'react-hot-toast';
-import { addNotice, removeNotice } from '../redux/slices/noticeSlice';
+import { addNotice, removeNotice } from '../../redux/slices/noticeSlice';
 
 // 🛡️ VALIDATION SCHEMA
 const schema = yup.object().shape({

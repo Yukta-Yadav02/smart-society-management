@@ -18,7 +18,7 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { updateProfile } from '../redux/slices/profileSlice';
+import { updateProfile } from '../../redux/slices/profileSlice';
 
 const Profile = () => {
     const dispatch = useDispatch();

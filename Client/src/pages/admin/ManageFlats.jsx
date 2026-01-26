@@ -16,7 +16,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { addFlat } from '../redux/slices/flatSlice';
+import { addFlat } from '../../redux/slices/flatSlice';
 import toast from 'react-hot-toast';
 
 // 🛡️ FORM VALIDATION SCHEMA (Yup)
