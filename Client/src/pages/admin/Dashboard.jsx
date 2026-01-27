@@ -24,6 +24,7 @@ const StatCard = ({ title, value, icon: Icon, color, subStats, onClick }) => {
             <div className="flex justify-between items-start mb-4">
                 <div className={`p-3 rounded-2xl ${color.bg} ${color.text}`}>
                     <Icon className="w-6 h-6" />
+                    <h1>Sawariya Dixit</h1>
                 </div>
                 <div className="text-slate-300 group-hover:text-indigo-500 transition-colors">
                     <ArrowUpRight className="w-5 h-5" />
