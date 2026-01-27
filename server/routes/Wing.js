@@ -1,6 +1,6 @@
 const express = require("express");
 
-const { createWing, getWings } = require("../controllers/blockControllers");
+const { createWing, getWings } = require("../controllers/wing");
 const { protect, authorizeRoles } = require("../middelware/auth");
 
 const router = express.Router();

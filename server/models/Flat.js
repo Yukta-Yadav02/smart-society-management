@@ -31,4 +31,7 @@ const flatSchema = new mongoose.Schema(
 //  same wing me same flat duplicate na ho
 flatSchema.index({ wing: 1, flatNumber: 1 }, { unique: true });
 
-module.exports = mongoose.model("Flat", flatSchema);
+
+
+// 🔥 FIX IS HERE
+module.exports = mongoose.models.Flat || mongoose.model("Flat", flatSchema);
