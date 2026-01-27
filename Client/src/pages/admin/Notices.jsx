@@ -55,9 +55,9 @@ const Notices = () => {
         }
     };
 
-    const filteredNotices = notices.filter(n =>
-        n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        n.description.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredNotices = (notices || []).filter(n =>
+        n.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        n.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
@@ -223,11 +223,3 @@ const Notices = () => {
 };
 
 export default Notices;
-export default function Notices() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold">Notices</h1>
-      <p className="text-slate-500 mt-2">Create and view notices</p>
-    </div>
-  );
-}

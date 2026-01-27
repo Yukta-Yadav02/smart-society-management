@@ -78,9 +78,9 @@ const ManageFlats = () => {
         );
     };
 
-    const filteredFlats = flats.filter(f => {
-        const matchesSearch = f.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            f.block.toLowerCase().includes(searchQuery.toLowerCase());
+    const filteredFlats = (flats || []).filter(f => {
+        const matchesSearch = f.number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            f.block?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesWing = selectedWing === 'All Wings' || f.wing === selectedWing;
         return matchesSearch && matchesWing;
     });
@@ -286,11 +286,3 @@ const ManageFlats = () => {
 };
 
 export default ManageFlats;
-export default function ManageFlats() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold">Manage Flats</h1>
-      <p className="text-slate-500 mt-2">Create and manage society flats</p>
-    </div>
-  );
-}

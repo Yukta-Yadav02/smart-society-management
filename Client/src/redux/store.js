@@ -8,8 +8,15 @@ import noticeReducer from './slices/noticeSlice';
 import requestReducer from './slices/requestSlice';
 import profileReducer from './slices/profileSlice';
 
+// Resident-specific slices
+import residentDashboardReducer from './slices/residentDashboardSlice';
+import residentMaintenanceReducer from './slices/residentMaintenanceSlice';
+import residentComplaintReducer from './slices/residentComplaintSlice';
+import residentNoticeReducer from './slices/residentNoticeSlice';
+
 export const store = configureStore({
     reducer: {
+        // Admin slices
         flats: flatReducer,
         dashboard: dashboardReducer,
         residents: residentReducer,
@@ -18,5 +25,11 @@ export const store = configureStore({
         notices: noticeReducer,
         requests: requestReducer,
         profile: profileReducer,
+        
+        // Resident slices
+        residentDashboard: residentDashboardReducer,
+        residentMaintenance: residentMaintenanceReducer,
+        residentComplaints: residentComplaintReducer,
+        residentNotices: residentNoticeReducer,
     },
 });

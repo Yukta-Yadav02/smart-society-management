@@ -38,10 +38,10 @@ const Complaints = () => {
         }
     };
 
-    const filteredComplaints = complaints.filter(c => {
+    const filteredComplaints = (complaints || []).filter(c => {
         const matchesTab = filter === 'All' || c.status === filter;
-        const matchesSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            c.resident.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = c.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            c.resident?.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesTab && matchesSearch;
     });
 
@@ -181,11 +181,3 @@ const Complaints = () => {
 };
 
 export default Complaints;
-export default function Complaints() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold">Complaints</h1>
-      <p className="text-slate-500 mt-2">View and resolve complaints</p>
-    </div>
-  );
-}

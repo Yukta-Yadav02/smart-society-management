@@ -117,10 +117,10 @@ const ManageResidents = () => {
         }
     };
 
-    const filteredResidents = residents.filter(r =>
-        r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.flat.includes(searchQuery)
+    const filteredResidents = (residents || []).filter(r =>
+        r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.flat?.includes(searchQuery)
     );
 
     return (
@@ -141,9 +141,9 @@ const ManageResidents = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 {[
-                    { label: 'Total Residents', value: residents.length, color: 'bg-indigo-50 text-indigo-600', icon: Users },
-                    { label: 'Owners', value: residents.filter(r => r.type === 'Owner').length, color: 'bg-emerald-50 text-emerald-600', icon: ShieldCheck },
-                    { label: 'Tenants', value: residents.filter(r => r.type === 'Tenant').length, color: 'bg-amber-50 text-amber-600', icon: Building2 },
+                    { label: 'Total Residents', value: (residents || []).length, color: 'bg-indigo-50 text-indigo-600', icon: Users },
+                    { label: 'Owners', value: (residents || []).filter(r => r.type === 'Owner').length, color: 'bg-emerald-50 text-emerald-600', icon: ShieldCheck },
+                    { label: 'Tenants', value: (residents || []).filter(r => r.type === 'Tenant').length, color: 'bg-amber-50 text-amber-600', icon: Building2 },
                 ].map((stat, i) => (
                     <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:border-indigo-100 transition-all">
                         <div>
@@ -350,11 +350,3 @@ const ManageResidents = () => {
 };
 
 export default ManageResidents;
-export default function ManageResidents() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold">Manage Residents</h1>
-      <p className="text-slate-500 mt-2">Resident list and details</p>
-    </div>
-  );
-}

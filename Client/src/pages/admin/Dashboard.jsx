@@ -144,7 +144,7 @@ const Dashboard = () => {
                     </div>
 
                     <div className="space-y-4">
-                        {recentRequests.slice(0, 3).map((req) => (
+                        {(recentRequests || []).slice(0, 3).map((req) => (
                             <div key={req.id} className="group flex items-center gap-5 p-4 rounded-[2rem] hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100">
                                 <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-black text-xl shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                                     {req.name[0]}
@@ -178,7 +178,7 @@ const Dashboard = () => {
                         ))}
                     </div>
 
-                    {recentRequests.length === 0 && (
+                    {(recentRequests || []).length === 0 && (
                         <div className="py-20 text-center">
                             <ClipboardList className="w-12 h-12 text-slate-100 mx-auto mb-4" />
                             <p className="text-slate-400 font-bold">No new requests to review.</p>
@@ -211,12 +211,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-export default function Dashboard() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold">Dashboard</h1>
-      <h1>Dashbooard</h1>
-      <p className="text-slate-500 mt-2">Admin overview page</p>
-    </div>
-  );
-}

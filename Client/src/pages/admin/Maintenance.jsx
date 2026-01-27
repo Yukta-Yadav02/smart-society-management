@@ -59,13 +59,17 @@ const Maintenance = () => {
             description: 'Common Society Maintenance', // Default description
             flats: flats // Applying to all registered flats automatically
         }));
-        toast.success(`Common maintenance generated for ${flats.length} flats!`, { icon: '🧾' });
+        toast.success(`Common maintenance generated for ${flats?.length || 0} flats!`, { icon: '🧾' });
         setShowCommonModal(false);
         commonForm.reset();
     };
 
     const onAddSpecial = (data) => {
-        const selectedFlat = flats.find(f => f.id.toString() === data.flatId);
+        const selectedFlat = flats?.find(f => f.id.toString() === data.flatId);
+        if (!selectedFlat) {
+            toast.error('Selected flat not found');
+            return;
+        }
         dispatch(addSpecialMaintenance({
             ...data,
             flat: selectedFlat.number,
@@ -84,14 +88,14 @@ const Maintenance = () => {
         });
     };
 
-    const filteredRecords = records.filter(r => {
+    const filteredRecords = (records || []).filter(r => {
         const matchesStatus = filterStatus === 'All' || r.status === filterStatus;
-        const matchesSearch = r.flat.includes(searchQuery) || r.description.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = r.flat?.includes(searchQuery) || r.description?.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesStatus && matchesSearch;
     });
 
-    const totalCollected = records.filter(r => r.status === 'Paid').reduce((sum, r) => sum + r.amount, 0);
-    const totalPending = records.filter(r => r.status === 'Unpaid').reduce((sum, r) => sum + r.amount, 0);
+    const totalCollected = (records || []).filter(r => r.status === 'Paid').reduce((sum, r) => sum + r.amount, 0);
+    const totalPending = (records || []).filter(r => r.status === 'Unpaid').reduce((sum, r) => sum + r.amount, 0);
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
@@ -252,7 +256,7 @@ const Maintenance = () => {
                                     <Users className="w-8 h-8" />
                                 </div>
                                 <h2 className="text-3xl font-black text-slate-800">Common Bill</h2>
-                                <p className="text-slate-500 font-medium mt-1">This will apply to all {flats.length} registered flats.</p>
+                                <p className="text-slate-500 font-medium mt-1">This will apply to all {flats?.length || 0} registered flats.</p>
                             </div>
 
                             <div className="p-10 pt-4 space-y-6">
@@ -296,7 +300,7 @@ const Maintenance = () => {
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Select Flat</label>
                                     <select {...specialForm.register('flatId')} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-transparent font-bold text-slate-700 appearance-none">
                                         <option value="">Select Flat...</option>
-                                        {flats.map(f => <option key={f.id} value={f.id}>Wing {f.wing} - Flat {f.number}</option>)}
+                                        {(flats || []).map(f => <option key={f.id} value={f.id}>Wing {f.wing} - Flat {f.number}</option>)}
                                     </select>
                                     {specialForm.formState.errors.flatId && <p className="text-rose-500 text-[10px] font-bold">{specialForm.formState.errors.flatId.message}</p>}
                                 </div>
@@ -327,11 +331,3 @@ const Maintenance = () => {
 };
 
 export default Maintenance;
-export default function Maintenance() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold">Maintenance</h1>
-      <p className="text-slate-500 mt-2">Manage maintenance records</p>
-    </div>
-  );
-}
