@@ -1,27 +1,42 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-
-const userSchema = new mongoose.Schema({
-    name:{
-        type:String,
-        required:true,
-    },
-    email:{
-        type:String,
-        unique:true
-    },
-
-    password:{
-        type:String,
-        required:true,
-    },
-     role: {
+const userSchema = new mongoose.Schema(
+  {
+    name: {
       type: String,
-      enum: ["Admin", "Resident", "Security"],
-      default: "Resident",
+      required: true,
     },
 
-})
+    email: {
+      type: String,
+      unique: true,
+      required: true,
+    },
 
+    password: {
+      type: String,
+      required: true,
+    },
 
-module.exports = mongoose.model("User",userSchema);
+    role: {
+      type: String,
+      enum: ["ADMIN", "RESIDENT", "SECURITY"],
+      default: "RESIDENT", // public bhi resident hi hai (pending)
+    },
+
+    status: {
+      type: String,
+      enum: ["PENDING", "ACTIVE", "REJECTED"],
+      default: "PENDING",
+    },
+
+    flat: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Flat",
+      default: null,
+    },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("User", userSchema);
