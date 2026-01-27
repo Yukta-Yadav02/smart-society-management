@@ -31,9 +31,8 @@ const Sidebar = () => {
 
   return (
     <div
-      className={`h-screen bg-white border-r border-slate-200 flex flex-col transition-all duration-300 sticky top-0 ${
-        isCollapsed ? 'w-20' : 'w-64'
-      }`}
+      className={`h-screen bg-white border-r border-slate-200 flex flex-col transition-all duration-300 sticky top-0 ${isCollapsed ? 'w-20' : 'w-64'
+        }`}
     >
       {/* Logo */}
       <div className="p-6 flex items-center gap-3">
@@ -51,12 +50,12 @@ const Sidebar = () => {
           <NavLink
             key={item.name}
             to={item.path}
+            end={item.path === '/admin'}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-xl transition-all
-              ${
-                isActive
-                  ? 'bg-indigo-50 text-indigo-600 border-l-4 border-indigo-600 rounded-l-none'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              ${isActive
+                ? 'bg-indigo-50 text-indigo-600 border-l-4 border-indigo-600 rounded-l-none'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
               }`
             }
           >
