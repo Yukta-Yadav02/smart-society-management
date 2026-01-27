@@ -9,6 +9,7 @@ const flatRoutes = require("./routes/flat");
 const flatRequestRoutes = require("./routes/flatRequest")
 const complaint = require("./routes/Complaint");
 const noticeRoutes = require("./routes/Notice");
+const maintenanceRoutes = require("./routes/Maintenance")
 
 
 connect();
@@ -25,6 +26,7 @@ app.use("/api/flat",flatRoutes);
 app.use("/api/",flatRequestRoutes);
 app.use("/api/",complaint);
 app.use("/api/notice",noticeRoutes);
+app.use("/api/maintenance",maintenanceRoutes)
 
 app.get("/",(req,res)=>{
     console.log("req is working ")
