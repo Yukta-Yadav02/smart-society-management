@@ -7,6 +7,7 @@ const authRoutes = require("./routes/auth");
 const wingRoutes = require("./routes/Wing")
 const flatRoutes = require("./routes/flat");
 const flatRequestRoutes = require("./routes/flatRequest")
+const complaint = require("./routes/Complaint");
 
 
 connect();
@@ -21,6 +22,7 @@ app.use("/api/auth",authRoutes);
 app.use("/api/wing",wingRoutes);
 app.use("/api/flat",flatRoutes);
 app.use("/api/",flatRequestRoutes)
+app.use("/api/",complaint)
 
 app.get("/",(req,res)=>{
     console.log("req is working ")

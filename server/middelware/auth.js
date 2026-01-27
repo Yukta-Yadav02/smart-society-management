@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-
+const User = require("../models/User");
 /* =========================
    PROTECT MIDDLEWARE
 ========================= */
@@ -53,4 +53,18 @@ exports.authorizeRoles = (...roles) => {
 
     next();
   };
+};
+
+// middlewares/hasFlat.js
+
+
+exports.hasFlat = async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  if (!user.flat) {
+    return res.status(403).json({
+      success: false,
+      message: "You cannot perform this action without a flat",
+    });
+  }
+  next();
 };
