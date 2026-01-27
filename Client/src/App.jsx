@@ -1,3 +1,5 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
@@ -16,6 +18,16 @@ import Profile from './pages/admin/Profile';
 function App() {
   return (
     <Router>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/flats" element={<ManageFlats />} />
+        <Route path="/requests" element={<ManageRequests />} />
+        <Route path="/residents" element={<ManageResidents />} />
+        <Route path="/complaints" element={<Complaints />} />
+        <Route path="/maintenance" element={<Maintenance />} />
+        <Route path="/notices" element={<Notices />} />
+        <Route path="/profile" element={<Profile />} />
+      </Routes>
       <Toaster
         position="top-right"
         toastOptions={{
