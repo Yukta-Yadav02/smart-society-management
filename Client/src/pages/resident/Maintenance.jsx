@@ -71,140 +71,188 @@ const Maintenance = () => {
   const totalDue = maintenance.filter(m => !m.paid).reduce((sum, m) => sum + m.amount, 0);
 
   return (
-    <div className="p-4 lg:p-8 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-      <div className="w-full">
-        <h1 className="text-2xl lg:text-4xl font-bold text-gray-800 mb-6 lg:mb-8 flex items-center mt-12 lg:mt-0">
-          <span className="mr-2 lg:mr-3">💰</span>
-          Maintenance Bills
-        </h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="px-4 py-6 lg:px-8 lg:py-8">
+        {/* Header */}
+        <div className="text-left mb-8">
+          <div className="flex items-center gap-4">
+            <div className="bg-blue-600 p-3 rounded-full">
+              <span className="text-xl text-white">💰</span>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">
+                Maintenance Bills
+              </h1>
+              <p className="text-gray-600">Manage your society payments</p>
+            </div>
+          </div>
+        </div>
         
-        {/* Summary */}
-        <div className="bg-gradient-to-r from-orange-500 to-red-500 p-4 lg:p-8 rounded-2xl shadow-xl mb-6 lg:mb-8 text-white">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between">
-            <div className="mb-4 lg:mb-0">
-              <h3 className="text-2xl lg:text-3xl font-bold mb-2">₹{totalDue.toLocaleString()}</h3>
-              <p className="text-orange-100 text-base lg:text-lg">Total Amount Due</p>
-              <p className="text-orange-200 text-sm mt-1">{maintenance.filter(m => !m.paid).length} unpaid bills</p>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm mb-1">Total Due</p>
+                <p className="text-2xl font-bold text-gray-800">₹{totalDue.toLocaleString()}</p>
+              </div>
+              <div className="bg-blue-100 p-3 rounded-full">
+                <span className="text-xl">💳</span>
+              </div>
             </div>
-            <div className="bg-white bg-opacity-20 p-3 lg:p-4 rounded-full">
-              <span className="text-3xl lg:text-4xl">💳</span>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm mb-1">Unpaid Bills</p>
+                <p className="text-2xl font-bold text-gray-800">{maintenance.filter(m => !m.paid).length}</p>
+              </div>
+              <div className="bg-red-100 p-3 rounded-full">
+                <span className="text-xl">📋</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm mb-1">Paid Bills</p>
+                <p className="text-2xl font-bold text-gray-800">{maintenance.filter(m => m.paid).length}</p>
+              </div>
+              <div className="bg-green-100 p-3 rounded-full">
+                <span className="text-xl">✅</span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Bills List */}
-        <div className="mb-6">
-          <div className="flex flex-wrap gap-2 mb-4">
-            <button 
-              onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                filter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              All Bills
-            </button>
-            <button 
-              onClick={() => setFilter('monthly')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                filter === 'monthly' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              📅 Monthly
-            </button>
-            <button 
-              onClick={() => setFilter('special')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                filter === 'special' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              🔧 Special Charges
-            </button>
-            <button 
-              onClick={() => setFilter('emergency')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                filter === 'emergency' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              🚨 Emergency
-            </button>
-          </div>
+        {/* Filter Tabs */}
+        <div className="bg-white p-1 rounded-lg shadow-sm mb-6 inline-flex border border-gray-200">
+          <button 
+            onClick={() => setFilter('all')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              filter === 'all' 
+                ? 'bg-blue-600 text-white' 
+                : 'text-gray-600 hover:text-blue-600'
+            }`}
+          >
+            All Bills
+          </button>
+          <button 
+            onClick={() => setFilter('monthly')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              filter === 'monthly' 
+                ? 'bg-blue-600 text-white' 
+                : 'text-gray-600 hover:text-blue-600'
+            }`}
+          >
+            📅 Monthly
+          </button>
+          <button 
+            onClick={() => setFilter('special')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              filter === 'special' 
+                ? 'bg-orange-600 text-white' 
+                : 'text-gray-600 hover:text-orange-600'
+            }`}
+          >
+            🔧 Special
+          </button>
+          <button 
+            onClick={() => setFilter('emergency')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              filter === 'emergency' 
+                ? 'bg-red-600 text-white' 
+                : 'text-gray-600 hover:text-red-600'
+            }`}
+          >
+            🚨 Emergency
+          </button>
         </div>
 
-        <div className="space-y-4 lg:space-y-6">
+        <div className="space-y-4">
           {filteredMaintenance.map((item) => (
-            <div key={item.id} className={`bg-white p-4 lg:p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow ${
-              item.type === 'special' ? 'border-l-4 border-orange-500' : 
-              item.type === 'emergency' ? 'border-l-4 border-red-500' :
-              'border-l-4 border-blue-500'
+            <div key={item.id} className={`bg-white p-6 rounded-lg shadow-md border-l-4 hover:shadow-lg transition-shadow ${
+              item.type === 'special' ? 'border-orange-500' : 
+              item.type === 'emergency' ? 'border-red-500' :
+              'border-blue-500'
             }`}>
-              <div className="flex flex-col lg:flex-row justify-between items-start mb-4 lg:mb-6">
-                <div className="mb-4 lg:mb-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h4 className="text-lg lg:text-xl font-bold text-gray-800">{item.title}</h4>
+              <div className="flex flex-col lg:flex-row justify-between items-start mb-4">
+                <div className="mb-4 lg:mb-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <h4 className="text-xl font-bold text-gray-800">{item.title}</h4>
                     {item.type === 'monthly' && (
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold">
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
                         📅 MONTHLY
                       </span>
                     )}
                     {item.type === 'special' && (
-                      <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-bold">
+                      <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium">
                         🔧 SPECIAL
                       </span>
                     )}
                     {item.type === 'emergency' && (
-                      <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-bold animate-pulse">
+                      <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-medium">
                         🚨 EMERGENCY
                       </span>
                     )}
                     {item.urgent && (
-                      <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-bold animate-pulse">
+                      <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">
                         ⚡ URGENT
                       </span>
                     )}
                   </div>
-                  <p className="text-gray-600 text-sm lg:text-base">{item.description}</p>
+                  <p className="text-gray-600">{item.description}</p>
                 </div>
                 <div className="text-left lg:text-right">
-                  <p className="text-xl lg:text-2xl font-bold text-gray-800">₹{item.amount.toLocaleString()}</p>
-                  <span className={`inline-block px-3 lg:px-4 py-1 lg:py-2 rounded-full text-xs lg:text-sm font-bold ${
-                    item.paid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  <p className="text-2xl font-bold text-gray-800 mb-2">
+                    ₹{item.amount.toLocaleString()}
+                  </p>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                    item.paid 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
                   }`}>
                     {item.paid ? '✅ PAID' : '⏰ UNPAID'}
                   </span>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4 mb-4 lg:mb-6">
-                <div className="bg-gray-50 p-3 lg:p-4 rounded-xl">
-                  <p className="text-xs lg:text-sm font-bold text-gray-600 mb-1">💰 Amount</p>
-                  <p className="text-base lg:text-lg font-bold text-gray-800">₹{item.amount.toLocaleString()}</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="bg-gray-50 p-3 rounded-lg border">
+                  <p className="text-xs font-medium text-gray-600 mb-1">💰 Amount</p>
+                  <p className="text-lg font-bold text-gray-800">₹{item.amount.toLocaleString()}</p>
                 </div>
-                <div className="bg-gray-50 p-3 lg:p-4 rounded-xl">
-                  <p className="text-xs lg:text-sm font-bold text-gray-600 mb-1">📅 Due Date</p>
-                  <p className="text-base lg:text-lg font-bold text-gray-800">{new Date(item.dueDate).toLocaleDateString()}</p>
+                <div className="bg-gray-50 p-3 rounded-lg border">
+                  <p className="text-xs font-medium text-gray-600 mb-1">📅 Due Date</p>
+                  <p className="text-lg font-bold text-gray-800">{new Date(item.dueDate).toLocaleDateString()}</p>
                 </div>
-                <div className="bg-gray-50 p-3 lg:p-4 rounded-xl">
-                  <p className="text-xs lg:text-sm font-bold text-gray-600 mb-1">📊 Period</p>
-                  <p className="text-base lg:text-lg font-bold text-gray-800">{item.period}</p>
+                <div className="bg-gray-50 p-3 rounded-lg border">
+                  <p className="text-xs font-medium text-gray-600 mb-1">📊 Period</p>
+                  <p className="text-lg font-bold text-gray-800">{item.period}</p>
                 </div>
               </div>
               
               {item.paid ? (
-                <div className="bg-green-50 p-3 lg:p-4 rounded-xl border border-green-200">
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                   <div className="flex items-center">
-                    <span className="text-xl lg:text-2xl mr-2 lg:mr-3">✅</span>
+                    <div className="bg-green-500 p-2 rounded-full mr-3">
+                      <span className="text-white">✅</span>
+                    </div>
                     <div>
-                      <p className="font-bold text-green-800 text-sm lg:text-base">Payment Completed</p>
-                      <p className="text-green-600 text-xs lg:text-sm">Paid on: {new Date(item.paidDate).toLocaleDateString()}</p>
+                      <p className="font-medium text-green-800">Payment Completed</p>
+                      <p className="text-green-600 text-sm">Paid on: {new Date(item.paidDate).toLocaleDateString()}</p>
                     </div>
                   </div>
                 </div>
               ) : (
                 <button 
                   onClick={() => handlePaymentClick(item)}
-                  className="w-full lg:w-auto bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 lg:px-8 py-3 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105 shadow-lg font-bold text-sm lg:text-base"
+                  className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
                 >
-                  💳 Pay Now
+                  <span>💳</span>
+                  Pay Now
                 </button>
               )}
             </div>
@@ -214,41 +262,47 @@ const Maintenance = () => {
         {/* Payment Modal */}
         {showPaymentModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-6 lg:p-8 rounded-2xl shadow-2xl max-w-md w-full">
-              <div className="text-center mb-4 lg:mb-6">
-                <div className="bg-green-100 p-3 lg:p-4 rounded-full w-12 h-12 lg:w-16 lg:h-16 mx-auto mb-3 lg:mb-4">
-                  <span className="text-2xl lg:text-3xl">💳</span>
+            <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+              <div className="text-center mb-6">
+                <div className="bg-blue-100 p-4 rounded-full w-16 h-16 mx-auto mb-4">
+                  <span className="text-2xl">💳</span>
                 </div>
-                <h3 className="text-xl lg:text-2xl font-bold text-gray-800 mb-2">Confirm Payment</h3>
-                <p className="text-gray-600 text-sm lg:text-base">Are you sure you want to pay this bill?</p>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">
+                  Confirm Payment
+                </h3>
+                <p className="text-gray-600">Review your payment details</p>
               </div>
               
               {selectedBill && (
-                <div className="bg-gray-50 p-3 lg:p-4 rounded-xl mb-4 lg:mb-6">
-                  <h4 className="font-bold text-gray-800 mb-2 text-sm lg:text-base">{selectedBill.title}</h4>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-600 text-sm lg:text-base">Amount:</span>
-                    <span className="text-xl lg:text-2xl font-bold text-green-600">₹{selectedBill.amount.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 text-sm lg:text-base">Due Date:</span>
-                    <span className="font-semibold text-sm lg:text-base">{new Date(selectedBill.dueDate).toLocaleDateString()}</span>
+                <div className="bg-gray-50 p-4 rounded-lg mb-6 border">
+                  <h4 className="font-bold text-gray-800 mb-3">{selectedBill.title}</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Amount:</span>
+                      <span className="text-xl font-bold text-green-600">
+                        ₹{selectedBill.amount.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Due Date:</span>
+                      <span className="font-medium text-gray-800">{new Date(selectedBill.dueDate).toLocaleDateString()}</span>
+                    </div>
                   </div>
                 </div>
               )}
               
-              <div className="flex flex-col lg:flex-row gap-3 lg:gap-4">
+              <div className="flex gap-3">
                 <button 
                   onClick={() => setShowPaymentModal(false)}
-                  className="flex-1 bg-gray-300 text-gray-700 px-4 lg:px-6 py-2 lg:py-3 rounded-xl hover:bg-gray-400 transition-colors font-bold text-sm lg:text-base"
+                  className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
                 >
-                  ❌ Cancel
+                  Cancel
                 </button>
                 <button 
                   onClick={confirmPayment}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105 shadow-lg font-bold text-sm lg:text-base"
+                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
-                  ✅ Pay Now
+                  Confirm Payment
                 </button>
               </div>
             </div>
@@ -258,25 +312,30 @@ const Maintenance = () => {
         {/* Success Modal */}
         {showSuccessModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-6 lg:p-8 rounded-2xl shadow-2xl max-w-md w-full text-center">
-              <div className="mb-4 lg:mb-6">
-                <div className="bg-green-100 p-4 lg:p-6 rounded-full w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-3 lg:mb-4 animate-bounce">
-                  <span className="text-3xl lg:text-4xl">✅</span>
+            <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full text-center">
+              <div className="mb-6">
+                <div className="bg-green-100 p-4 rounded-full w-16 h-16 mx-auto mb-4">
+                  <span className="text-2xl">✅</span>
                 </div>
-                <h3 className="text-2xl lg:text-3xl font-bold text-green-600 mb-2">Payment Successful!</h3>
-                <p className="text-gray-600 text-base lg:text-lg">Your payment has been processed successfully</p>
+                <h3 className="text-2xl font-bold text-green-600 mb-2">
+                  Payment Successful!
+                </h3>
+                <p className="text-gray-600">Your payment has been processed</p>
               </div>
               
               {selectedBill && (
-                <div className="bg-green-50 p-3 lg:p-4 rounded-xl mb-4 lg:mb-6">
-                  <p className="text-green-800 font-semibold text-sm lg:text-base">₹{selectedBill.amount.toLocaleString()} paid for</p>
-                  <p className="text-green-700 text-sm lg:text-base">{selectedBill.title}</p>
+                <div className="bg-green-50 p-4 rounded-lg mb-6 border border-green-200">
+                  <p className="text-2xl font-bold text-green-600 mb-1">
+                    ₹{selectedBill.amount.toLocaleString()}
+                  </p>
+                  <p className="text-green-800 font-medium">{selectedBill.title}</p>
+                  <p className="text-green-600 text-sm mt-1">Transaction completed successfully</p>
                 </div>
               )}
               
-              <div className="text-xs lg:text-sm text-gray-500">
-                <p>🎉 Thank you for your payment!</p>
-                <p>This popup will close automatically...</p>
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                <p className="text-blue-600 font-medium mb-1">🎉 Thank you for your payment!</p>
+                <p className="text-gray-500 text-sm">This popup will close automatically...</p>
               </div>
             </div>
           </div>
