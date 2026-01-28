@@ -3,6 +3,8 @@ import { Provider } from 'react-redux'
 import { store } from './redux/store'
 import RootLayout from './layouts/RootLayout'
 import ProtectedLayout from './layouts/ProtectedLayout'
+import Layout from './components/layout/Layout'
+import ResidentLayout from './components/layout/ResidentLayout'
 
 // Common Pages
 import Home from './pages/common/Home'
@@ -38,23 +40,31 @@ const router = createBrowserRouter([
             { path: '/signup', element: <SignUp /> },
             { path: '/dashboard', element: <Dashboard /> },
             { path: '/request-access', element: <RequestAccess /> },
-            
-            // Admin Routes
-            { path: '/admin/dashboard', element: <AdminDashboard /> },
-            { path: '/admin/flats', element: <ManageFlats /> },
-            { path: '/admin/residents', element: <ManageResidents /> },
-            { path: '/admin/requests', element: <ManageRequests /> },
-            { path: '/admin/complaints', element: <AdminComplaints /> },
-            { path: '/admin/maintenance', element: <AdminMaintenance /> },
-            { path: '/admin/notices', element: <AdminNotices /> },
-            { path: '/admin/profile', element: <AdminProfile /> },
-            
-            // Resident Routes
-            { path: '/resident/dashboard', element: <ResidentDashboard /> },
-            { path: '/resident/complaints', element: <ResidentComplaints /> },
-            { path: '/resident/maintenance', element: <ResidentMaintenance /> },
-            { path: '/resident/notices', element: <ResidentNotices /> },
-            { path: '/resident/profile', element: <ResidentProfile /> },
+        ],
+    },
+    {
+        path: '/admin',
+        element: <Layout />,
+        children: [
+            { path: 'dashboard', element: <AdminDashboard /> },
+            { path: 'flats', element: <ManageFlats /> },
+            { path: 'residents', element: <ManageResidents /> },
+            { path: 'requests', element: <ManageRequests /> },
+            { path: 'complaints', element: <AdminComplaints /> },
+            { path: 'maintenance', element: <AdminMaintenance /> },
+            { path: 'notices', element: <AdminNotices /> },
+            { path: 'profile', element: <AdminProfile /> },
+        ],
+    },
+    {
+        path: '/resident',
+        element: <ResidentLayout />,
+        children: [
+            { path: 'dashboard', element: <ResidentDashboard /> },
+            { path: 'complaints', element: <ResidentComplaints /> },
+            { path: 'maintenance', element: <ResidentMaintenance /> },
+            { path: 'notices', element: <ResidentNotices /> },
+            { path: 'profile', element: <ResidentProfile /> },
         ],
     },
 ]);

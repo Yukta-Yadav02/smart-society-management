@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import flatReducer from './slices/flatSlice';
-import dashboardReducer from './slices/dashboardSlice';
+import dashboardReducer from './slices/DashboardSlice';
 import residentReducer from './slices/residentSlice';
 import maintenanceReducer from './slices/maintenanceSlice';
 import complaintReducer from './slices/complaintSlice';
