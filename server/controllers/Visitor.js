@@ -78,26 +78,26 @@ exports.markVisitorExit = async (req, res) => {
   }
 };
 // optional 
-exports.getMyFlatVisitors = async (req, res) => {
-  try {
-    if (!req.user.flat) {
-      return res.status(403).json({
-        success: false,
-        message: "Flat not assigned",
-      });
-    }
+// exports.getMyFlatVisitors = async (req, res) => {
+//   try {
+//     if (!req.user.flat) {
+//       return res.status(403).json({
+//         success: false,
+//         message: "Flat not assigned",
+//       });
+//     }
 
-    const visitors = await Visitor.find({ flat: req.user.flat })
-      .sort({ createdAt: -1 });
+//     const visitors = await Visitor.find({ flat: req.user.flat })
+//       .sort({ createdAt: -1 });
 
-    res.status(200).json({
-      success: true,
-      data: visitors,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch visitors",
-    });
-  }
-};
+//     res.status(200).json({
+//       success: true,
+//       data: visitors,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch visitors",
+//     });
+//   }
+// };

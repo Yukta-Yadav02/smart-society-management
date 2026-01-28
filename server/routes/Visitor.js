@@ -25,12 +25,12 @@ router.put(
   markVisitorExit
 );
 
-// RESIDENT
-router.get(
-  "/my",
-  protect,
-  authorizeRoles("RESIDENT"),
-  getMyFlatVisitors
-);
+// // RESIDENT
+// router.get(
+//   "/my",
+//   protect,
+//   authorizeRoles("RESIDENT"),
+//   getMyFlatVisitors
+// );
 
 module.exports = router;
