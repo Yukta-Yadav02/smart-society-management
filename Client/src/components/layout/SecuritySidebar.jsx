@@ -1,32 +1,24 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Building2,
-  ClipboardList,
+  Shield,
+  UserPlus,
+  UserMinus,
   Users,
-  AlertCircle,
-  Wrench,
-  Bell,
-  UserCircle,
+  Clock,
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Home
+  Home,
+  Eye
 } from 'lucide-react';
 
-const Sidebar = () => {
+const SecuritySidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
-    { name: 'Manage Flats', icon: Building2, path: '/admin/flats' },
-    { name: 'Manage Requests', icon: ClipboardList, path: '/admin/requests' },
-    { name: 'Manage Residents', icon: Users, path: '/admin/residents' },
-    { name: 'Complaints', icon: AlertCircle, path: '/admin/complaints' },
-    { name: 'Maintenance', icon: Wrench, path: '/admin/maintenance' },
-    { name: 'Notices', icon: Bell, path: '/admin/notices' },
-    { name: 'Profile', icon: UserCircle, path: '/admin/profile' },
+    { name: 'Add Visitor', icon: UserPlus, path: '/security/add-visitor' },
+    { name: 'Exit Visitor', icon: UserMinus, path: '/security/exit-visitor' },
   ];
 
   return (
@@ -37,11 +29,11 @@ const Sidebar = () => {
     >
       {/* Logo */}
       <div className="p-6 flex items-center gap-3">
-        <div className="bg-indigo-600 p-2 rounded-xl">
-          <Home className="text-white w-6 h-6" />
+        <div className="bg-green-600 p-2 rounded-xl">
+          <Shield className="text-white w-6 h-6" />
         </div>
         {!isCollapsed && (
-          <span className="font-bold text-xl text-slate-800">Gokuldham</span>
+          <span className="font-bold text-xl text-slate-800">Security</span>
         )}
       </div>
 
@@ -51,11 +43,11 @@ const Sidebar = () => {
           <NavLink
             key={item.name}
             to={item.path}
-            end={item.path === '/admin/dashboard'}
+            end={item.path === '/security/add-visitor'}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-xl transition-all
               ${isActive
-                ? 'bg-indigo-50 text-indigo-600 border-l-4 border-indigo-600 rounded-l-none'
+                ? 'bg-green-50 text-green-600 border-l-4 border-green-600 rounded-l-none'
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
               }`
             }
@@ -87,4 +79,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar;
+export default SecuritySidebar;

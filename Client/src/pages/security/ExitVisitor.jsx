@@ -1,83 +1,177 @@
-import React from 'react';
-import Society from './assets/Society.jpg';
+import React, { useState } from 'react';
+import { UserMinus, Clock, MapPin, Search, Filter } from 'lucide-react';
 
 const ExitVisitor = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  
   const visitors = [
-    { id: 1, name: "Arjun Mehta", flat: "A-502", time: "09:45 AM", type: "Guest", color: "from-blue-600 to-blue-400" },
-    { id: 2, name: "Suresh Raina", flat: "B-104", time: "10:20 AM", type: "Delivery", color: "from-indigo-600 to-indigo-400" },
-    { id: 3, name: "Kavita Iyer", flat: "D-901", time: "11:05 AM", type: "Work", color: "from-cyan-600 to-cyan-400" },
-    { id: 4, name: "Vikram Singh", flat: "C-202", time: "11:45 AM", type: "Guest", color: "from-blue-700 to-blue-500" },
+    { id: 1, name: "Arjun Mehta", flat: "A-502", time: "09:45 AM", type: "Guest", duration: "2h 15m" },
+    { id: 2, name: "Suresh Raina", flat: "B-104", time: "10:20 AM", type: "Delivery", duration: "45m" },
+    { id: 3, name: "Kavita Iyer", flat: "D-901", time: "11:05 AM", type: "Maintenance", duration: "1h 30m" },
+    { id: 4, name: "Vikram Singh", flat: "C-202", time: "11:45 AM", type: "Guest", duration: "3h 10m" },
+    { id: 5, name: "Priya Sharma", flat: "A-301", time: "12:30 PM", type: "Service", duration: "1h 45m" },
+    { id: 6, name: "Rahul Kumar", flat: "B-205", time: "01:15 PM", type: "Family", duration: "2h 30m" },
   ];
+
+  const filteredVisitors = visitors.filter(visitor => {
+    const matchesSearch = visitor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         visitor.flat.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterType === 'all' || visitor.type.toLowerCase() === filterType;
+    return matchesSearch && matchesFilter;
+  });
+
+  const handleExit = (visitorId, visitorName) => {
+    alert(`${visitorName} has been marked as exited successfully!`);
+  };
+
+  const getTypeColor = (type) => {
+    const colors = {
+      'Guest': 'bg-blue-100 text-blue-700 border-blue-200',
+      'Delivery': 'bg-orange-100 text-orange-700 border-orange-200',
+      'Maintenance': 'bg-purple-100 text-purple-700 border-purple-200',
+      'Service': 'bg-green-100 text-green-700 border-green-200',
+      'Family': 'bg-pink-100 text-pink-700 border-pink-200'
+    };
+    return colors[type] || 'bg-gray-100 text-gray-700 border-gray-200';
+  };
+
   return (
-    <div
-      className="min-h-screen w-full bg-cover bg-center bg-fixed relative selection:bg-blue-500/30"
-      style={{
-        backgroundImage: `url(${Society})`,
-      }}
-    >
-      
-      <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-[4px]"></div>
+    <div className="w-full">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="bg-red-100 p-2 rounded-lg">
+            <UserMinus className="w-6 h-6 text-red-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-800">Active Visitors</h1>
+        </div>
+        <p className="text-slate-600">Manage visitor exits and track active visitors</p>
+      </div>
 
-      <div className="relative z-10 p-4 sm:p-8 md:p-12 max-w-7xl mx-auto pt-32">
-
-        {/* Header Section */}
-        <div className="mb-10 border-l-4 border-blue-600 pl-6 animate-in fade-in slide-in-from-left-4 duration-700">
-          <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter">
-            Active <span className="text-blue-500">Visitors</span>
-          </h1>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-            </span>
-            <p className="text-gray-400 text-[10px] md:text-xs font-bold tracking-[0.2em] uppercase">
-              Live Society Status
-            </p>
+      {/* Search and Filter */}
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 mb-8">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by name or flat number..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all"
+            />
+          </div>
+          <div className="relative">
+            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="pl-12 pr-8 py-3 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all appearance-none bg-white min-w-[150px]"
+            >
+              <option value="all">All Types</option>
+              <option value="guest">Guest</option>
+              <option value="delivery">Delivery</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="service">Service</option>
+              <option value="family">Family</option>
+            </select>
           </div>
         </div>
+      </div>
 
-        {/* Visitors Grid */}
-        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {visitors.map((v) => (
-            <div
-              key={v.id}
-              className="group relative bg-slate-900/40 border border-white/5 backdrop-blur-xl rounded-[2rem] p-6 transition-all duration-500 hover:bg-slate-900/60 hover:border-blue-500/40 hover:-translate-y-2 shadow-2xl overflow-hidden"
-                                               >
-              {/* Background Glow Effect */}
-              <div className="absolute -top-10 -right-10 w-24 h-24 bg-blue-600/10 blur-3xl group-hover:bg-blue-600/20 transition-all duration-500"></div>
-
-              <div className="flex flex-col items-center relative z-10">
-                {/* Avatar with Gradient */}
-                <div className={`w-16 h-16 bg-gradient-to-br ${v.color} rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-[0_10px_20px_rgba(0,0,0,0.3)] mb-4 ring-4 ring-white/5 group-hover:scale-110 transition-transform duration-500`}>
-                  {v.name.charAt(0)}
+      {/* Visitors Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredVisitors.map((visitor) => (
+          <div
+            key={visitor.id}
+            className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 hover:shadow-xl transition-all duration-300"
+          >
+            {/* Visitor Info */}
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-slate-600 to-slate-800 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                  {visitor.name.charAt(0)}
                 </div>
-
-                <h3 className="text-lg font-extrabold text-white tracking-tight text-center w-full group-hover:text-blue-400 transition-colors">
-                  {v.name}
-                </h3>
-                <p className="text-blue-500/80 text-xs font-black mt-1 uppercase tracking-widest">
-                  {v.flat}
-                </p>
-                {/* Info Badges */}
-                <div className="mt-6 grid grid-cols-2 gap-2 w-full">
-                  <div className="bg-white/5 border border-white/5 px-2 py-2 rounded-xl text-center">
-                    <p className="text-[8px] text-gray-500 uppercase">Purpose</p>
-                    <p className="text-[10px] text-gray-200 font-bold">{v.type}</p>
-                  </div>
-                  <div className="bg-blue-600/10 border border-blue-500/10 px-2 py-2 rounded-xl text-center">
-                    <p className="text-[8px] text-blue-400 uppercase">Entry</p>
-                    <p className="text-[10px] text-blue-200 font-bold">{v.time}</p>
+                <div>
+                  <h3 className="font-semibold text-slate-800 text-lg">{visitor.name}</h3>
+                  <div className="flex items-center gap-1 text-slate-500 text-sm">
+                    <MapPin className="w-3 h-3" />
+                    <span>{visitor.flat}</span>
                   </div>
                 </div>
-                {/* Action Button */}
-                <button className="mt-6 w-full py-3 bg-white/5 hover:bg-red-500 text-gray-300 hover:text-white rounded-xl font-black transition-all duration-300 text-[10px] 
-                uppercase tracking-widest border
-                 border-white/10 hover:border-red-500 shadow-lg active:scale-95 flex items-center justify-center gap-2">
-                  Mark Exit
-                </button>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getTypeColor(visitor.type)}`}>
+                {visitor.type}
+              </span>
+            </div>
+
+            {/* Time Info */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-slate-50 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-slate-600 text-xs mb-1">
+                  <Clock className="w-3 h-3" />
+                  <span>Entry Time</span>
+                </div>
+                <p className="font-semibold text-slate-800">{visitor.time}</p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-slate-600 text-xs mb-1">
+                  <Clock className="w-3 h-3" />
+                  <span>Duration</span>
+                </div>
+                <p className="font-semibold text-slate-800">{visitor.duration}</p>
               </div>
             </div>
-          ))}
+
+            {/* Action Button */}
+            <button 
+              onClick={() => handleExit(visitor.id, visitor.name)}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+            >
+              <UserMinus className="w-4 h-4" />
+              Mark Exit
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {filteredVisitors.length === 0 && (
+        <div className="text-center py-12">
+          <div className="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserMinus className="w-8 h-8 text-slate-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-800 mb-2">No visitors found</h3>
+          <p className="text-slate-600">Try adjusting your search or filter criteria</p>
+        </div>
+      )}
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
+        <div className="bg-white rounded-xl p-4 border border-slate-200">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-blue-600">{visitors.filter(v => v.type === 'Guest').length}</p>
+            <p className="text-sm text-slate-600">Guests</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-slate-200">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-orange-600">{visitors.filter(v => v.type === 'Delivery').length}</p>
+            <p className="text-sm text-slate-600">Deliveries</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-slate-200">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-purple-600">{visitors.filter(v => v.type === 'Maintenance').length}</p>
+            <p className="text-sm text-slate-600">Maintenance</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-4 border border-slate-200">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-green-600">{visitors.length}</p>
+            <p className="text-sm text-slate-600">Total Active</p>
+          </div>
         </div>
       </div>
     </div>

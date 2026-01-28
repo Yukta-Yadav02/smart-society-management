@@ -60,7 +60,7 @@ const Dashboard = () => {
             title: 'Total Flats',
             value: stats.totalFlats,
             icon: Building2,
-            path: '/flats',
+            path: '/admin/flats',
             color: { bg: 'bg-blue-50', text: 'text-blue-600' },
             subStats: [
                 { label: 'Occupied', value: stats.occupiedFlats, color: 'text-blue-500' },
@@ -72,7 +72,7 @@ const Dashboard = () => {
             title: 'Total Residents',
             value: stats.totalResidents,
             icon: Users,
-            path: '/residents',
+            path: '/admin/residents',
             color: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
             subStats: [
                 { label: 'Owners', value: '840', color: 'text-emerald-500' },
@@ -84,7 +84,7 @@ const Dashboard = () => {
             title: 'Total Requests',
             value: stats.totalRequests,
             icon: ClipboardList,
-            path: '/requests',
+            path: '/admin/requests',
             color: { bg: 'bg-amber-50', text: 'text-amber-600' },
             subStats: [
                 { label: 'Pending', value: stats.pendingRequests, color: 'text-amber-500' },
@@ -96,7 +96,7 @@ const Dashboard = () => {
             title: 'Complaints',
             value: stats.totalComplaints,
             icon: AlertCircle,
-            path: '/complaints',
+            path: '/admin/complaints',
             color: { bg: 'bg-rose-50', text: 'text-rose-600' },
             subStats: [
                 { label: 'Pending', value: stats.pendingComplaints, color: 'text-rose-500' },

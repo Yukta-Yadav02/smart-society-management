@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Home, Building2, LogIn, UserPlus, LogOut, User, Layout, ChevronDown } from 'lucide-react';
+import { Home, Building2, LogIn, UserPlus, LogOut, User, Layout, ChevronDown, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const HomeNavbar = () => {
@@ -10,6 +10,7 @@ const HomeNavbar = () => {
     const location = useLocation();
     const [scrolled, setScrolled] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const isHomePage = location.pathname === '/';
 
@@ -25,6 +26,7 @@ const HomeNavbar = () => {
         // Reset scroll state on navigation
         setScrolled(window.scrollY > 50);
         setIsProfileOpen(false); // Close dropdown on navigate
+        setIsMobileMenuOpen(false); // Close mobile menu on navigate
     }, [location]);
 
     const handleLogout = () => {
@@ -53,11 +55,12 @@ const HomeNavbar = () => {
                             }`}>
                             <Building2 className={(scrolled || !isHomePage) ? 'text-white h-6 w-6' : 'text-primary-600 h-6 w-6'} />
                         </div>
-                        <span className={`text-2xl font-black tracking-tight transition-colors duration-300 ${textStyle}`}>
+                        <span className={`text-xl sm:text-2xl font-black tracking-tight transition-colors duration-300 ${textStyle}`}>
                             Gokuldham
                         </span>
                     </Link>
 
+                    {/* Desktop Menu */}
                     <div className="hidden md:flex items-center gap-10">
                         <Link
                             to="/"
@@ -73,7 +76,8 @@ const HomeNavbar = () => {
                         </a>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    {/* Desktop Auth Buttons */}
+                    <div className="hidden md:flex items-center gap-4">
                         {user ? (
                             <div className="relative">
                                 <motion.div
@@ -151,7 +155,106 @@ const HomeNavbar = () => {
                             </div>
                         )}
                     </div>
+
+                    {/* Mobile Menu Button */}
+                    <div className="md:hidden">
+                        <button
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            className={`p-2 rounded-xl transition-all duration-300 ${(scrolled || !isHomePage)
+                                ? 'text-primary-600 hover:bg-primary-50'
+                                : 'text-white hover:bg-white/10'
+                                }`}
+                        >
+                            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                        </button>
+                    </div>
                 </div>
+
+                {/* Mobile Menu */}
+                <AnimatePresence>
+                    {isMobileMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="md:hidden mt-4 pb-4"
+                        >
+                            <div className={`rounded-2xl p-4 space-y-4 ${(scrolled || !isHomePage)
+                                ? 'bg-white/95 backdrop-blur-md border border-primary-100'
+                                : 'bg-white/10 backdrop-blur-md border border-white/20'
+                                }`}>
+                                <Link
+                                    to="/"
+                                    className={`flex items-center gap-3 p-3 rounded-xl transition-all ${(scrolled || !isHomePage)
+                                        ? 'text-primary-600 hover:bg-primary-50'
+                                        : 'text-white hover:bg-white/10'
+                                        }`}
+                                >
+                                    <Home size={20} />
+                                    <span className="font-bold">Home</span>
+                                </Link>
+                                <a
+                                    href="/#wings"
+                                    className={`flex items-center gap-3 p-3 rounded-xl transition-all ${(scrolled || !isHomePage)
+                                        ? 'text-primary-600 hover:bg-primary-50'
+                                        : 'text-white hover:bg-white/10'
+                                        }`}
+                                >
+                                    <Building2 size={20} />
+                                    <span className="font-bold">Wings</span>
+                                </a>
+                                
+                                {user ? (
+                                    <div className="space-y-2 pt-2 border-t border-white/20">
+                                        <Link
+                                            to="/dashboard"
+                                            className={`flex items-center gap-3 p-3 rounded-xl transition-all ${(scrolled || !isHomePage)
+                                                ? 'text-primary-600 hover:bg-primary-50'
+                                                : 'text-white hover:bg-white/10'
+                                                }`}
+                                        >
+                                            <Layout size={20} />
+                                            <span className="font-bold">Dashboard</span>
+                                        </Link>
+                                        <button
+                                            onClick={handleLogout}
+                                            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${(scrolled || !isHomePage)
+                                                ? 'text-red-600 hover:bg-red-50'
+                                                : 'text-red-300 hover:bg-white/10'
+                                                }`}
+                                        >
+                                            <LogOut size={20} />
+                                            <span className="font-bold">Logout</span>
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2 pt-2 border-t border-white/20">
+                                        <Link
+                                            to="/login"
+                                            className={`flex items-center gap-3 p-3 rounded-xl transition-all ${(scrolled || !isHomePage)
+                                                ? 'text-primary-600 hover:bg-primary-50'
+                                                : 'text-white hover:bg-white/10'
+                                                }`}
+                                        >
+                                            <LogIn size={20} />
+                                            <span className="font-bold">Login</span>
+                                        </Link>
+                                        <Link
+                                            to="/signup"
+                                            className={`flex items-center gap-3 p-3 rounded-xl transition-all ${(scrolled || !isHomePage)
+                                                ? 'bg-primary-600 text-white hover:bg-primary-700'
+                                                : 'bg-white text-primary-600 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            <UserPlus size={20} />
+                                            <span className="font-bold">Join Us</span>
+                                        </Link>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </nav>
     );

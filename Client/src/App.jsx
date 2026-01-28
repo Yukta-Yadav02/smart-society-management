@@ -5,6 +5,7 @@ import RootLayout from './layouts/RootLayout'
 import ProtectedLayout from './layouts/ProtectedLayout'
 import Layout from './components/layout/Layout'
 import ResidentLayout from './components/layout/ResidentLayout'
+import SecurityLayout from './components/layout/SecurityLayout'
 
 // Common Pages
 import Home from './pages/common/Home'
@@ -22,6 +23,12 @@ import AdminComplaints from './pages/admin/Complaints'
 import AdminMaintenance from './pages/admin/Maintenance'
 import AdminNotices from './pages/admin/Notices'
 import AdminProfile from './pages/admin/Profile'
+
+// Security Pages
+import AddVisitor from './pages/security/AddVisitor'
+import ExitVisitor from './pages/security/ExitVisitor'
+import ActiveVisitors from './pages/security/ActiveVisitors'
+import VisitorHistory from './pages/security/VisitorHistory'
 
 // Resident Pages
 import ResidentDashboard from './pages/resident/ResidentDashboard'
@@ -54,6 +61,16 @@ const router = createBrowserRouter([
             { path: 'maintenance', element: <AdminMaintenance /> },
             { path: 'notices', element: <AdminNotices /> },
             { path: 'profile', element: <AdminProfile /> },
+        ],
+    },
+    {
+        path: '/security',
+        element: <SecurityLayout />,
+        children: [
+            { path: 'add-visitor', element: <AddVisitor /> },
+            { path: 'exit-visitor', element: <ExitVisitor /> },
+            { path: 'active-visitors', element: <ActiveVisitors /> },
+            { path: 'visitor-history', element: <VisitorHistory /> },
         ],
     },
     {
