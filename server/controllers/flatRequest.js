@@ -6,7 +6,23 @@ const User = require("../models/User");
 /* 1. User applies for flat */
 exports.createFlatRequest = async (req, res) => {
   try {
+
+    
     const { flatId, ownershipType, remark } = req.body;
+
+    
+    const exists = await FlatRequest.findOne({
+          user: req.user.id,
+          flat: flatId,
+          status: "Pending",
+      });
+
+if (exists) {
+  return res.status(400).json({
+    success: false,
+    message: "You already have a pending request for this flat",
+  });
+}
 
     if (!flatId || !ownershipType) {
       return res.status(400).json({
@@ -173,7 +189,7 @@ exports.adminDecision = async (req, res) => {
 
       await User.findByIdAndUpdate(request.user, {
         flat: flat._id,
-        status: "Active",
+        status: "ACTIVE"
       });
     }
 

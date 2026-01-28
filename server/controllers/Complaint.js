@@ -103,6 +103,12 @@ exports.updateComplaintStatus = async (req, res) => {
 exports.deleteComplaint = async (req, res) => {
   try {
     await Complaint.findByIdAndDelete(req.params.id);
+    if (
+      req.user.role !== "ADMIN" &&
+      Complaint.user.toString() !== req.user.id
+    ) {
+     return res.status(403).json({ message: "Not allowed" });
+ }
     res.json({ success: true, message: "Complaint deleted" });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

@@ -1,6 +1,6 @@
 // controllers/maintenance.js
 const Maintenance = require("../models/Maintenance");
-const Flat = require("../models/Flat");
+const Flat = require("../models/FLat");
 const User = require("../models/User");
 
 // Admin creates maintenance
@@ -15,7 +15,8 @@ exports.createMaintenance = async (req, res) => {
       });
     }
 
-    const flat = await Flat.findById(flatId);
+    //  Flat + resident fetch
+    const flat = await Flat.findById(flatId).populate("currentResident");
     if (!flat) {
       return res.status(404).json({
         success: false,
@@ -23,6 +24,23 @@ exports.createMaintenance = async (req, res) => {
       });
     }
 
+    //  Flat must be occupied
+    if (!flat.currentResident) {
+      return res.status(400).json({
+        success: false,
+        message: "Flat is not occupied, maintenance not applicable",
+      });
+    }
+
+    //  Resident must be ACTIVE
+    if (flat.currentResident.status !== "ACTIVE") {
+      return res.status(400).json({
+        success: false,
+        message: "Resident account is not active, maintenance not applicable",
+      });
+    }
+
+    //  Create maintenance
     const maintenance = await Maintenance.create({
       flat: flatId,
       month,
@@ -30,7 +48,7 @@ exports.createMaintenance = async (req, res) => {
       amount,
     });
 
-    console.log(maintenance)
+    console.log(maintenance);
 
     res.status(201).json({
       success: true,
@@ -48,6 +66,7 @@ exports.createMaintenance = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to create maintenance",
+      error: error.message,
     });
   }
 };

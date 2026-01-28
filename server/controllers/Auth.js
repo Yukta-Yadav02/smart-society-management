@@ -206,3 +206,15 @@ exports.login = async (req, res) => {
     });
   }
 };
+
+exports.toggleUserStatus = async (req, res) => {
+  const user = await User.findById(req.user.id);
+
+  user.isActive = !user.isActive;
+  await user.save();
+
+  res.json({
+    success: true,
+    message: `Account ${user.isActive ? "activated" : "deactivated"}`,
+  });
+};
