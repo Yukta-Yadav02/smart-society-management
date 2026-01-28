@@ -1,13 +1,16 @@
 const jwt = require("jsonwebtoken");
-
+const User = require("../models/User");
 /* =========================
    PROTECT MIDDLEWARE
 ========================= */
 exports.protect = (req, res, next) => {
+  console.log(req.body)
   try {
     const token = req.cookies.token ||
                   req.body.token ||
-                  req.header("Authorization")?.replace("Bearer ", "");
+                  req.header("Authorization")?.replace("Bearer", "");
+
+                  console.log(token)
 
                   
     if (!token) {
@@ -38,12 +41,30 @@ exports.protect = (req, res, next) => {
 ========================= */
 exports.authorizeRoles = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    const userRole = req.user.role.toUpperCase();
+    const allowedRoles = roles.map(r => r.toUpperCase());
+
+    if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({
         success: false,
         message: "Access denied",
       });
     }
+
     next();
   };
+};
+
+// middlewares/hasFlat.js
+
+
+exports.hasFlat = async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  if (!user.flat) {
+    return res.status(403).json({
+      success: false,
+      message: "You cannot perform this action without a flat",
+    });
+  }
+  next();
 };
