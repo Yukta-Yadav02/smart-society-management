@@ -1,7 +1,6 @@
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken")
-
+const jwt = require("jsonwebtoken");
 
 /* =========================
    ONE TIME ADMIN SETUP
@@ -17,12 +16,13 @@ exports.setupAdmin = async (req, res) => {
     }
 
     const { name, email, password } = req.body;
-    if(!name || !email || !password){
+    if (!name || !email || !password) {
       return res.status(400).json({
-        success:false,
-        message:"All fields are required",
-      })
+        success: false,
+        message: "All fields are required",
+      });
     }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const admin = await User.create({
@@ -35,7 +35,7 @@ exports.setupAdmin = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Admin (Secretary) created successfully",
+      message: "Admin created successfully",
       data: admin,
     });
   } catch (error) {
@@ -45,12 +45,20 @@ exports.setupAdmin = async (req, res) => {
     });
   }
 };
+
 /* =========================
-   ADMIN → CREATE USER
+   PUBLIC → REGISTER RESIDENT
 ========================= */
-exports.register = async (req, res) => {
+exports.registerResident = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
 
     const exists = await User.findOne({ email });
     if (exists) {
@@ -66,13 +74,13 @@ exports.register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role: "RESIDENT",     // public bhi resident hi hai
-      status: "PENDING",    // approval baaki
+      role: "RESIDENT",
+      status: "PENDING",
     });
 
     return res.status(201).json({
       success: true,
-      message: "Registered successfully. Please request a flat.",
+      message: "Registered successfully. Waiting for admin approval.",
       data: user,
     });
   } catch (error) {
@@ -84,31 +92,72 @@ exports.register = async (req, res) => {
 };
 
 /* =========================
-   USER LOGIN
+   ADMIN → CREATE SECURITY
 ========================= */
-exports.login = async (req, res) => {
+exports.createSecurity = async (req, res) => {
   try {
+    const { name, email, password } = req.body;
 
-    const { email, password } = req.body;
-
-    if(!email || !password){
+    if (!name || !email || !password) {
       return res.status(400).json({
-        success:false,
-        message:"All fields are required"
-      })
-    }
-
-    // check user
-    const user = await User.findOne({ email });
-    
-    if (!user) {
-      return res.status(401).json({
         success: false,
-        message: "Invalid User",
+        message: "All fields are required",
       });
     }
 
-    // check password
+    const exists = await User.findOne({ email });
+    if (exists) {
+      return res.status(400).json({
+        success: false,
+        message: "User already exists",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const security = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: "SECURITY",
+      status: "ACTIVE",
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Security created successfully",
+      data: security,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Security creation failed",
+    });
+  }
+};
+
+/* =========================
+   USER LOGIN (ALL ROLES)
+========================= */
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({
@@ -117,29 +166,39 @@ exports.login = async (req, res) => {
       });
     }
 
-    // generate JWT
-    const token = jwt.sign({ 
-      id: user._id,
-      role: user.role },
+    //  Pending resident cannot login
+    // if (user.role === "RESIDENT" && user.status !== "ACTIVE") {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: "Account not approved yet",
+    //   });
+    // }
+
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "3d" }
     );
 
-    // send token in cookie
     res.cookie("token", token, {
       httpOnly: true,
-      secure: false, // true in production
-    //   sameSite: "strict",
-      maxAge: 24 * 60 * 60 * 1000,
+      secure: false,
+      maxAge: 3 * 24 * 60 * 60 * 1000,
     });
 
     return res.status(200).json({
       success: true,
       message: "Login successful",
-      token:token,
-      data: user,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        flat: user.role === "RESIDENT" ? user.flat : null,
+      },
     });
-
   } catch (error) {
     return res.status(500).json({
       success: false,

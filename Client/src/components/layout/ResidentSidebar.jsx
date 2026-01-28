@@ -16,11 +16,11 @@ const ResidentSidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { name: 'Complaints', icon: AlertCircle, path: '/complaints' },
-    { name: 'Maintenance', icon: Wrench, path: '/maintenance' },
-    { name: 'Notices', icon: Bell, path: '/notices' },
-    { name: 'Profile', icon: UserCircle, path: '/profile' },
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/resident/dashboard' },
+    { name: 'Complaints', icon: AlertCircle, path: '/resident/complaints' },
+    { name: 'Maintenance', icon: Wrench, path: '/resident/maintenance' },
+    { name: 'Notices', icon: Bell, path: '/resident/notices' },
+    { name: 'Profile', icon: UserCircle, path: '/resident/profile' },
   ];
 
   return (
@@ -44,7 +44,7 @@ const ResidentSidebar = () => {
           <NavLink
             key={item.name}
             to={item.path}
-            end={item.path === '/'}
+            end={item.path === '/resident/dashboard'}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-xl transition-all
               ${isActive

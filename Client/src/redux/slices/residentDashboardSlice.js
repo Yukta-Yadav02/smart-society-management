@@ -17,6 +17,19 @@ const residentDashboardSlice = createSlice({
             unreadNotices: 2,
             totalPaid: 25000
         },
+        complaints: [
+            { id: 1, title: 'Water leakage', status: 'pending', date: '2024-03-20' },
+        ],
+        maintenance: [
+            { id: 1, month: 'March 2024', amount: 2500, paid: false, dueDate: '2024-03-31' },
+            { id: 2, month: 'April 2024', amount: 2500, paid: false, dueDate: '2024-04-30' },
+        ],
+        notices: [
+            { id: 1, title: 'Society Meeting', date: '2024-03-25', content: 'Monthly society meeting' },
+            { id: 2, title: 'Water Supply', date: '2024-03-22', content: 'Water supply will be interrupted' },
+        ],
+        loading: false,
+        error: null,
         recentActivity: [
             { id: 1, type: 'payment', description: 'Maintenance payment completed', date: '2024-03-15', amount: 2500 },
             { id: 2, type: 'complaint', description: 'New complaint submitted', date: '2024-03-20' },

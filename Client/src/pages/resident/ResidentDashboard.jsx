@@ -7,7 +7,7 @@ const ResidentDashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  const { complaints, maintenance, notices, loading, error } = useSelector(state => state.resident);
+  const { complaints, maintenance, notices, loading, error } = useSelector(state => state.residentDashboard || {});
   
   const profile = { wing: 'A', flatNumber: '101' };
 

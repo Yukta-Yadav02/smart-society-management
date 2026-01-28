@@ -29,7 +29,7 @@ const AddVisitor = () => {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-[3px]"></div>
 
       <div className="relative z-10 w-full max-w-[95%] sm:max-w-xl md:max-w-3xl bg-slate-900/80 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 shadow-2xl p-6 md:p-10 lg:p-12">
-        
+
         <div className="text-center mb-8">
           <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight">
             Visitor <span className="text-blue-500">Entry Form</span>
@@ -43,7 +43,7 @@ const AddVisitor = () => {
         <form className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6" onSubmit={handleSubmit}>
           <div className="flex flex-col">
             <label className="text-[10px] uppercase tracking-[0.2em] text-blue-400 font-bold mb-2 ml-1">
-               Visitor Name
+              Visitor Name
             </label>
             <input
               type="text"
@@ -70,7 +70,6 @@ const AddVisitor = () => {
               required
             />
           </div>
-
           <div className="flex flex-col">
             <label className="text-[10px] uppercase tracking-[0.2em] text-blue-400 font-bold mb-2 ml-1">
               Flat Number
@@ -91,7 +90,7 @@ const AddVisitor = () => {
               Visitor Type
             </label>
             <div className="relative">
-              <select 
+              <select
                 name="type"
                 value={formData.type}
                 onChange={handleChange}
@@ -108,19 +107,17 @@ const AddVisitor = () => {
               </div>
             </div>
           </div>
-
           <div className="md:col-span-2 mt-6">
-            <button 
+            <button
               type="submit"
               className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl tracking-[0.2em] text-sm shadow-xl shadow-blue-900/40 hover:-translate-y-1 active:scale-[0.98] transition-all uppercase"
             >
               Check-In Visitor
-            </button>
+            </button> 
           </div>
         </form>
       </div>
     </div>
   );
 };
-
 export default AddVisitor;
