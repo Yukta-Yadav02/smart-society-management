@@ -1,7 +1,8 @@
 import React from 'react';
 import ResidentSidebar from './ResidentSidebar';
+import { Outlet } from 'react-router-dom';
 
-const ResidentLayout = ({ children }) => {
+const ResidentLayout = () => {
     return (
         <div className="flex min-h-screen bg-slate-50/50">
             <ResidentSidebar />
@@ -18,7 +19,7 @@ const ResidentLayout = ({ children }) => {
                     </div>
                 </header>
                 <div className="p-8">
-                    {children}
+                    <Outlet />
                 </div>
             </main>
         </div>

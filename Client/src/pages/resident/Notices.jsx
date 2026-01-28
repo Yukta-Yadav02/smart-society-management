@@ -2,7 +2,7 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 
 const Notices = () => {
-  const notices = useSelector(state => state.resident.notices);
+  const notices = useSelector(state => state.residentNotices?.notices || []);
 
   const getPriorityColor = (priority) => {
     switch(priority) {

@@ -19,7 +19,7 @@ const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
     { name: 'Manage Flats', icon: Building2, path: '/admin/flats' },
     { name: 'Manage Requests', icon: ClipboardList, path: '/admin/requests' },
     { name: 'Manage Residents', icon: Users, path: '/admin/residents' },
@@ -50,7 +50,7 @@ const Sidebar = () => {
           <NavLink
             key={item.name}
             to={item.path}
-            end={item.path === '/admin'}
+            end={item.path === '/admin/dashboard'}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-xl transition-all
               ${isActive
