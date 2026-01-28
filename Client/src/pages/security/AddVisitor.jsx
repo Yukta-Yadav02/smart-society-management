@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { UserPlus, Phone, Building, Tag, Clock } from 'lucide-react';
+import { UserPlus, Phone, Building, Tag, Clock, CheckCircle, X } from 'lucide-react';
 
 const AddVisitor = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +9,7 @@ const AddVisitor = () => {
     type: '',
     purpose: ''
   });
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -17,12 +18,45 @@ const AddVisitor = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log("Visitor Data:", formData);
-    alert("Visitor Checked-In Successfully!");
+    setShowSuccessPopup(true);
     setFormData({ name: '', mobile: '', flat: '', type: '', purpose: '' });
+    
+    // Auto close popup after 3 seconds
+    setTimeout(() => {
+      setShowSuccessPopup(false);
+    }, 3000);
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full relative">
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 transform animate-in zoom-in-95 duration-300">
+            <div className="text-center">
+              <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-2">Visitor Added Successfully!</h3>
+              <p className="text-slate-600 mb-6">The visitor has been checked-in and registered in the system.</p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowSuccessPopup(false)}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200"
+                >
+                  Continue
+                </button>
+                <button 
+                  onClick={() => setShowSuccessPopup(false)}
+                  className="p-3 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all duration-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">

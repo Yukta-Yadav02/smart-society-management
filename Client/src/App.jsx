@@ -27,8 +27,6 @@ import AdminProfile from './pages/admin/Profile'
 // Security Pages
 import AddVisitor from './pages/security/AddVisitor'
 import ExitVisitor from './pages/security/ExitVisitor'
-import ActiveVisitors from './pages/security/ActiveVisitors'
-import VisitorHistory from './pages/security/VisitorHistory'
 
 // Resident Pages
 import ResidentDashboard from './pages/resident/ResidentDashboard'
@@ -69,8 +67,6 @@ const router = createBrowserRouter([
         children: [
             { path: 'add-visitor', element: <AddVisitor /> },
             { path: 'exit-visitor', element: <ExitVisitor /> },
-            { path: 'active-visitors', element: <ActiveVisitors /> },
-            { path: 'visitor-history', element: <VisitorHistory /> },
         ],
     },
     {
