@@ -34,6 +34,7 @@ const Login = () => {
                         <Building2 className="text-white h-8 w-8" />
                     </div>
                     <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
+                    <h3>Gokuldham Society</h3>
                     <p className="text-gray-600 mt-2">Log in to your Gokuldham Resident account</p>
                 </div>
 
