@@ -19,7 +19,17 @@ const Login = () => {
         const result = await login(email, password);
 
         if (result.success) {
-            navigate('/');
+            // Redirect based on user role
+            const userRole = result.user?.role;
+            if (userRole === 'ADMIN') {
+                navigate('/admin/dashboard');
+            } else if (userRole === 'RESIDENT') {
+                navigate('/resident/dashboard');
+            } else if (userRole === 'SECURITY') {
+                navigate('/security/dashboard');
+            } else {
+                navigate('/');
+            }
         } else {
             setError(result.message);
         }

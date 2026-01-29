@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
   Building2,
@@ -17,8 +18,11 @@ import {
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const location = useLocation();
-  const isResident = location.pathname.startsWith('/resident');
+  const { user, logout } = useAuth();
+  
+  const isAdmin = user?.role === 'ADMIN';
+  const isResident = user?.role === 'RESIDENT';
+  const isSecurity = user?.role === 'SECURITY';
 
   const adminMenuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
@@ -39,8 +43,26 @@ const Sidebar = () => {
     { name: 'Profile', icon: UserCircle, path: '/resident/profile' },
   ];
 
-  const menuItems = isResident ? residentMenuItems : adminMenuItems;
-  const dashboardPath = isResident ? '/resident/dashboard' : '/admin/dashboard';
+  const securityMenuItems = [
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/security/dashboard' },
+    { name: 'Visitors', icon: Users, path: '/security/visitors' },
+    { name: 'Notices', icon: Bell, path: '/security/notices' },
+    { name: 'Profile', icon: UserCircle, path: '/security/profile' },
+  ];
+
+  let menuItems = [];
+  let dashboardPath = '/';
+  
+  if (isAdmin) {
+    menuItems = adminMenuItems;
+    dashboardPath = '/admin/dashboard';
+  } else if (isResident) {
+    menuItems = residentMenuItems;
+    dashboardPath = '/resident/dashboard';
+  } else if (isSecurity) {
+    menuItems = securityMenuItems;
+    dashboardPath = '/security/dashboard';
+  }
 
   return (
     <div
@@ -91,7 +113,10 @@ const Sidebar = () => {
           </>}
         </button>
 
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50">
+        <button 
+          onClick={logout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50"
+        >
           <LogOut className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : ''}`} />
           {!isCollapsed && <span>Logout</span>}
         </button>
