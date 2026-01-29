@@ -1,39 +1,51 @@
 const express = require('express');
 const app = express();
-const {connect} = require("./config/database")
+const cors = require("cors");
+const { connect } = require("./config/database");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
+
 const authRoutes = require("./routes/auth");
-const wingRoutes = require("./routes/Wing")
+const wingRoutes = require("./routes/Wing");
 const flatRoutes = require("./routes/flat");
-const flatRequestRoutes = require("./routes/flatRequest")
+const flatRequestRoutes = require("./routes/flatRequest");
 const complaint = require("./routes/Complaint");
 const noticeRoutes = require("./routes/Notice");
-const maintenanceRoutes = require("./routes/Maintenance")
+const maintenanceRoutes = require("./routes/Maintenance");
 const visitorRoutes = require("./routes/Visitor");
-
 
 connect();
 
-const PORT = 4000 || process.env.PORT;
+const PORT = process.env.PORT || 4000;
 
+/* ================= CORS SETUP ================= */
+app.use(
+  cors({
+    origin: "http://localhost:5173", // React frontend
+    credentials: true,              // cookies / auth headers allow
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+/* ================= MIDDLEWARE ================= */
 app.use(express.json());
-app.use(cookieParser())
+app.use(cookieParser());
 
-// api mounting 
-app.use("/api/auth",authRoutes);
-app.use("/api/wing",wingRoutes);
-app.use("/api/flat",flatRoutes);
-app.use("/api/",flatRequestRoutes);
-app.use("/api/",complaint);
-app.use("/api/notice",noticeRoutes);
-app.use("/api/maintenance",maintenanceRoutes);
-app.use("/api/visitor",visitorRoutes)
+/* ================= ROUTES ================= */
+app.use("/api/auth", authRoutes);
+app.use("/api/wing", wingRoutes);
+app.use("/api/flat", flatRoutes);
+app.use("/api/", flatRequestRoutes);
+app.use("/api/", complaint);
+app.use("/api/notice", noticeRoutes);
+app.use("/api/maintenance", maintenanceRoutes);
+app.use("/api/visitor", visitorRoutes);
 
-app.get("/",(req,res)=>{
-    console.log("req is working ")
-})
+app.get("/", (req, res) => {
+  res.send("API is working 🚀");
+});
 
-app.listen(PORT,()=>{
-    console.log(`server is running ${PORT}`)
-})
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
