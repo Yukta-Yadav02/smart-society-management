@@ -5,7 +5,7 @@ import { Mail, Lock, User, Loader2, Building2, AlertCircle } from 'lucide-react'
 
 const SignUp = () => {
     const [formData, setFormData] = useState({
-        fullName: '',
+        name: '',
         email: '',
         password: '',
     });
@@ -59,12 +59,12 @@ const SignUp = () => {
                             <div className="relative">
                                 <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 flex-shrink-0" size={18} />
                                 <input
-                                    name="fullName"
+                                    name="name"
                                     type="text"
                                     required
                                     className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all font-medium text-sm sm:text-base"
                                     placeholder="Jethala Gada"
-                                    value={formData.fullName}
+                                    value={formData.name}
                                     onChange={handleChange}
                                 />
                             </div>
