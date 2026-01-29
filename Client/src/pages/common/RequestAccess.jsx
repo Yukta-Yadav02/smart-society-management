@@ -9,37 +9,58 @@ import {
   Mail,
   ArrowLeft
 } from 'lucide-react';
+import { apiConnector } from '../../services/apiConnector';
+import { FLAT_REQUEST_API } from '../../services/apis';
 
 const RequestAccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  //  Only fields that actually exist
-  const wing = searchParams.get('wing') || 'A';
-  const flat = searchParams.get('flat') || 'A-101';
+  // Get flat info from URL params
+  const flatId = searchParams.get("flatId");
+  const wing = searchParams.get("wing");
+  const flat = searchParams.get("flat");
+
+  // Early return if flatId is missing
+  if (!flatId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-red-600 font-bold">
+          Flat information missing. Please select a flat again.
+        </p>
+      </div>
+    );
+  }
 
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [residentType, setResidentType] = useState('Owner');
+  const [residentType, setResidentType] = useState('Owner'); // Owner | Resident
   const [message, setMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log('📤 Submitting access request:', {
-      wing,
-      flat,
-      residentType,
-      message,
-      userId: user?._id,
-    });
+    const payload = {
+      flatId,
+      ownershipType: residentType,
+      remark: message,
+    };
 
-    // 🔗 Backend API yahin lagegi (future)
-    // await apiConnector("POST", REQUEST_API.CREATE, {...})
+    console.log(" SENDING PAYLOAD →", payload);
 
-    setTimeout(() => {
+    try {
+      const res = await apiConnector(
+        "POST",
+        FLAT_REQUEST_API.CREATE,
+        payload
+      );
+
+      console.log(" BACKEND RESPONSE →", res);
       setIsSubmitted(true);
-    }, 800);
+    } catch (err) {
+      console.error(" REQUEST FAILED →", err);
+      alert(err?.message || "Request failed");
+    }
   };
 
   /* ================= SUCCESS SCREEN ================= */
@@ -135,9 +156,9 @@ const RequestAccess = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <button
                     type="button"
-                    onClick={() => setResidentType('Owner')}
+                    onClick={() => setResidentType('OWNER')}
                     className={`py-3 rounded-xl font-bold border-2 transition-all ${
-                      residentType === 'Owner'
+                      residentType === 'OWNER'
                         ? 'border-primary-600 bg-primary-50 text-primary-700'
                         : 'border-gray-100 text-gray-400 hover:border-gray-200'
                     }`}
@@ -147,14 +168,14 @@ const RequestAccess = () => {
 
                   <button
                     type="button"
-                    onClick={() => setResidentType('Tenant')}
+                    onClick={() => setResidentType('RESIDENT')}
                     className={`py-3 rounded-xl font-bold border-2 transition-all ${
-                      residentType === 'Tenant'
+                      residentType === 'RESIDENT'
                         ? 'border-primary-600 bg-primary-50 text-primary-700'
                         : 'border-gray-100 text-gray-400 hover:border-gray-200'
                     }`}
                   >
-                    Tenant (Rental)
+                    Resident
                   </button>
                 </div>
               </div>
@@ -162,7 +183,7 @@ const RequestAccess = () => {
               {/* Message */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Message (Optional)
+                  Remark (Optional)
                 </label>
 
                 <textarea
