@@ -48,8 +48,8 @@ const Hero = () => {
                     </motion.div>
 
                     {/* Main Animated Title */}
-                    <h1 className="text-6xl md:text-[7rem] font-black text-white tracking-tighter leading-[0.9] mb-8">
-                        <span className="block overflow-hidden">
+                    <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[7rem] font-black text-white tracking-tight leading-[0.9] mb-8 px-4">
+                        <span className="block">
                             <motion.span
                                 initial={{ y: "100%" }}
                                 animate={{ y: 0 }}
@@ -59,7 +59,7 @@ const Hero = () => {
                                 Gokuldham
                             </motion.span>
                         </span>
-                        <span className="block overflow-hidden">
+                        <span className="block">
                             <motion.span
                                 initial={{ y: "100%" }}
                                 animate={{ y: 0 }}

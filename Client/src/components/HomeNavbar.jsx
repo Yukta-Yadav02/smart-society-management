@@ -11,8 +11,10 @@ const HomeNavbar = () => {
     const [scrolled, setScrolled] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [activeSection, setActiveSection] = useState('home');
 
     const isHomePage = location.pathname === '/';
+    const isWingsSection = location.hash === '#wings' || window.location.hash === '#wings';
 
     useEffect(() => {
         const handleScroll = () => {
@@ -23,15 +25,50 @@ const HomeNavbar = () => {
     }, []);
 
     useEffect(() => {
+        const handleHashChange = () => {
+            if (window.location.hash === '#wings') {
+                setActiveSection('wings');
+            } else {
+                setActiveSection('home');
+            }
+        };
+        
+        // Set initial state
+        handleHashChange();
+        
+        window.addEventListener('hashchange', handleHashChange);
+        return () => window.removeEventListener('hashchange', handleHashChange);
+    }, []);
+
+    useEffect(() => {
         // Reset scroll state on navigation
         setScrolled(window.scrollY > 50);
         setIsProfileOpen(false); // Close dropdown on navigate
         setIsMobileMenuOpen(false); // Close mobile menu on navigate
+        
+        // Set active section based on current path
+        if (location.pathname === '/') {
+            if (window.location.hash === '#wings') {
+                setActiveSection('wings');
+            } else {
+                setActiveSection('home');
+            }
+        } else {
+            setActiveSection(''); // No active section for other pages
+        }
     }, [location]);
 
     const handleLogout = () => {
         logout();
         navigate('/');
+    };
+
+    const handleHomeClick = (e) => {
+        e.preventDefault();
+        setActiveSection('home');
+        navigate('/');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.location.hash = '';
     };
 
     const navStyle = (scrolled || !isHomePage)
@@ -64,13 +101,39 @@ const HomeNavbar = () => {
                     <div className="hidden md:flex items-center gap-10">
                         <Link
                             to="/"
-                            className={`font-bold text-sm uppercase tracking-widest transition-colors duration-300 flex items-center gap-2 ${linkStyle}`}
+                            onClick={(e) => {
+                                setActiveSection('home');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className={`font-bold text-sm uppercase tracking-widest transition-colors duration-300 flex items-center gap-2 relative ${linkStyle} ${
+                                activeSection === 'home' ? 'after:absolute after:bottom-[-8px] after:left-0 after:right-0 after:h-0.5 after:bg-primary-600 after:rounded-full' : ''
+                            }`}
                         >
                             <Home size={16} /> Home
                         </Link>
                         <a
                             href="/#wings"
-                            className={`font-bold text-sm uppercase tracking-widest transition-colors duration-300 flex items-center gap-2 ${linkStyle}`}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                setActiveSection('wings');
+                                if (location.pathname !== '/') {
+                                    navigate('/');
+                                    setTimeout(() => {
+                                        const wingsElement = document.getElementById('wings');
+                                        if (wingsElement) {
+                                            wingsElement.scrollIntoView({ behavior: 'smooth' });
+                                        }
+                                    }, 100);
+                                } else {
+                                    const wingsElement = document.getElementById('wings');
+                                    if (wingsElement) {
+                                        wingsElement.scrollIntoView({ behavior: 'smooth' });
+                                    }
+                                }
+                            }}
+                            className={`font-bold text-sm uppercase tracking-widest transition-colors duration-300 flex items-center gap-2 relative ${linkStyle} ${
+                                activeSection === 'wings' ? 'after:absolute after:bottom-[-8px] after:left-0 after:right-0 after:h-0.5 after:bg-primary-600 after:rounded-full' : ''
+                            }`}
                         >
                             <Building2 size={16} /> Wings
                         </a>
@@ -185,20 +248,49 @@ const HomeNavbar = () => {
                                 }`}>
                                 <Link
                                     to="/"
-                                    className={`flex items-center gap-3 p-3 rounded-xl transition-all ${(scrolled || !isHomePage)
-                                        ? 'text-primary-600 hover:bg-primary-50'
-                                        : 'text-white hover:bg-white/10'
-                                        }`}
+                                    onClick={(e) => {
+                                        setActiveSection('home');
+                                        setIsMobileMenuOpen(false);
+                                    }}
+                                    className={`flex items-center gap-3 p-3 rounded-xl transition-all relative ${
+                                        activeSection === 'home' 
+                                            ? 'bg-primary-600 text-white border-l-4 border-primary-700' 
+                                            : (scrolled || !isHomePage)
+                                                ? 'text-primary-600 hover:bg-primary-50'
+                                                : 'text-white hover:bg-white/10'
+                                    }`}
                                 >
                                     <Home size={20} />
                                     <span className="font-bold">Home</span>
                                 </Link>
                                 <a
                                     href="/#wings"
-                                    className={`flex items-center gap-3 p-3 rounded-xl transition-all ${(scrolled || !isHomePage)
-                                        ? 'text-primary-600 hover:bg-primary-50'
-                                        : 'text-white hover:bg-white/10'
-                                        }`}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setActiveSection('wings');
+                                        setIsMobileMenuOpen(false);
+                                        if (location.pathname !== '/') {
+                                            navigate('/');
+                                            setTimeout(() => {
+                                                const wingsElement = document.getElementById('wings');
+                                                if (wingsElement) {
+                                                    wingsElement.scrollIntoView({ behavior: 'smooth' });
+                                                }
+                                            }, 100);
+                                        } else {
+                                            const wingsElement = document.getElementById('wings');
+                                            if (wingsElement) {
+                                                wingsElement.scrollIntoView({ behavior: 'smooth' });
+                                            }
+                                        }
+                                    }}
+                                    className={`flex items-center gap-3 p-3 rounded-xl transition-all relative ${
+                                        activeSection === 'wings' 
+                                            ? 'bg-primary-600 text-white border-l-4 border-primary-700' 
+                                            : (scrolled || !isHomePage)
+                                                ? 'text-primary-600 hover:bg-primary-50'
+                                                : 'text-white hover:bg-white/10'
+                                    }`}
                                 >
                                     <Building2 size={20} />
                                     <span className="font-bold">Wings</span>
