@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Building2,
@@ -17,8 +17,10 @@ import {
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const location = useLocation();
+  const isResident = location.pathname.startsWith('/resident');
 
-  const menuItems = [
+  const adminMenuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
     { name: 'Manage Flats', icon: Building2, path: '/admin/flats' },
     { name: 'Manage Requests', icon: ClipboardList, path: '/admin/requests' },
@@ -28,6 +30,17 @@ const Sidebar = () => {
     { name: 'Notices', icon: Bell, path: '/admin/notices' },
     { name: 'Profile', icon: UserCircle, path: '/admin/profile' },
   ];
+
+  const residentMenuItems = [
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/resident/dashboard' },
+    { name: 'Complaints', icon: AlertCircle, path: '/resident/complaints' },
+    { name: 'Maintenance', icon: Wrench, path: '/resident/maintenance' },
+    { name: 'Notices', icon: Bell, path: '/resident/notices' },
+    { name: 'Profile', icon: UserCircle, path: '/resident/profile' },
+  ];
+
+  const menuItems = isResident ? residentMenuItems : adminMenuItems;
+  const dashboardPath = isResident ? '/resident/dashboard' : '/admin/dashboard';
 
   return (
     <div
@@ -51,7 +64,7 @@ const Sidebar = () => {
           <NavLink
             key={item.name}
             to={item.path}
-            end={item.path === '/admin/dashboard'}
+            end={item.path === dashboardPath}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-xl transition-all
               ${isActive

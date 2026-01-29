@@ -31,15 +31,15 @@ const AddVisitor = () => {
     <div className="w-full relative">
       {/* Success Popup */}
       {showSuccessPopup && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 transform animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md transform animate-in zoom-in-95 duration-300">
             <div className="text-center">
-              <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-green-600" />
+              <div className="bg-green-100 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
               </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">Visitor Added Successfully!</h3>
-              <p className="text-slate-600 mb-6">The visitor has been checked-in and registered in the system.</p>
-              <div className="flex gap-3">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-2">Visitor Added Successfully!</h3>
+              <p className="text-sm sm:text-base text-slate-600 mb-6">The visitor has been checked-in and registered in the system.</p>
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button 
                   onClick={() => setShowSuccessPopup(false)}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200"
@@ -48,7 +48,7 @@ const AddVisitor = () => {
                 </button>
                 <button 
                   onClick={() => setShowSuccessPopup(false)}
-                  className="p-3 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all duration-200"
+                  className="p-3 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all duration-200 sm:w-auto w-full flex items-center justify-center"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -57,22 +57,23 @@ const AddVisitor = () => {
           </div>
         </div>
       )}
+
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">
           <div className="bg-green-100 p-2 rounded-lg">
-            <UserPlus className="w-6 h-6 text-green-600" />
+            <UserPlus className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-800">Add New Visitor</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Add New Visitor</h1>
         </div>
-        <p className="text-slate-600">Register a new visitor for society entry</p>
+        <p className="text-sm sm:text-base text-slate-600">Register a new visitor for society entry</p>
       </div>
 
       {/* Form Card */}
-      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6 lg:p-8">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Row 1 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Visitor Name *
@@ -84,10 +85,10 @@ const AddVisitor = () => {
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Enter full name"
-                  className="w-full px-4 py-3 pl-12 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all"
+                  className="w-full px-4 py-3 pl-10 sm:pl-12 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all text-sm sm:text-base"
                   required
                 />
-                <UserPlus className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <UserPlus className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               </div>
             </div>
 
@@ -102,16 +103,16 @@ const AddVisitor = () => {
                   value={formData.mobile}
                   onChange={handleChange}
                   placeholder="+91 XXXXX XXXXX"
-                  className="w-full px-4 py-3 pl-12 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all"
+                  className="w-full px-4 py-3 pl-10 sm:pl-12 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all text-sm sm:text-base"
                   required
                 />
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Phone className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               </div>
             </div>
           </div>
 
           {/* Row 2 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Flat Number *
@@ -123,10 +124,10 @@ const AddVisitor = () => {
                   value={formData.flat}
                   onChange={handleChange}
                   placeholder="e.g. A-104"
-                  className="w-full px-4 py-3 pl-12 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all"
+                  className="w-full px-4 py-3 pl-10 sm:pl-12 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all text-sm sm:text-base"
                   required
                 />
-                <Building className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Building className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               </div>
             </div>
 
@@ -139,7 +140,7 @@ const AddVisitor = () => {
                   name="type"
                   value={formData.type}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 pl-12 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all appearance-none bg-white"
+                  className="w-full px-4 py-3 pl-10 sm:pl-12 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all appearance-none bg-white text-sm sm:text-base"
                   required
                 >
                   <option value="">Select visitor type</option>
@@ -149,7 +150,7 @@ const AddVisitor = () => {
                   <option value="service">Service Provider</option>
                   <option value="family">Family Member</option>
                 </select>
-                <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Tag className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               </div>
             </div>
           </div>
@@ -165,23 +166,23 @@ const AddVisitor = () => {
               onChange={handleChange}
               placeholder="Brief description of visit purpose (optional)"
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all resize-none"
+              className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all resize-none text-sm sm:text-base"
             />
           </div>
 
           {/* Submit Button */}
-          <div className="flex gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
             <button 
               type="submit"
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl text-sm sm:text-base"
             >
-              <UserPlus className="w-5 h-5" />
+              <UserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
               Check-In Visitor
             </button>
             <button 
               type="button"
               onClick={() => setFormData({ name: '', mobile: '', flat: '', type: '', purpose: '' })}
-              className="px-6 py-3 border border-slate-300 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-all duration-200"
+              className="px-6 py-3 border border-slate-300 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-all duration-200 text-sm sm:text-base"
             >
               Clear Form
             </button>
@@ -190,15 +191,15 @@ const AddVisitor = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6 sm:mt-8">
         <div className="bg-white rounded-xl p-4 border border-slate-200">
           <div className="flex items-center gap-3">
             <div className="bg-blue-100 p-2 rounded-lg">
-              <Clock className="w-5 h-5 text-blue-600" />
+              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-slate-600">Today's Visitors</p>
-              <p className="text-xl font-bold text-slate-800">24</p>
+              <p className="text-xs sm:text-sm text-slate-600">Today's Visitors</p>
+              <p className="text-lg sm:text-xl font-bold text-slate-800">24</p>
             </div>
           </div>
         </div>
@@ -206,23 +207,23 @@ const AddVisitor = () => {
         <div className="bg-white rounded-xl p-4 border border-slate-200">
           <div className="flex items-center gap-3">
             <div className="bg-green-100 p-2 rounded-lg">
-              <UserPlus className="w-5 h-5 text-green-600" />
+              <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-slate-600">Active Visitors</p>
-              <p className="text-xl font-bold text-slate-800">12</p>
+              <p className="text-xs sm:text-sm text-slate-600">Active Visitors</p>
+              <p className="text-lg sm:text-xl font-bold text-slate-800">12</p>
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-xl p-4 border border-slate-200">
+        <div className="bg-white rounded-xl p-4 border border-slate-200 sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-3">
             <div className="bg-orange-100 p-2 rounded-lg">
-              <Building className="w-5 h-5 text-orange-600" />
+              <Building className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
             </div>
             <div>
-              <p className="text-sm text-slate-600">Peak Hours</p>
-              <p className="text-xl font-bold text-slate-800">2-6 PM</p>
+              <p className="text-xs sm:text-sm text-slate-600">Peak Hours</p>
+              <p className="text-lg sm:text-xl font-bold text-slate-800">2-6 PM</p>
             </div>
           </div>
         </div>

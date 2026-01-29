@@ -71,7 +71,7 @@ const router = createBrowserRouter([
     },
     {
         path: '/resident',
-        element: <ResidentLayout />,
+        element: <Layout />,
         children: [
             { path: 'dashboard', element: <ResidentDashboard /> },
             { path: 'complaints', element: <ResidentComplaints /> },
