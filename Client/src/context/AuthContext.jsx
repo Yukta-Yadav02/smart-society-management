@@ -1,79 +1,92 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import axios from 'axios';
+import React, { createContext, useContext, useState } from "react";
+import { apiConnector } from "../services/apiConnector";
+import { AUTH_API } from "../services/apis";
 
 const AuthContext = createContext();
 
-// Change this to your actual backend URL (e.g., http://localhost:5000/api)
-const API_BASE_URL = 'http://localhost:5000/api';
-
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        const checkAuth = async () => {
-            const token = localStorage.getItem('gokuldham_token');
-            if (token) {
-                try {
-                    // This endpoint should return the current user based on the token
-                    const response = await axios.get(`${API_BASE_URL}/auth/me`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    setUser(response.data.user);
-                } catch (error) {
-                    console.error('Auth verification failed:', error);
-                    localStorage.removeItem('gokuldham_token');
-                    setUser(null);
-                }
-            }
-            setLoading(false);
-        };
-        checkAuth();
-    }, []);
+  /* ================= LOGIN ================= */
+  const login = async (email, password) => {
+    console.log("➡️ LOGIN CALLED:", email);
 
-    const login = async (email, password) => {
-        try {
-            const response = await axios.post(`${API_BASE_URL}/auth/login`, { email, password });
-            const { user, token } = response.data;
+    try {
+      setLoading(true);
 
-            setUser(user);
-            localStorage.setItem('gokuldham_token', token);
-            return { success: true };
-        } catch (error) {
-            return {
-                success: false,
-                message: error.response?.data?.message || 'Login failed. Please check your credentials.'
-            };
-        }
-    };
+      const response = await apiConnector(
+        "POST",
+        AUTH_API.LOGIN,
+        { email, password }
+      );
 
-    const signup = async (userData) => {
-        try {
-            // Mapping frontend fullName to backend name
-            const response = await axios.post(`${API_BASE_URL}/auth/signup`, {
-                name: userData.fullName,
-                email: userData.email,
-                password: userData.password
-            });
-            return { success: true };
-        } catch (error) {
-            return {
-                success: false,
-                message: error.response?.data?.message || 'Signup failed. Please try again.'
-            };
-        }
-    };
+      console.log("✅ LOGIN RESPONSE:", response);
 
-    const logout = () => {
-        setUser(null);
-        localStorage.removeItem('gokuldham_token');
-    };
+      if (response.success) {
+        localStorage.setItem("token", response.token);
+        setUser(response.user);
 
-    return (
-        <AuthContext.Provider value={{ user, login, signup, logout, loading }}>
-            {children}
-        </AuthContext.Provider>
-    );
+        console.log("🔐 Token stored, user set");
+        return { success: true };
+      }
+
+      return { success: false, message: response.message };
+    } catch (error) {
+      console.error("❌ LOGIN FAILED:", error);
+      return {
+        success: false,
+        message: error.message || "Login failed",
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ================= SIGNUP (RESIDENT) ================= */
+  const signup = async ({ name, email, password }) => {
+    console.log("➡️ SIGNUP CALLED:", email);
+
+    try {
+      setLoading(true);
+
+      const response = await apiConnector(
+        "POST",
+        AUTH_API.REGISTER_RESIDENT,
+        { name, email, password }
+      );
+
+      console.log("✅ SIGNUP RESPONSE:", response);
+
+      return {
+        success: response.success,
+        message: response.message,
+      };
+    } catch (error) {
+      console.error("❌ SIGNUP FAILED:", error);
+      return {
+        success: false,
+        message: error.message || "Signup failed",
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ================= LOGOUT ================= */
+  const logout = () => {
+    console.log("🚪 LOGOUT");
+    localStorage.removeItem("token");
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{ user, login, signup, logout, loading }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => useContext(AuthContext);

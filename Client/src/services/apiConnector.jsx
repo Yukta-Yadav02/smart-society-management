@@ -28,7 +28,7 @@ export const apiConnector = async (
 
     return response.data;
   } catch (error) {
-    console.error("API ERROR:", error);
+    console.error(" API ERROR:", error.response?.data || error);
     throw error?.response?.data || error;
   }
 };
