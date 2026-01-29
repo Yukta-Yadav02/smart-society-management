@@ -62,17 +62,18 @@ const WingsLayout = () => {
     }
   };
 
-  const handleRequestAccess = (flat) => {
-    console.log("➡️ Request access clicked:", flat);
+  
+ const handleRequestAccess = (flat) => {
+  console.log("➡️ Request access clicked:", flat);
 
-    if (!user) {
-      navigate("/signup");
-    } else {
-     navigate(
-  `/request-access?wing=${selectedWing.name}&flat=${flat.flatNumber}`
-);
-    }
-  };
+  if (!user) {
+    navigate("/signup");
+  } else {
+    navigate(
+      `/request-access?flatId=${flat._id}&wing=${selectedWing.name}&flat=${flat.flatNumber}`
+    );
+  }
+};
 
   return (
     <section id="wings" className="py-24 bg-white relative overflow-hidden">
