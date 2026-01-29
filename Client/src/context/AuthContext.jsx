@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }) => {
         setUser(response.user);
 
         console.log("🔐 Token stored, user set");
-        return { success: true };
+        return { success: true, user: response.user };
       }
 
       return { success: false, message: response.message };
@@ -78,6 +78,8 @@ export const AuthProvider = ({ children }) => {
     console.log("🚪 LOGOUT");
     localStorage.removeItem("token");
     setUser(null);
+    // Redirect to home page after logout
+    window.location.href = '/';
   };
 
   return (
