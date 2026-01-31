@@ -19,10 +19,11 @@ import {
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { user, logout } = useAuth();
-  
-  const isAdmin = user?.role === 'ADMIN';
-  const isResident = user?.role === 'RESIDENT';
-  const isSecurity = user?.role === 'SECURITY';
+
+  const role = user?.role?.toUpperCase();
+  const isAdmin = role === 'ADMIN';
+  const isResident = role === 'RESIDENT';
+  const isSecurity = role === 'SECURITY';
 
   const adminMenuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
@@ -52,7 +53,7 @@ const Sidebar = () => {
 
   let menuItems = [];
   let dashboardPath = '/';
-  
+
   if (isAdmin) {
     menuItems = adminMenuItems;
     dashboardPath = '/admin/dashboard';
@@ -66,8 +67,7 @@ const Sidebar = () => {
 
   return (
     <div
-      className={`h-screen bg-white border-r border-slate-200 flex flex-col transition-all duration-300 sticky top-0 ${
-        isCollapsed ? 'w-20' : 'w-64'
+      className={`h-screen bg-white border-r border-slate-200 flex flex-col transition-all duration-300 sticky top-0 ${isCollapsed ? 'w-20' : 'w-64'
         }`}
     >
       {/* Logo */}
@@ -102,24 +102,46 @@ const Sidebar = () => {
       </nav>
 
       {/* Bottom */}
-      <div className="p-4 border-t border-slate-100">
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-50 mb-2"
-        >
-          {isCollapsed ? <ChevronRight className="mx-auto" /> : <>
-            <ChevronLeft className="w-5 h-5" />
-            <span>Collapse</span>
-          </>}
-        </button>
+      <div className="p-4 border-t border-slate-100 flex flex-col gap-4">
+        {/* User Profile Info */}
+        <div className={`flex items-center gap-3 px-2 ${isCollapsed ? 'justify-center' : ''}`}>
+          <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+            <span className="text-indigo-600 font-bold text-lg">
+              {user?.name?.charAt(0).toUpperCase() || <UserCircle className="w-6 h-6" />}
+            </span>
+          </div>
+          {!isCollapsed && (
+            <div className="flex flex-col overflow-hidden">
+              <span className="font-bold text-slate-800 text-sm truncate">
+                {user?.name || 'User'}
+              </span>
+              <span className="text-xs text-indigo-600 font-medium capitalize">
+                {user?.role?.toLowerCase() || 'Role'}
+              </span>
+            </div>
+          )}
+        </div>
 
-        <button 
-          onClick={logout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50"
-        >
-          <LogOut className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : ''}`} />
-          {!isCollapsed && <span>Logout</span>}
-        </button>
+        {/* Action Buttons */}
+        <div className="space-y-1">
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-50 transition-colors"
+          >
+            {isCollapsed ? <ChevronRight className="mx-auto" /> : <>
+              <ChevronLeft className="w-5 h-5" />
+              <span>Collapse</span>
+            </>}
+          </button>
+
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 transition-colors"
+          >
+            <LogOut className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : ''}`} />
+            {!isCollapsed && <span>Logout</span>}
+          </button>
+        </div>
       </div>
     </div>
   );

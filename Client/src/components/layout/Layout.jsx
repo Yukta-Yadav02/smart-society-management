@@ -1,10 +1,11 @@
 import React from 'react';
 import Sidebar from './Sidebar';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { UserCircle } from 'lucide-react';
 
 const Layout = () => {
-    const location = useLocation();
-    const isResident = location.pathname.startsWith('/resident');
+    const { user } = useAuth();
 
     return (
         <div className="flex min-h-screen bg-slate-50/50">
@@ -15,20 +16,19 @@ const Layout = () => {
                 <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-end px-8 sticky top-0 z-10">
                     <div className="flex items-center gap-4">
                         <div className="text-right">
-                            {isResident ? (
-                                <>
-                                    <p className="text-sm font-semibold text-slate-800">Rajesh Kumar</p>
-                                    <p className="text-xs text-slate-500">Resident - A-101</p>
-                                </>
-                            ) : (
-                                <>
-                                    <p className="text-sm font-semibold text-slate-800">Yukta Yadav</p>
-                                    <p className="text-xs text-slate-500">Secretary</p>
-                                </>
-                            )}
+                            <p className="text-sm font-semibold text-slate-800">
+                                {user?.name || 'User'}
+                            </p>
+                            <p className="text-xs text-slate-500 capitalize">
+                                {user?.role?.toLowerCase() || 'Role'}
+                            </p>
                         </div>
-                        <div className="w-10 h-10 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold">
-                            {isResident ? 'RK' : 'YY'}
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold overflow-hidden">
+                            {user?.name ? (
+                                user.name.charAt(0).toUpperCase()
+                            ) : (
+                                <UserCircle className="w-6 h-6" />
+                            )}
                         </div>
                     </div>
                 </header>
