@@ -5,7 +5,10 @@ import { AUTH_API } from "../services/apis";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem("user");
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
   const [loading, setLoading] = useState(false);
 
   /* ================= LOGIN ================= */
@@ -25,6 +28,7 @@ export const AuthProvider = ({ children }) => {
 
       if (response.success) {
         localStorage.setItem("token", response.token);
+        localStorage.setItem("user", JSON.stringify(response.user));
         setUser(response.user);
 
         console.log("🔐 Token stored, user set");
@@ -77,6 +81,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     console.log("🚪 LOGOUT");
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setUser(null);
     // Redirect to home page after logout
     window.location.href = '/';
