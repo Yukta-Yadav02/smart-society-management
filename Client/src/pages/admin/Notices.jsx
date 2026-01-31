@@ -18,7 +18,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import toast from 'react-hot-toast';
-import { addNotice, removeNotice } from '../../redux/slices/noticeSlice';
+import { addNotice, deleteNotice } from '../../store/store';
 
 // 🛡️ VALIDATION SCHEMA
 const schema = yup.object().shape({
@@ -50,7 +50,7 @@ const Notices = () => {
 
     const handleDelete = (id, title) => {
         if (window.confirm(`Delete notice: "${title}"?`)) {
-            dispatch(removeNotice(id));
+            dispatch(deleteNotice(id));
             toast.error('Notice deleted permanently', { icon: '🗑️' });
         }
     };
