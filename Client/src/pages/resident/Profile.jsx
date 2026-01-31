@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, Edit, Save, X, Home, Phone, Mail, Car, AlertTriangle, Briefcase } from 'lucide-react';
 
+
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
-import { updateRequestStatus } from '../../redux/slices/requestSlice';
+import { updateRequest } from '../../store/store';
 
 const ManageRequests = () => {
     const dispatch = useDispatch();
@@ -38,7 +38,7 @@ const ManageRequests = () => {
     };
 
     const handleAction = (id, name, status, reason = '') => {
-        dispatch(updateRequestStatus({ id, status, reason }));
+        dispatch(updateRequest({ id, status, reason }));
         if (status === 'Approved') {
             toast.success(`${name}'s request approved!`, { icon: '✅' });
         } else {

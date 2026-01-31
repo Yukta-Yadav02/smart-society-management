@@ -21,10 +21,10 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import toast from 'react-hot-toast';
 import {
-  addResident,
-  removeResident,
-  updateResident
-} from '../../redux/slices/residentSlice';
+    addResident,
+    deleteResident,
+    updateResident
+} from '../../store/store';
 
 // 🛡️ FORM VALIDATION SCHEMA (Yup)
 const schema = yup.object().shape({
@@ -112,7 +112,7 @@ const ManageResidents = () => {
 
     const handleDelete = (id, name) => {
         if (window.confirm(`Are you sure you want to remove ${name}?`)) {
-            dispatch(removeResident(id));
+            dispatch(deleteResident(id));
             toast.error(`${name} removed from directory`, { icon: '🗑️' });
         }
     };

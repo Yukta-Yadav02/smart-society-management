@@ -18,7 +18,7 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { updateProfile } from '../../redux/slices/profileSlice';
+import { updateProfile } from '../../store/store';
 
 const Profile = () => {
     const dispatch = useDispatch();
@@ -232,8 +232,8 @@ const ProfileField = React.forwardRef(({ label, icon: Icon, disabled, ...props }
                 ref={ref}
                 disabled={disabled}
                 className={`w-full ${Icon ? 'pl-14' : 'px-6'} py-5 rounded-2.5xl border transition-all font-bold text-slate-700 ${disabled
-                        ? 'bg-slate-50/50 border-transparent text-slate-400 cursor-not-allowed'
-                        : 'bg-white border-indigo-100 ring-8 ring-indigo-50 focus:ring-indigo-100/50 focus:outline-none focus:border-indigo-400 text-slate-800'
+                    ? 'bg-slate-50/50 border-transparent text-slate-400 cursor-not-allowed'
+                    : 'bg-white border-indigo-100 ring-8 ring-indigo-50 focus:ring-indigo-100/50 focus:outline-none focus:border-indigo-400 text-slate-800'
                     }`}
                 {...props}
             />

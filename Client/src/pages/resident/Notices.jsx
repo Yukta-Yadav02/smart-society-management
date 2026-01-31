@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bell, Search, Filter, Calendar, User, AlertTriangle } from 'lucide-react';
 
+
 const Notices = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');

@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
-import { updateComplaintStatus } from '../../redux/slices/complaintSlice';
+import { updateComplaint } from '../../store/store';
 
 const Complaints = () => {
     const dispatch = useDispatch();
@@ -24,7 +24,7 @@ const Complaints = () => {
     const [searchQuery, setSearchQuery] = useState('');
 
     const handleAction = (id, title, status) => {
-        dispatch(updateComplaintStatus({ id, status }));
+        dispatch(updateComplaint({ id, status }));
         if (status === 'Resolved') {
             toast.success(`Complaint "${title}" resolved!`, {
                 icon: '✅',

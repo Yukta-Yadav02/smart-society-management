@@ -13,6 +13,25 @@ const HomeNavbar = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [activeSection, setActiveSection] = useState('home');
 
+    const getInitials = (name) => {
+        if (!name) return '';
+        const parts = name.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+    };
+
+    const roleBgClass = (role) => {
+        switch ((role || '').toUpperCase()) {
+            case 'ADMIN':
+                return 'bg-gradient-to-br from-purple-500 to-indigo-500';
+            case 'SECURITY':
+                return 'bg-gradient-to-br from-orange-400 to-red-400';
+            case 'RESIDENT':
+            default:
+                return 'bg-gradient-to-br from-green-400 to-teal-500';
+        }
+    };
+
     const isHomePage = location.pathname === '/';
     const isWingsSection = location.hash === '#wings' || window.location.hash === '#wings';
 
@@ -152,12 +171,17 @@ const HomeNavbar = () => {
                                         : 'bg-white/10 border-white/30 text-white backdrop-blur-md hover:bg-white/20'
                                         }`}
                                 >
-                                    <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-xs font-black shadow-lg">
-                                        {user.name.charAt(0)}
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-black shadow-lg ${roleBgClass(user.role)}`}>
+                                        {getInitials(user.name)}
                                     </div>
-                                    <span className={`text-xs font-black uppercase tracking-widest hidden sm:block ${(scrolled || !isHomePage) ? 'text-gray-900' : 'text-white'}`}>
-                                        {user.name.split(' ')[0]}
-                                    </span>
+                                    <div className="hidden sm:flex flex-col items-start ml-2">
+                                        <span className={`text-xs font-black tracking-tight ${ (scrolled || !isHomePage) ? 'text-gray-900' : 'text-white'}`}>
+                                            {user.name.split(' ')[0]}
+                                        </span>
+                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${ (scrolled || !isHomePage) ? 'text-primary-400' : 'text-white/70'}`}>
+                                            {user.role ? (user.role.charAt(0) + user.role.slice(1).toLowerCase()) : ''}
+                                        </span>
+                                    </div>
                                     <ChevronDown size={14} className={`transition-transform duration-300 ${(scrolled || !isHomePage) ? 'text-gray-400' : 'text-white/60'} ${isProfileOpen ? 'rotate-180' : ''}`} />
                                 </motion.div>
 
@@ -171,9 +195,15 @@ const HomeNavbar = () => {
                                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                                 className="absolute right-0 mt-3 w-64 bg-white rounded-[2rem] shadow-2xl shadow-primary-600/10 border border-primary-50 overflow-hidden z-50 p-2"
                                             >
-                                                <div className="p-4 mb-2 border-b border-gray-50">
-                                                    <p className="text-[10px] font-black text-primary-400 uppercase tracking-widest mb-1">Signed in as</p>
-                                                    <p className="text-sm font-black text-gray-900 truncate">{user.email}</p>
+                                                <div className="p-4 mb-2 border-b border-gray-50 flex items-center gap-3">
+                                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-black shadow-lg ${roleBgClass(user.role)}`}>
+                                                        {getInitials(user.name)}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-black text-gray-900 truncate">{user.name}</p>
+                                                        <p className="text-[10px] font-bold text-primary-400 uppercase tracking-widest mt-1">{user.role ? (user.role.charAt(0) + user.role.slice(1).toLowerCase()) : ''}</p>
+                                                        <p className="text-[12px] text-gray-500 truncate mt-2">{user.email}</p>
+                                                    </div>
                                                 </div>
                                                 <Link
                                                     to="/dashboard"

@@ -20,11 +20,8 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import toast from 'react-hot-toast';
-import {
-  generateCommonMaintenance,
-  addSpecialMaintenance,
-  updatePaymentStatus
-} from '../../redux/slices/maintenanceSlice';
+import { addMaintenance, updateMaintenance } from '../../store/store';
+
 
 // 🛡️ VALIDATION SCHEMAS
 const commonSchema = yup.object().shape({
@@ -54,11 +51,20 @@ const Maintenance = () => {
     const specialForm = useForm({ resolver: yupResolver(specialSchema) });
 
     const onGenerateCommon = (data) => {
-        dispatch(generateCommonMaintenance({
-            ...data,
-            description: 'Common Society Maintenance', // Default description
-            flats: flats // Applying to all registered flats automatically
-        }));
+        // Generate maintenance for each flat
+        flats.forEach(flat => {
+            dispatch(addMaintenance({
+                id: Date.now() + Math.random(),
+                flat: flat.flatNumber,
+                wing: flat.wing,
+                amount: data.amount,
+                period: data.period,
+                status: 'Unpaid',
+                type: 'Common',
+                description: 'Monthly Maintenance'
+            }));
+        });
+
         toast.success(`Common maintenance generated for ${flats?.length || 0} flats!`, { icon: '🧾' });
         setShowCommonModal(false);
         commonForm.reset();
@@ -70,19 +76,24 @@ const Maintenance = () => {
             toast.error('Selected flat not found');
             return;
         }
-        dispatch(addSpecialMaintenance({
-            ...data,
-            flat: selectedFlat.number,
-            wing: selectedFlat.wing
+        dispatch(addMaintenance({
+            id: Date.now(),
+            flat: selectedFlat.flatNumber,
+            wing: selectedFlat.wing,
+            amount: data.amount,
+            period: data.period,
+            status: 'Unpaid',
+            type: 'Special',
+            description: data.description
         }));
-        toast.success(`Special charge added for Flat ${selectedFlat.number}`, { icon: '🛠️' });
+        toast.success(`Special charge added for Flat ${selectedFlat.flatNumber}`, { icon: '🛠️' });
         setShowSpecialModal(false);
         specialForm.reset();
     };
 
     const toggleStatus = (id, currentStatus) => {
         const newStatus = currentStatus === 'Paid' ? 'Unpaid' : 'Paid';
-        dispatch(updatePaymentStatus({ id, status: newStatus }));
+        dispatch(updateMaintenance({ id, status: newStatus }));
         toast.success(`Status updated to ${newStatus}`, {
             style: { background: newStatus === 'Paid' ? '#ecfdf5' : '#fff7ed', color: newStatus === 'Paid' ? '#059669' : '#d97706' }
         });
@@ -187,8 +198,8 @@ const Maintenance = () => {
                                     {req.flat}
                                 </div>
                                 <span className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${req.status === 'Paid'
-                                        ? 'bg-white text-emerald-600 border-emerald-100'
-                                        : 'bg-white text-amber-600 border-amber-100'
+                                    ? 'bg-white text-emerald-600 border-emerald-100'
+                                    : 'bg-white text-amber-600 border-amber-100'
                                     }`}>
                                     <div className={`w-1.5 h-1.5 rounded-full ${req.status === 'Paid' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                                     {req.status}
@@ -225,8 +236,8 @@ const Maintenance = () => {
                             <button
                                 onClick={() => toggleStatus(req.id, req.status)}
                                 className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all ${req.status === 'Paid'
-                                        ? 'bg-slate-50 text-slate-400 hover:bg-amber-50 hover:text-amber-600 border border-transparent'
-                                        : 'bg-emerald-600 text-white shadow-lg shadow-emerald-100 hover:bg-emerald-700 border border-emerald-500'
+                                    ? 'bg-slate-50 text-slate-400 hover:bg-amber-50 hover:text-amber-600 border border-transparent'
+                                    : 'bg-emerald-600 text-white shadow-lg shadow-emerald-100 hover:bg-emerald-700 border border-emerald-500'
                                     }`}
                             >
                                 {req.status === 'Paid' ? 'Mark Unpaid' : 'Mark Paid Now'}

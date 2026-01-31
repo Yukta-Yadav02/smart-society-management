@@ -19,9 +19,8 @@ import * as yup from 'yup';
 import toast from 'react-hot-toast';
 
 import {
-    fetchFlatsByWing,
-    createFlat
-} from '../../redux/slices/flatSlice';
+    addFlat
+} from '../../store/store';
 
 /* ================= VALIDATION ================= */
 const schema = yup.object().shape({
@@ -56,17 +55,25 @@ const ManageFlats = () => {
         resolver: yupResolver(schema),
     });
 
-    /* ---------- FETCH FLATS ---------- */
-    useEffect(() => {
-        if (selectedWing) {
-            dispatch(fetchFlatsByWing(selectedWing));
-        }
-    }, [selectedWing, dispatch]);
+    /* ---------- FETCH FLATS (Using local state now) ---------- */
+    // useEffect(() => {
+    //     if (selectedWing) {
+    //         // filtering handled locally now
+    //     }
+    // }, [selectedWing, dispatch]);
 
     /* ---------- SUBMIT ---------- */
     const onSubmit = async (data) => {
         try {
-            await dispatch(createFlat(data)).unwrap();
+            dispatch(addFlat({
+                id: Date.now(),
+                flatNumber: data.flatNumber,
+                wing: data.wingId.replace('WING_ID_', ''), // Simple mapping for demo
+                block: 'Tower 1',
+                currentResident: null,
+                residentType: null,
+                status: 'Vacant'
+            }));
             toast.success('Flat created successfully 🏢');
             reset();
             setShowAddModal(false);

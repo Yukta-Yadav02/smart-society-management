@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Plus, Search, Filter, Clock, CheckCircle, X } from 'lucide-react';
+// import { updateComplaintStatus } from "../../store/slices/residentSlice";
 
 const Complaints = () => {
   const [showForm, setShowForm] = useState(false);
@@ -8,7 +9,7 @@ const Complaints = () => {
     category: 'maintenance',
     priority: 'medium'
   });
-  
+
   // Data will come from backend API
   const [complaints, setComplaints] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,7 +36,7 @@ const Complaints = () => {
   });
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
       case 'resolved': return 'bg-green-100 text-green-700 border-green-200';
       case 'in-progress': return 'bg-blue-100 text-blue-700 border-blue-200';
@@ -44,7 +45,7 @@ const Complaints = () => {
   };
 
   const getPriorityColor = (priority) => {
-    switch(priority) {
+    switch (priority) {
       case 'high': return 'bg-red-100 text-red-700 border-red-200';
       case 'medium': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
       case 'low': return 'bg-green-100 text-green-700 border-green-200';
@@ -69,7 +70,7 @@ const Complaints = () => {
           </div>
           <p className="text-slate-600">Track and manage your society complaints</p>
         </div>
-        <button 
+        <button
           onClick={() => setShowForm(!showForm)}
           className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
         >
@@ -91,7 +92,7 @@ const Complaints = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
           <div className="flex items-center gap-4">
             <div className="bg-blue-100 p-3 rounded-xl">
@@ -103,7 +104,7 @@ const Complaints = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
           <div className="flex items-center gap-4">
             <div className="bg-green-100 p-3 rounded-xl">
@@ -115,7 +116,7 @@ const Complaints = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
           <div className="flex items-center gap-4">
             <div className="bg-purple-100 p-3 rounded-xl">
@@ -138,20 +139,20 @@ const Complaints = () => {
               <label className="block text-sm font-semibold text-slate-700 mb-2">Description *</label>
               <textarea
                 value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Describe your complaint in detail..."
                 className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all resize-none"
                 rows={4}
                 required
               />
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Category *</label>
                 <select
                   value={formData.category}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all appearance-none bg-white"
                 >
                   <option value="maintenance">Maintenance</option>
@@ -161,12 +162,12 @@ const Complaints = () => {
                   <option value="other">Other</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Priority *</label>
                 <select
                   value={formData.priority}
-                  onChange={(e) => setFormData({...formData, priority: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all appearance-none bg-white"
                 >
                   <option value="low">Low</option>
@@ -176,8 +177,8 @@ const Complaints = () => {
                 </select>
               </div>
             </div>
-            
-            <button 
+
+            <button
               type="submit"
               className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
             >
@@ -226,7 +227,7 @@ const Complaints = () => {
             </div>
             <h3 className="text-lg font-semibold text-slate-800 mb-2">No complaints found</h3>
             <p className="text-slate-600">
-              {complaints.length === 0 
+              {complaints.length === 0
                 ? "You haven't submitted any complaints yet. Click 'New Complaint' to get started."
                 : "Try adjusting your search or filter criteria"
               }
@@ -244,18 +245,18 @@ const Complaints = () => {
                     </span>
                   </div>
                   <p className="text-slate-700 mb-3">{complaint.description}</p>
-                  
+
                   <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
                     <span>Category: <span className="font-semibold text-slate-700">{complaint.category}</span></span>
                     <span>Date: <span className="font-semibold text-slate-700">{complaint.createdAt ? new Date(complaint.createdAt).toLocaleDateString() : '-'}</span></span>
                   </div>
                 </div>
-                
+
                 <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(complaint.status)}`}>
                   {complaint.status?.replace('-', ' ').toUpperCase()}
                 </span>
               </div>
-              
+
               {complaint.response && (
                 <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                   <div className="flex items-start gap-3">
