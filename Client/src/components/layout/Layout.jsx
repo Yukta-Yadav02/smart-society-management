@@ -1,12 +1,11 @@
 import React from 'react';
 import Sidebar from './Sidebar';
-import { Outlet, Navigate, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { UserCircle, Bell, Settings } from 'lucide-react';
 
 const Layout = () => {
     const { user } = useAuth();
-    const location = useLocation();
 
     if (!user) {
         return <Navigate to="/login" replace />;
