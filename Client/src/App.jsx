@@ -4,8 +4,7 @@ import { store } from './store/store'
 import RootLayout from './layouts/RootLayout'
 import ProtectedLayout from './layouts/ProtectedLayout'
 import Layout from './components/layout/Layout'
-import ResidentLayout from './components/layout/ResidentLayout'
-import SecurityLayout from './components/layout/SecurityLayout'
+
 
 // Common Pages
 import Home from './pages/common/Home'
@@ -63,10 +62,11 @@ const router = createBrowserRouter([
     },
     {
         path: '/security',
-        element: <SecurityLayout />,
+        element: <Layout />,
         children: [
             { path: 'add-visitor', element: <AddVisitor /> },
             { path: 'exit-visitor', element: <ExitVisitor /> },
+            { path: 'profile', element: <AdminProfile /> }, // Added profile for security
         ],
     },
     {
@@ -81,6 +81,7 @@ const router = createBrowserRouter([
         ],
     },
 ]);
+
 
 function App() {
     return (
