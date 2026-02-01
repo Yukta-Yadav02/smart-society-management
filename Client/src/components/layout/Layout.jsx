@@ -1,34 +1,12 @@
 import React from 'react';
 import Sidebar from './Sidebar';
-import { Outlet, Navigate, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { UserCircle } from 'lucide-react';
 
 const Layout = () => {
     const { user } = useAuth();
-    const location = useLocation();
 
-    if (!user) {
-        return <Navigate to="/login" replace />;
-    }
-
-    const path = location.pathname;
-
-    // Admin route protection
-    if (path.startsWith('/admin') && user.role !== 'ADMIN') {
-        return <Navigate to="/login" replace />;
-    }
-
-    // Resident route protection
-    if (path.startsWith('/resident')) {
-        if (user.role !== 'RESIDENT') {
-            return <Navigate to="/login" replace />;
-        }
-        // If resident is not active, they should only see the common dashboard
-        if (user.status !== 'ACTIVE') {
-            return <Navigate to="/dashboard" replace />;
-        }
-    }
     return (
         <div className="flex min-h-screen bg-slate-50/50">
             <Sidebar />
