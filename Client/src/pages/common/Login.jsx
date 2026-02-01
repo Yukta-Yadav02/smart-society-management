@@ -24,7 +24,11 @@ const Login = () => {
             if (userRole === 'ADMIN') {
                 navigate('/admin/dashboard');
             } else if (userRole === 'RESIDENT') {
-                navigate('/resident/dashboard');
+                if (result.user?.status === 'ACTIVE') {
+                    navigate('/resident/dashboard');
+                } else {
+                    navigate('/dashboard');
+                }
             } else if (userRole === 'SECURITY') {
                 navigate('/security/dashboard');
             } else {
