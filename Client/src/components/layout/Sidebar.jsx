@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import {
   LayoutDashboard,
   Building2,
@@ -13,10 +13,10 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Home,
-  Shield,
   UserPlus,
-  UserMinus
+  UserMinus,
+  Home,
+  Shield
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -48,8 +48,10 @@ const Sidebar = () => {
   ];
 
   const securityMenuItems = [
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/security/dashboard' },
     { name: 'Add Visitor', icon: UserPlus, path: '/security/add-visitor' },
     { name: 'Exit Visitor', icon: UserMinus, path: '/security/exit-visitor' },
+    { name: 'Notices', icon: Bell, path: '/security/notices' },
     { name: 'Profile', icon: UserCircle, path: '/security/profile' },
   ];
 
@@ -64,155 +66,93 @@ const Sidebar = () => {
     dashboardPath = '/resident/dashboard';
   } else if (isSecurity) {
     menuItems = securityMenuItems;
-    dashboardPath = '/security/add-visitor'; // Security doesn't seem to have a dashboard yet
+    dashboardPath = '/security/dashboard';
   }
 
-  const getThemeStyles = () => {
-    if (isAdmin) return {
-      light: 'bg-indigo-50',
-      main: 'bg-indigo-600',
-      text: 'text-indigo-600',
-      border: 'border-indigo-200',
-      shadow: 'shadow-indigo-200',
-      activeText: 'text-indigo-700'
-    };
-    if (isResident) return {
-      light: 'bg-blue-50',
-      main: 'bg-blue-600',
-      text: 'text-blue-600',
-      border: 'border-blue-200',
-      shadow: 'shadow-blue-200',
-      activeText: 'text-blue-700'
-    };
-    if (isSecurity) return {
-      light: 'bg-green-50',
-      main: 'bg-green-600',
-      text: 'text-green-600',
-      border: 'border-green-200',
-      shadow: 'shadow-green-200',
-      activeText: 'text-green-700'
-    };
-    return {
-      light: 'bg-indigo-50',
-      main: 'bg-indigo-600',
-      text: 'text-indigo-600',
-      border: 'border-indigo-200',
-      shadow: 'shadow-indigo-200',
-      activeText: 'text-indigo-700'
-    };
-  };
-
-  const theme = getThemeStyles();
-
   return (
-    <aside
-      className={`h-screen bg-white border-r border-slate-200 flex flex-col transition-all duration-500 ease-in-out sticky top-0 z-20 shadow-sm ${isCollapsed ? 'w-20' : 'w-64'
+    <div
+      className={`h-screen bg-white border-r border-slate-200 flex flex-col transition-all duration-300 sticky top-0 ${isCollapsed ? 'w-20' : 'w-64'
         }`}
     >
-      {/* Logo Section */}
-      <div className="p-6 flex items-center gap-3 overflow-hidden">
-        <div className={`${theme.main} p-2.5 rounded-2xl shadow-lg ${theme.shadow} shrink-0 transition-transform hover:scale-105 duration-300`}>
-          {isSecurity ? (
-            <Shield className="text-white w-6 h-6" />
-          ) : (
-            <Home className="text-white w-6 h-6" />
-          )}
+      {/* Logo */}
+      <div className="p-6 flex items-center gap-3">
+        <div className={`p-2 rounded-xl text-white shadow-lg ${isSecurity ? 'bg-emerald-600 shadow-emerald-100' : 'bg-indigo-600 shadow-indigo-100'}`}>
+          {isSecurity ? <Shield className="w-6 h-6" /> : <Home className="w-6 h-6" />}
         </div>
         {!isCollapsed && (
-          <div className="flex flex-col">
-            <span className="font-extrabold text-xl text-slate-800 tracking-tight leading-none">
-              {isAdmin ? 'Admin' : isSecurity ? 'Security' : 'Resident'}
-            </span>
-            <span className={`text-[10px] font-bold ${theme.text} uppercase tracking-widest mt-0.5`}>
-              Panel
-            </span>
-          </div>
+          <span className="font-bold text-xl text-slate-800">
+            {isSecurity ? 'Gate Security' : 'Gokuldham'}
+          </span>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 mt-6 px-3 space-y-1.5 overflow-y-auto no-scrollbar">
+      <nav className="flex-1 mt-4 px-3 space-y-1">
         {menuItems.map((item) => (
           <NavLink
             key={item.name}
             to={item.path}
             end={item.path === dashboardPath}
             className={({ isActive }) =>
-              `group flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 relative
+              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all
               ${isActive
-                ? `${theme.light} ${theme.text} shadow-sm`
+                ? isSecurity
+                  ? 'bg-emerald-50 text-emerald-600 border-l-4 border-emerald-600 rounded-l-none'
+                  : 'bg-indigo-50 text-indigo-600 border-l-4 border-indigo-600 rounded-l-none'
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
               }`
             }
           >
-            <item.icon className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${isCollapsed ? 'mx-auto' : ''}`} />
-            {!isCollapsed && (
-              <span className="font-semibold text-[15px] whitespace-nowrap">
-                {item.name}
-              </span>
-            )}
-
-            {/* Active Indicator Pin */}
-            {({ isActive }) => isActive && !isCollapsed && (
-              <div className={`absolute right-3 w-1.5 h-1.5 rounded-full ${theme.main} shadow-md`} />
-            )}
+            <item.icon className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : ''}`} />
+            {!isCollapsed && <span className="font-medium">{item.name}</span>}
           </NavLink>
         ))}
       </nav>
 
-      {/* Bottom Section */}
-      <div className="p-4 border-t border-slate-100 bg-slate-50/30">
-        {/* User Profile Card */}
-        <div className={`flex items-center gap-3 p-2 rounded-2xl transition-all duration-300 ${isCollapsed ? 'justify-center' : 'hover:bg-white hover:shadow-sm'}`}>
-          <div className={`w-10 h-10 rounded-xl ${theme.light} flex items-center justify-center shrink-0 border ${theme.border} shadow-inner`}>
-            {user?.name ? (
-              <span className={`${theme.activeText} font-bold text-lg`}>
-                {user.name.charAt(0).toUpperCase()}
-              </span>
-            ) : (
-              <UserCircle className={`w-6 h-6 ${theme.text}`} />
-            )}
+      {/* Bottom */}
+      <div className="p-4 border-t border-slate-100 flex flex-col gap-4">
+        {/* User Profile Info */}
+        <div className={`flex items-center gap-3 px-2 ${isCollapsed ? 'justify-center' : ''}`}>
+          <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+            <span className="text-indigo-600 font-bold text-lg">
+              {user?.name?.charAt(0).toUpperCase() || <UserCircle className="w-6 h-6" />}
+            </span>
           </div>
           {!isCollapsed && (
-            <div className="flex flex-col overflow-hidden min-w-0">
+            <div className="flex flex-col overflow-hidden">
               <span className="font-bold text-slate-800 text-sm truncate">
                 {user?.name || 'User'}
               </span>
-              <span className={`text-[11px] ${theme.text} font-bold uppercase tracking-wider`}>
-                {user?.role || 'Guest'}
+              <span className="text-xs text-indigo-600 font-medium capitalize">
+                {user?.role?.toLowerCase() || 'Role'}
               </span>
             </div>
           )}
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-4 space-y-1">
+        <div className="space-y-1">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-white hover:text-slate-900 transition-all duration-300 hover:shadow-sm group"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-50 transition-colors"
           >
-            {isCollapsed ? (
-              <ChevronRight className="mx-auto group-hover:translate-x-0.5 transition-transform" />
-            ) : (
-              <>
-                <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
-                <span className="font-medium text-sm">Collapse Sidebar</span>
-              </>
-            )}
+            {isCollapsed ? <ChevronRight className="mx-auto" /> : <>
+              <ChevronLeft className="w-5 h-5" />
+              <span>Collapse</span>
+            </>}
           </button>
 
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 transition-all duration-300 hover:shadow-sm group"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-50 transition-colors"
           >
-            <LogOut className={`w-5 h-5 group-hover:translate-x-0.5 transition-transform ${isCollapsed ? 'mx-auto' : ''}`} />
-            {!isCollapsed && <span className="font-bold text-sm">Logout</span>}
+            <LogOut className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : ''}`} />
+            {!isCollapsed && <span>Logout</span>}
           </button>
         </div>
       </div>
-    </aside>
+    </div>
   );
 };
 
 export default Sidebar;
-
