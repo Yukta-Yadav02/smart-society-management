@@ -6,6 +6,9 @@ export const AUTH_API = {
   SETUP_ADMIN: BASE_URL + "/auth/setup-admin",
   REGISTER_RESIDENT: BASE_URL + "/auth/register",
   CREATE_SECURITY: BASE_URL + "/auth/create-security",
+  GET_ALL_RESIDENTS: BASE_URL + "/auth/residents",
+  UPDATE_RESIDENT: (id) => BASE_URL + `/auth/update-resident/${id}`,
+  DELETE_USER: (id) => BASE_URL + `/auth/delete-user/${id}`,
 };
 
 /* ================= WING ================= */
@@ -58,9 +61,23 @@ export const NOTICE_API = {
     BASE_URL + `/notice/${id}/respond`,
 };
 
+/* ================= DASHBOARD ================= */
+export const DASHBOARD_API = {
+  GET_STATS: BASE_URL + "/dashboard/admin-stats",
+  GET_RESIDENT_STATS: BASE_URL + "/dashboard/resident-stats",
+};
+
 /* ================= VISITOR ================= */
 export const VISITOR_API = {
   ENTRY: BASE_URL + "/visitor/entry",
   EXIT: (id) =>
     BASE_URL + `/visitor/exit/${id}`,
+};
+
+/* ================= RESIDENT DASHBOARD ================= */
+export const DATA_API = {
+  DASHBOARD: BASE_URL + "/resident/dashboard",
+  COMPLAINTS: BASE_URL + "/resident/complaints",
+  MAINTENANCE: BASE_URL + "/resident/maintenance",
+  NOTICES: BASE_URL + "/resident/notices",
 };
