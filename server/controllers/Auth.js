@@ -140,6 +140,7 @@ exports.createSecurity = async (req, res) => {
    USER LOGIN (ALL ROLES)
 ========================= */
 exports.login = async (req, res) => {
+  console.log(req.body);
   try {
     const { email, password } = req.body;
 
@@ -203,6 +204,7 @@ exports.login = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Login failed",
+      error: error.message,
     });
   }
 };
