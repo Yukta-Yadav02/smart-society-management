@@ -5,11 +5,13 @@ import {
     Calendar,
     Trash2,
     Edit,
-    MoreVertical,
-    ChevronRight,
     Pin,
-    AlertCircle,
-    Info
+    Megaphone,
+    Clock,
+    X,
+    Search,
+    MoreVertical,
+    AlertCircle
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
@@ -19,18 +21,14 @@ import toast from 'react-hot-toast';
 
 import { apiConnector } from '../../services/apiConnector';
 import { NOTICE_API } from '../../services/apis';
-
 import { addNotice, deleteNotice, setNotices } from '../../store/store';
 
 // COMMON UI COMPONENTS
 import PageHeader from '../../components/common/PageHeader';
 import SearchInput from '../../components/common/SearchInput';
-import Card from '../../components/common/Card';
-import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import TextArea from '../../components/common/TextArea';
-import Button from '../../components/common/Button';
 
 // 🛡️ VALIDATION SCHEMA
 const schema = yup.object().shape({
@@ -85,9 +83,8 @@ const Notices = () => {
     };
 
     const handleDelete = async (id, title) => {
-        if (window.confirm(`Delete notice: "${title}"?`)) {
+        if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
             try {
-                // DELETE might need to be implemented or ID based
                 const res = await apiConnector("DELETE", `/api/notice/${id}`);
                 if (res.success || res) {
                     dispatch(deleteNotice(id));
@@ -105,78 +102,88 @@ const Notices = () => {
     );
 
     return (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
-            <PageHeader
-                title="Society Broadcasts"
-                subtitle="Keep every resident informed with official announcements."
-                actionLabel="New Notice"
-                onAction={() => setShowAddModal(true)}
-                icon={Bell}
-            />
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                    <h1 className="text-3xl font-black text-slate-800 tracking-tight text-shadow-sm uppercase">Society Broadcasts</h1>
+                    <p className="text-slate-500 mt-1 font-bold">Manage and view all official society announcements.</p>
+                </div>
+                <button
+                    onClick={() => setShowAddModal(true)}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-xl shadow-indigo-100 border border-indigo-500 uppercase tracking-widest text-[10px]"
+                >
+                    <Plus className="w-5 h-5" />
+                    New Notice
+                </button>
+            </div>
 
             <SearchInput
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search through announcement archives..."
-                className="mb-10"
+                placeholder="Search for announcements..."
+                className="mb-12"
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {filteredNotices.map((notice) => (
-                    <Card key={notice._id || notice.id} className={`p-10 relative overflow-hidden group flex flex-col ${notice.pinned ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}>
+                    <div key={notice._id || notice.id} className="bg-white rounded-[2.5rem] border border-slate-100 p-2 shadow-sm hover:shadow-xl hover:translate-y-[-4px] transition-all duration-300 group overflow-hidden relative">
                         {notice.pinned && (
-                            <div className="absolute top-0 right-0 bg-indigo-600 text-white px-6 py-2.5 rounded-bl-3xl font-black text-[9px] uppercase tracking-widest flex items-center gap-2 z-20">
-                                <Pin size={12} className="fill-white" /> Pinned
+                            <div className="absolute top-2 right-2 bg-indigo-600 text-white px-4 py-1.5 rounded-[1.5rem] font-black text-[9px] uppercase tracking-widest flex items-center gap-1.5 z-20 shadow-lg shadow-indigo-100">
+                                <Pin size={10} className="fill-current" /> Pinned
                             </div>
                         )}
 
-                        <div className="flex items-start justify-between mb-8">
-                            <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:rotate-12 transition-transform duration-500 shadow-sm border border-indigo-100">
-                                <Bell size={28} />
-                            </div>
-                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button className="p-3 rounded-xl bg-white border border-slate-100 text-slate-300 hover:text-indigo-600 hover:border-indigo-100 transition-all"><Edit size={18} /></button>
-                                <button
-                                    onClick={() => handleDelete(notice._id || notice.id, notice.title)}
-                                    className="p-3 rounded-xl bg-white border border-slate-100 text-slate-300 hover:text-rose-500 hover:border-rose-100 transition-all"
-                                >
-                                    <Trash2 size={18} />
+                        <div className="rounded-[2.2rem] bg-slate-50/50 p-8 sm:p-10">
+                            <div className="flex justify-between items-start mb-8">
+                                <div className="flex items-center gap-5">
+                                    <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-lg transform transition-transform group-hover:rotate-12 duration-500 z-10 ${notice.pinned ? 'bg-indigo-600 text-white shadow-indigo-200' : 'bg-white text-indigo-600 border border-slate-100 shadow-sm'}`}>
+                                        <Bell size={28} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                                <Calendar size={12} />
+                                                {notice.createdAt ? new Date(notice.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : 'Today'}
+                                            </span>
+                                        </div>
+                                        <h3 className="text-xl sm:text-2xl font-black text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors uppercase tracking-tight">
+                                            {notice.title}
+                                        </h3>
+                                    </div>
+                                </div>
+                                <button className="p-2.5 rounded-xl text-slate-300 hover:text-slate-600 hover:bg-white transition-all">
+                                    <MoreVertical className="w-5 h-5" />
                                 </button>
                             </div>
-                        </div>
 
-                        <div className="flex-1 relative z-10">
-                            <h3 className="text-2xl font-black text-slate-800 mb-4 pr-12 leading-tight tracking-tight uppercase group-hover:text-indigo-600 transition-colors">
-                                {notice.title}
-                            </h3>
-                            <div className="bg-slate-50/50 p-6 rounded-3xl border border-slate-50 mb-8 max-h-[150px] overflow-hidden relative">
-                                <p className="text-slate-500 text-sm leading-relaxed font-medium">
+                            <div className="bg-white/70 p-6 sm:p-8 rounded-[2rem] border border-white shadow-sm mb-2 min-h-[120px]">
+                                <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-bold">
                                     {notice.description || notice.content}
                                 </p>
-                                <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-slate-50 via-slate-50/80 to-transparent" />
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between pt-6 border-t border-slate-100 mt-auto">
-                            <span className="text-[10px] font-black text-slate-300 flex items-center gap-2 uppercase tracking-widest">
-                                <Calendar size={14} />
-                                {notice.createdAt ? new Date(notice.createdAt).toLocaleDateString() : (notice.date || '-')}
-                            </span>
-                            <button className="text-indigo-600 font-black text-[10px] flex items-center gap-2 hover:translate-x-1 transition-all uppercase tracking-widest group/btn">
-                                Read More
-                                <ChevronRight size={14} className="bg-indigo-50 rounded-full p-0.5 group-hover/btn:bg-indigo-100 transition-colors" />
+                        <div className="p-4 flex gap-3">
+                            <button
+                                className="flex-1 py-4.5 rounded-2xl bg-white border border-slate-100 text-slate-400 font-black text-xs hover:text-indigo-600 hover:border-indigo-100 transition-all flex items-center justify-center gap-2 uppercase tracking-widest"
+                            >
+                                <Edit className="w-4 h-4" /> Edit Notice
+                            </button>
+                            <button
+                                onClick={() => handleDelete(notice._id || notice.id, notice.title)}
+                                className="flex-1 py-4.5 rounded-2xl bg-white border border-slate-100 text-slate-400 font-black text-xs hover:text-rose-500 hover:border-rose-100 transition-all flex items-center justify-center gap-2 uppercase tracking-widest"
+                            >
+                                <Trash2 className="w-4 h-4" /> Remove
                             </button>
                         </div>
-
-                        <Info size={120} className="absolute -bottom-10 -right-10 text-slate-50 -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                    </Card>
+                    </div>
                 ))}
 
                 {(filteredNotices || []).length === 0 && (
-                    <div className="col-span-full py-40 bg-white border border-dashed border-slate-200 rounded-[3rem] text-center flex flex-col items-center">
-                        <Bell size={64} className="text-slate-100 mb-6" />
-                        <h3 className="text-2xl font-black text-slate-200 uppercase tracking-tighter">No active notices</h3>
-                        <p className="text-slate-400 text-xs font-bold mt-1 uppercase tracking-widest">Share important society updates here.</p>
+                    <div className="col-span-full py-40 bg-white border border-dashed border-slate-200 rounded-[4rem] text-center flex flex-col items-center group">
+                        <Megaphone size={64} className="text-slate-100 mb-6 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-500" />
+                        <h3 className="text-2xl font-black text-slate-200 uppercase tracking-tighter">No notices found</h3>
+                        <p className="text-slate-400 text-xs font-bold mt-1 uppercase tracking-widest">Broadcast something important to the community.</p>
                     </div>
                 )}
             </div>
@@ -184,48 +191,46 @@ const Notices = () => {
             {/* Create Notice Modal */}
             <Modal
                 isOpen={showAddModal}
-                onClose={() => setShowAddModal(false)}
-                title="New Announcement"
-                subtitle="Post a notice that every resident will see on their dashboard."
-                icon={Bell}
+                onClose={() => { setShowAddModal(false); reset(); }}
+                title="New Broadcast"
+                subtitle="Create a notice that will be visible to all residents."
+                icon={Megaphone}
             >
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                     <Input
-                        label="Announcement Title"
-                        placeholder="e.g. Society General Meeting 2024"
+                        label="Notice Title"
+                        placeholder="e.g. Annual Society Meeting"
                         register={register('title')}
                         error={errors.title?.message}
                     />
                     <TextArea
-                        label="Notice Content"
-                        placeholder="Detail the announcement here..."
+                        label="Announcement Content"
+                        placeholder="Describe the notice in detail here..."
                         rows={6}
                         register={register('description')}
                         error={errors.description?.message}
                     />
 
-                    <div className="flex items-center gap-3 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/30">
-                        <input
-                            type="checkbox"
-                            className="w-5 h-5 rounded border-indigo-200 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                            id="pin-chk"
-                            onChange={(e) => setValue('pinned', e.target.checked)}
-                            checked={watch('pinned')}
-                        />
-                        <label htmlFor="pin-chk" className="text-xs font-black text-indigo-900/40 uppercase tracking-widest cursor-pointer select-none">
-                            Pin to the top of dashboard
+                    <div className="flex items-center gap-3 p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/40 cursor-pointer" onClick={() => setValue('pinned', !watch('pinned'))}>
+                        <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${watch('pinned') ? 'bg-indigo-600 border-indigo-600' : 'border-indigo-200'}`}>
+                            {watch('pinned') && <Pin size={12} className="text-white fill-current" />}
+                        </div>
+                        <label className="text-[10px] font-black text-indigo-900/40 uppercase tracking-widest cursor-pointer select-none">
+                            Pin this broadcast for priority notice
                         </label>
                     </div>
 
                     <div className="pt-4 flex gap-4">
                         <button
                             type="button"
-                            onClick={() => setShowAddModal(false)}
-                            className="flex-1 py-4 font-black text-slate-400 hover:bg-slate-50 transition-all uppercase tracking-widest text-[10px]"
+                            onClick={() => { setShowAddModal(false); reset(); }}
+                            className="flex-1 py-4.5 font-black text-slate-400 hover:bg-slate-50 transition-all rounded-2xl uppercase tracking-widest text-[10px]"
                         >
                             Cancel
                         </button>
-                        <Button type="submit" fullWidth className="flex-[2]">Broadcast Now</Button>
+                        <button type="submit" className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4.5 rounded-2xl transition-all shadow-xl shadow-indigo-100 border border-indigo-500 uppercase tracking-widest text-[10px]">
+                            Publish Notice
+                        </button>
                     </div>
                 </form>
             </Modal>

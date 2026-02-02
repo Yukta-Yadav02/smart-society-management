@@ -4,19 +4,12 @@ import { UserMinus, Clock, MapPin, Search, Filter } from 'lucide-react';
 const ExitVisitor = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
-  
-  const visitors = [
-    { id: 1, name: "Arjun Mehta", flat: "A-502", time: "09:45 AM", type: "Guest", duration: "2h 15m" },
-    { id: 2, name: "Suresh Raina", flat: "B-104", time: "10:20 AM", type: "Delivery", duration: "45m" },
-    { id: 3, name: "Kavita Iyer", flat: "D-901", time: "11:05 AM", type: "Maintenance", duration: "1h 30m" },
-    { id: 4, name: "Vikram Singh", flat: "C-202", time: "11:45 AM", type: "Guest", duration: "3h 10m" },
-    { id: 5, name: "Priya Sharma", flat: "A-301", time: "12:30 PM", type: "Service", duration: "1h 45m" },
-    { id: 6, name: "Rahul Kumar", flat: "B-205", time: "01:15 PM", type: "Family", duration: "2h 30m" },
-  ];
+
+  const visitors = [];
 
   const filteredVisitors = visitors.filter(visitor => {
     const matchesSearch = visitor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         visitor.flat.toLowerCase().includes(searchTerm.toLowerCase());
+      visitor.flat.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterType === 'all' || visitor.type.toLowerCase() === filterType;
     return matchesSearch && matchesFilter;
   });
@@ -125,7 +118,7 @@ const ExitVisitor = () => {
             </div>
 
             {/* Action Button */}
-            <button 
+            <button
               onClick={() => handleExit(visitor.id, visitor.name)}
               className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
             >

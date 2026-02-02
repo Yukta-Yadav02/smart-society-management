@@ -36,7 +36,7 @@ const Profile = () => {
 
     const [isEditing, setIsEditing] = useState(false);
 
-  
+
     useEffect(() => {
         const fetchProfile = async () => {
             try {
@@ -54,11 +54,11 @@ const Profile = () => {
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm({
         defaultValues: profileData || {
-            societyName: 'Gokuldham Society',
-            regNumber: 'MH-RC-2024-X',
-            address: 'Powai, Mumbai, Maharashtra 400076',
-            email: 'admin@gokuldham.com',
-            phone: '+91 98765 43210'
+            societyName: '',
+            regNumber: '',
+            address: '',
+            email: '',
+            phone: ''
         }
     });
 
@@ -115,7 +115,7 @@ const Profile = () => {
                                 </div>
                             )}
                         </div>
-                        <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase mb-2">{profileData?.societyName || 'Gokuldham Society'}</h2>
+                        <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase mb-2">{profileData?.societyName || 'Society Name'}</h2>
                         <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full border border-emerald-100 text-[10px] font-black uppercase tracking-widest">
                             <ShieldCheck size={14} /> Registered Society
                         </div>

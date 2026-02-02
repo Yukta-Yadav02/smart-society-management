@@ -20,7 +20,7 @@ const AddVisitor = () => {
     console.log("Visitor Data:", formData);
     setShowSuccessPopup(true);
     setFormData({ name: '', mobile: '', flat: '', type: '', purpose: '' });
-    
+
     // Auto close popup after 3 seconds
     setTimeout(() => {
       setShowSuccessPopup(false);
@@ -40,13 +40,13 @@ const AddVisitor = () => {
               <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-2">Visitor Added Successfully!</h3>
               <p className="text-sm sm:text-base text-slate-600 mb-6">The visitor has been checked-in and registered in the system.</p>
               <div className="flex flex-col sm:flex-row gap-3">
-                <button 
+                <button
                   onClick={() => setShowSuccessPopup(false)}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200"
                 >
                   Continue
                 </button>
-                <button 
+                <button
                   onClick={() => setShowSuccessPopup(false)}
                   className="p-3 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all duration-200 sm:w-auto w-full flex items-center justify-center"
                 >
@@ -136,7 +136,7 @@ const AddVisitor = () => {
                 Visitor Type *
               </label>
               <div className="relative">
-                <select 
+                <select
                   name="type"
                   value={formData.type}
                   onChange={handleChange}
@@ -172,14 +172,14 @@ const AddVisitor = () => {
 
           {/* Submit Button */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
-            <button 
+            <button
               type="submit"
               className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl text-sm sm:text-base"
             >
               <UserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
               Check-In Visitor
             </button>
-            <button 
+            <button
               type="button"
               onClick={() => setFormData({ name: '', mobile: '', flat: '', type: '', purpose: '' })}
               className="px-6 py-3 border border-slate-300 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-all duration-200 text-sm sm:text-base"
@@ -199,11 +199,11 @@ const AddVisitor = () => {
             </div>
             <div>
               <p className="text-xs sm:text-sm text-slate-600">Today's Visitors</p>
-              <p className="text-lg sm:text-xl font-bold text-slate-800">24</p>
+              <p className="text-lg sm:text-xl font-bold text-slate-800">0</p>
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-xl p-4 border border-slate-200">
           <div className="flex items-center gap-3">
             <div className="bg-green-100 p-2 rounded-lg">
@@ -211,11 +211,11 @@ const AddVisitor = () => {
             </div>
             <div>
               <p className="text-xs sm:text-sm text-slate-600">Active Visitors</p>
-              <p className="text-lg sm:text-xl font-bold text-slate-800">12</p>
+              <p className="text-lg sm:text-xl font-bold text-slate-800">0</p>
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-xl p-4 border border-slate-200 sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-3">
             <div className="bg-orange-100 p-2 rounded-lg">
@@ -223,7 +223,7 @@ const AddVisitor = () => {
             </div>
             <div>
               <p className="text-xs sm:text-sm text-slate-600">Peak Hours</p>
-              <p className="text-lg sm:text-xl font-bold text-slate-800">2-6 PM</p>
+              <p className="text-lg sm:text-xl font-bold text-slate-800">-</p>
             </div>
           </div>
         </div>
