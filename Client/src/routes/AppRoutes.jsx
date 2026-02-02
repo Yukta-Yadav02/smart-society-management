@@ -1,5 +1,5 @@
 import React from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 
 // Layouts
 import RootLayout from '../layouts/RootLayout';
@@ -64,6 +64,8 @@ const router = createBrowserRouter([
         path: '/security',
         element: <DashboardLayout />,
         children: [
+            { index: true, element: <Navigate to="/security/add-visitor" replace /> },
+            { path: 'dashboard', element: <Navigate to="/security/add-visitor" replace /> },
             { path: 'add-visitor', element: <AddVisitor /> },
             { path: 'exit-visitor', element: <ExitVisitor /> },
         ],

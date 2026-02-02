@@ -48,7 +48,6 @@ const Sidebar = () => {
   ];
 
   const securityMenuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/security/dashboard' },
     { name: 'Add Visitor', icon: UserPlus, path: '/security/add-visitor' },
     { name: 'Exit Visitor', icon: UserMinus, path: '/security/exit-visitor' },
     { name: 'Notices', icon: Bell, path: '/security/notices' },
@@ -66,7 +65,7 @@ const Sidebar = () => {
     dashboardPath = '/resident/dashboard';
   } else if (isSecurity) {
     menuItems = securityMenuItems;
-    dashboardPath = '/security/dashboard';
+    dashboardPath = '/security/add-visitor';
   }
 
   return (
