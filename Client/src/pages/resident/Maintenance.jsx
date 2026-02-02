@@ -1,215 +1,250 @@
-import React, { useState } from 'react';
-import { Wrench, CreditCard, Clock, CheckCircle, Filter, Search } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  Receipt,
+  CreditCard,
+  Clock,
+  CheckCircle2,
+  ArrowRight,
+  Search,
+  IndianRupee,
+  Calendar,
+  Building2
+} from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
+import toast from 'react-hot-toast';
+
+import { apiConnector } from '../../services/apiConnector';
+import { MAINTENANCE_API } from '../../services/apis';
+
+import { setMaintenance, updateMaintenance } from '../../store/store';
+
+//  COMMON UI COMPONENTS
+import PageHeader from '../../components/common/PageHeader';
+import StatCard from '../../components/common/StatCard';
+import Card from '../../components/common/Card';
+import Badge from '../../components/common/Badge';
+import Button from '../../components/common/Button';
+import SearchInput from '../../components/common/SearchInput';
+import Modal from '../../components/common/Modal';
 
 const Maintenance = () => {
+  const dispatch = useDispatch();
+  const records = useSelector((state) => state.maintenance.records);
+  const user = useSelector((state) => state.profile.data);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('All');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedBill, setSelectedBill] = useState(null);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [filter, setFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  // Data will come from backend API
-  const [maintenance, setMaintenance] = useState([]);
 
-  const filteredMaintenance = maintenance.filter(item => {
-    const matchesSearch = item.title?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filter === 'all' || 
-                         (filter === 'paid' && item.paid) || 
-                         (filter === 'unpaid' && !item.paid) ||
-                         item.type === filter;
-    return matchesSearch && matchesFilter;
-  });
+ 
+  useEffect(() => {
+    const fetchMyMaintenance = async () => {
+      try {
+        const res = await apiConnector("GET", MAINTENANCE_API.GET_MY);
+        if (res.success) {
+          dispatch(setMaintenance(res.data));
+        }
+      } catch (err) {
+        console.error("Fetch Maintenance Error:", err);
+        toast.error("Failed to load maintenance records");
+      }
+    };
+    fetchMyMaintenance();
+  }, [dispatch]);
 
   const handlePaymentClick = (bill) => {
     setSelectedBill(bill);
     setShowPaymentModal(true);
   };
 
-  const confirmPayment = () => {
-    setMaintenance(prev => prev.map(item =>
-      item.id === selectedBill.id
-        ? { ...item, paid: true, paidDate: new Date().toISOString() }
-        : item
-    ));
-    setShowPaymentModal(false);
-    setShowSuccessModal(true);
-    setTimeout(() => {
-      setShowSuccessModal(false);
-      setSelectedBill(null);
-    }, 3000);
+  const confirmPayment = async () => {
+    try {
+      const id = selectedBill._id || selectedBill.id;
+      const res = await apiConnector("PUT", MAINTENANCE_API.PAY(id));
+
+      if (res.success) {
+        // Update local state
+        dispatch(updateMaintenance({ id, status: 'PAID', paidAt: new Date().toISOString() }));
+        toast.success(`Payment of ₹${selectedBill.amount} successful!`, { icon: '💰' });
+        setShowPaymentModal(false);
+        setSelectedBill(null);
+      }
+    } catch (err) {
+      toast.error(err.message || "Payment failed");
+    }
   };
 
-  const totalDue = maintenance.filter(m => !m.paid).reduce((sum, m) => sum + (m.amount || 0), 0);
-  const paidCount = maintenance.filter(m => m.paid).length;
-  const unpaidCount = maintenance.filter(m => !m.paid).length;
+  const filteredRecords = (records || []).filter(r => {
+    const displayStatus = r.status === 'PAID' ? 'Paid' : 'Unpaid';
+    const matchesStatus = filterStatus === 'All' || displayStatus === filterStatus;
+    const period = `${r.month} ${r.year}`;
+    const matchesSearch = (r.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      period.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
+
+  const pendingAmount = (records || []).filter(r => r.status === 'PENDING').reduce((sum, r) => sum + r.amount, 0);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex items-center gap-2 sm:gap-3 mb-2">
-          <div className="bg-green-100 p-1.5 sm:p-2 rounded-lg">
-            <Wrench className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Maintenance Bills</h1>
-        </div>
-        <p className="text-sm sm:text-base text-slate-600">Manage your society maintenance payments</p>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+      <PageHeader
+        title="Maintenance & Dues"
+        subtitle="View and pay your society maintenance bills online."
+        icon={Receipt}
+      />
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <StatCard
+          label="Outstanding Balance"
+          value={`₹${pendingAmount}`}
+          icon={IndianRupee}
+          colorClass="bg-rose-50 text-rose-600"
+          delay={0.1}
+        />
+        <StatCard
+          label="Pending Bills"
+          value={(records || []).filter(r => r.status === 'PENDING').length}
+          icon={Clock}
+          colorClass="bg-amber-50 text-amber-600"
+          delay={0.2}
+        />
+        <StatCard
+          label="Paid (Total)"
+          value={(records || []).filter(r => r.status === 'PAID').length}
+          icon={CheckCircle2}
+          colorClass="bg-emerald-50 text-emerald-600"
+          delay={0.3}
+        />
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="bg-red-100 p-2 sm:p-3 rounded-lg sm:rounded-xl">
-              <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
-            </div>
-            <div>
-              <p className="text-xs sm:text-sm text-slate-600">Total Due</p>
-              <p className="text-lg sm:text-2xl font-bold text-slate-800">₹{totalDue.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="bg-orange-100 p-2 sm:p-3 rounded-lg sm:rounded-xl">
-              <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
-            </div>
-            <div>
-              <p className="text-xs sm:text-sm text-slate-600">Unpaid Bills</p>
-              <p className="text-lg sm:text-2xl font-bold text-slate-800">{unpaidCount}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="bg-green-100 p-2 sm:p-3 rounded-lg sm:rounded-xl">
-              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-xs sm:text-sm text-slate-600">Paid Bills</p>
-              <p className="text-lg sm:text-2xl font-bold text-slate-800">{paidCount}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Search and Filter */}
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search maintenance bills..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all text-sm sm:text-base"
-            />
-          </div>
-          <div className="relative">
-            <Filter className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="pl-10 sm:pl-12 pr-6 sm:pr-8 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all appearance-none bg-white min-w-[120px] sm:min-w-[150px] text-sm sm:text-base"
+      {/* Filters */}
+      <div className="flex flex-col lg:flex-row gap-6 mb-10 items-start lg:items-center">
+        <SearchInput
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by month or charge type..."
+          className="flex-1 w-full max-w-xl"
+        />
+        <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm shrink-0">
+          {['All', 'Paid', 'Unpaid'].map(s => (
+            <button
+              key={s}
+              onClick={() => setFilterStatus(s)}
+              className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterStatus === s ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'
+                }`}
             >
-              <option value="all">All Bills</option>
-              <option value="paid">Paid</option>
-              <option value="unpaid">Unpaid</option>
-              <option value="monthly">Monthly</option>
-              <option value="special">Special</option>
-              <option value="emergency">Emergency</option>
-            </select>
-          </div>
+              {s}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Bills List */}
-      <div className="space-y-3 sm:space-y-4">
-        {filteredMaintenance.length === 0 ? (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-8 sm:p-12 text-center">
-            <div className="bg-slate-100 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-              <Wrench className="w-6 h-6 sm:w-8 sm:h-8 text-slate-400" />
-            </div>
-            <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-2">No maintenance bills found</h3>
-            <p className="text-sm sm:text-base text-slate-600">Bills will appear here when available from the backend</p>
+      {/* Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+        {filteredRecords.length === 0 ? (
+          <div className="col-span-full py-20 bg-white border border-dashed border-slate-200 rounded-[3rem] text-center flex flex-col items-center">
+            <CreditCard size={64} className="text-slate-100 mb-6" />
+            <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">No billing records assigned to your flat.</p>
           </div>
         ) : (
-          filteredMaintenance.map((item) => (
-            <div key={item.id} className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6 hover:shadow-xl transition-all duration-300">
-              {/* Bill content will be rendered here */}
-            </div>
+          filteredRecords.map((bill) => (
+            <Card key={bill._id || bill.id} className="p-2 overflow-hidden flex flex-col group">
+              <div className={`rounded-[2rem] p-8 flex-1 ${bill.status === 'PAID' ? 'bg-emerald-50/20' : 'bg-rose-50/20'}`}>
+                <div className="flex justify-between items-start mb-8">
+                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                    <Receipt size={24} />
+                  </div>
+                  <Badge variant={bill.status === 'PAID' ? 'success' : 'warning'}>
+                    {bill.status === 'PAID' ? 'Paid' : 'Unpaid'}
+                  </Badge>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Billing Period</p>
+                    <h3 className="text-2xl font-black text-slate-800 tracking-tight uppercase">{bill.month} {bill.year}</h3>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white/60 p-3 rounded-xl border border-white/50">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Type</p>
+                      <p className="text-xs font-bold text-slate-700">{bill.type || 'Common'}</p>
+                    </div>
+                    <div className="bg-white/60 p-3 rounded-xl border border-white/50">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Flat No</p>
+                      <p className="text-xs font-bold text-slate-700">{user?.flat?.flatNumber || bill.flat?.flatNumber || '-'}</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-200/50">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Amount Due</p>
+                    <p className="text-4xl font-black text-slate-800 tracking-tighter tabular-nums flex items-baseline gap-1">
+                      <span className="text-base opacity-40">₹</span>{bill.amount}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4">
+                {bill.status === 'PENDING' ? (
+                  <Button
+                    fullWidth
+                    className="py-4.5 shadow-xl shadow-indigo-100"
+                    onClick={() => handlePaymentClick(bill)}
+                    icon={CreditCard}
+                  >
+                    Pay & Clear Due
+                  </Button>
+                ) : (
+                  <button className="w-full py-4.5 rounded-2xl border border-dashed border-emerald-200 text-emerald-600 font-bold text-[10px] uppercase tracking-widest cursor-default flex items-center justify-center gap-2">
+                    <CheckCircle2 size={16} /> Paid on {bill.paidAt ? new Date(bill.paidAt).toLocaleDateString() : 'Record'}
+                  </button>
+                )}
+              </div>
+            </Card>
           ))
         )}
       </div>
 
-      {/* Payment Modal */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-4 sm:p-6 w-full max-w-sm sm:max-w-md">
-            <div className="text-center mb-4 sm:mb-6">
-              <div className="bg-green-100 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <CreditCard className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
-              </div>
-              <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-2">Confirm Payment</h3>
-              <p className="text-sm sm:text-base text-slate-600">Review your payment details</p>
+      {/* Payment Confirmation Modal */}
+      <Modal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        title="Confirm Payment"
+        subtitle="You are about to pay your maintenance bill securely."
+        icon={CreditCard}
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-6">
+          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+            <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-200 border-dashed">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Bill Period</span>
+              <span className="font-black text-slate-800 uppercase">{selectedBill?.month} {selectedBill?.year}</span>
             </div>
-            
-            {selectedBill && (
-              <div className="bg-slate-50 p-3 sm:p-4 rounded-lg sm:rounded-xl mb-4 sm:mb-6">
-                <h4 className="font-bold text-slate-800 mb-2 sm:mb-3 text-sm sm:text-base">{selectedBill.title}</h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm sm:text-base">
-                    <span className="text-slate-600">Amount:</span>
-                    <span className="font-bold text-green-600">₹{selectedBill.amount?.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm sm:text-base">
-                    <span className="text-slate-600">Due Date:</span>
-                    <span className="font-medium">{selectedBill.dueDate ? new Date(selectedBill.dueDate).toLocaleDateString() : '-'}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-              <button 
-                onClick={() => setShowPaymentModal(false)}
-                className="flex-1 bg-slate-200 text-slate-700 py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg sm:rounded-xl hover:bg-slate-300 transition-colors font-semibold text-sm sm:text-base"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={confirmPayment}
-                className="flex-1 bg-green-600 text-white py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg sm:rounded-xl hover:bg-green-700 transition-colors font-semibold text-sm sm:text-base"
-              >
-                Confirm Payment
-              </button>
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Amount</span>
+              <span className="text-2xl font-black text-indigo-600">₹{selectedBill?.amount}</span>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-4 sm:p-6 w-full max-w-sm sm:max-w-md text-center">
-            <div className="bg-green-100 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-              <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-bold text-green-600 mb-2">Payment Successful!</h3>
-            <p className="text-sm sm:text-base text-slate-600 mb-4 sm:mb-6">Your payment has been processed successfully</p>
-            
-            {selectedBill && (
-              <div className="bg-green-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-green-200">
-                <p className="text-xl sm:text-2xl font-bold text-green-600 mb-1">₹{selectedBill.amount?.toLocaleString()}</p>
-                <p className="text-green-800 font-medium text-sm sm:text-base">{selectedBill.title}</p>
-              </div>
-            )}
+          <div className="bg-amber-50 p-4 rounded-xl flex gap-3 items-start border border-amber-100">
+            <Clock className="text-amber-500 shrink-0 mt-0.5" size={16} />
+            <p className="text-[10px] text-amber-700 font-bold leading-relaxed uppercase">By clicking confirm, you will be redirected to the secure payment processing page.</p>
+          </div>
+
+          <div className="flex gap-4 pt-4">
+            <button
+              onClick={() => setShowPaymentModal(false)}
+              className="flex-1 py-4 font-black text-slate-400 hover:bg-slate-50 transition-all uppercase tracking-widest text-[10px]"
+            >
+              Cancel
+            </button>
+            <Button fullWidth onClick={confirmPayment} className="flex-[2] py-4">Proceed to Pay</Button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };

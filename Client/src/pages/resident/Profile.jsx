@@ -1,328 +1,171 @@
-import React, { useState } from 'react';
-import { User, Edit, Save, X, Home, Phone, Mail, Car, AlertTriangle, Briefcase } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  User,
+  Edit3,
+  Save,
+  Home,
+  Phone,
+  Mail,
+  ShieldAlert,
+  Briefcase,
+  Camera,
+  Lock,
+  Bell
+} from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
 
+import { apiConnector } from '../../services/apiConnector';
+import { AUTH_API } from '../../services/apis';
+
+import { updateProfile } from '../../store/store';
+
+// COMMON UI COMPONENTS
+import PageHeader from '../../components/common/PageHeader';
+import Card from '../../components/common/Card';
+import Input from '../../components/common/Input';
+import Button from '../../components/common/Button';
 
 const Profile = () => {
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.profile.data);
+
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState({
-    name: 'Rajesh Kumar',
-    email: 'rajesh.kumar@email.com',
-    phone: '+91 9876543210',
-    flatNumber: '101',
-    wing: 'A',
-    emergencyContact: '+91 9876543211',
-    emergencyName: 'Priya Kumar',
-    relation: 'Spouse',
-    occupation: 'Software Engineer',
-    vehicleNumber: 'MH12AB1234'
+
+  useEffect(() => {
+    // Already fetched during login/auth context likely, 
+    // but can re-fetch if needed.
+  }, []);
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    defaultValues: user || {}
   });
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // Show success message or handle API call
-  };
+  useEffect(() => {
+    if (user) {
+      // Flatten user data for form
+      const formData = {
+        ...user,
+        wing: user.flat?.wing?.name || user.wing || '-',
+        flat: user.flat?.flatNumber || user.flatCode || '-',
+      };
+      reset(formData);
+    }
+  }, [user, reset]);
 
-  const handleChange = (field, value) => {
-    setProfile(prev => ({ ...prev, [field]: value }));
+  const onSubmit = async (data) => {
+    try {
+      // Assume update-profile exists
+      // const res = await apiConnector("PUT", "/api/auth/update-resident-profile", data);
+      dispatch(updateProfile(data));
+      toast.success('Profile settings updated! ✨');
+      setIsEditing(false);
+    } catch (err) {
+      toast.error(err.message || "Failed to update profile");
+    }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="bg-indigo-100 p-2 rounded-lg">
-              <User className="w-6 h-6 text-indigo-600" />
-            </div>
-            <h1 className="text-2xl font-bold text-slate-800">My Profile</h1>
-          </div>
-          <p className="text-slate-600">Manage your personal information and settings</p>
-        </div>
-        {!isEditing ? (
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
+      <PageHeader
+        title="Account Settings"
+        subtitle="Manage your personal information and preferences."
+        actionLabel={!isEditing ? "Edit Profile" : "Save Profile"}
+        onAction={!isEditing ? () => setIsEditing(true) : handleSubmit(onSubmit)}
+        icon={!isEditing ? Edit3 : Save}
+      />
+
+      {isEditing && (
+        <div className="mb-6 flex justify-end">
           <button
-            onClick={() => setIsEditing(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+            onClick={() => setIsEditing(false)}
+            className="text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-600 px-4 py-2"
           >
-            <Edit className="w-4 h-4" />
-            Edit Profile
+            Discard Changes
           </button>
-        ) : (
-          <div className="flex gap-3">
-            <button
-              onClick={handleSave}
-              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
-            >
-              <Save className="w-4 h-4" />
-              Save Changes
-            </button>
-            <button
-              onClick={() => setIsEditing(false)}
-              className="bg-slate-500 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
-            >
-              <X className="w-4 h-4" />
-              Cancel
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Profile Overview Card */}
-      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
-          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 w-24 h-24 rounded-2xl flex items-center justify-center flex-shrink-0">
-            <User className="w-12 h-12 text-white" />
-          </div>
-          <div className="text-center lg:text-left flex-1">
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">{profile.name}</h2>
-            <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-6 text-slate-600">
-              <div className="flex items-center gap-2">
-                <Home className="w-4 h-4" />
-                <span>Flat {profile.wing}-{profile.flatNumber}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Briefcase className="w-4 h-4" />
-                <span>{profile.occupation}</span>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
+      )}
 
-      {/* Personal Information */}
-      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-        <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <User className="w-5 h-5 text-blue-600" />
-          </div>
-          Personal Information
-        </h3>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Full Name</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={profile.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                disabled={!isEditing}
-                className={`w-full px-4 py-3 pl-12 rounded-xl border transition-all ${
-                  isEditing 
-                    ? 'border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100' 
-                    : 'border-slate-200 bg-slate-50'
-                } outline-none`}
-              />
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        {/* Profile Snapshot */}
+        <div className="space-y-8">
+          <Card className="p-10 text-center relative overflow-hidden group">
+            <div className="w-36 h-36 rounded-3xl bg-indigo-600 mx-auto flex items-center justify-center text-white border-[6px] border-white shadow-2xl mb-6 relative group-hover:scale-105 transition-transform duration-500 overflow-hidden">
+              <span className="text-5xl font-black">{(user?.name || 'R')[0]}</span>
+              {isEditing && (
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  <Camera className="text-white" size={24} />
+                </div>
+              )}
             </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
-            <div className="relative">
-              <input
-                type="email"
-                value={profile.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-                disabled={!isEditing}
-                className={`w-full px-4 py-3 pl-12 rounded-xl border transition-all ${
-                  isEditing 
-                    ? 'border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100' 
-                    : 'border-slate-200 bg-slate-50'
-                } outline-none`}
-              />
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase mb-1">{user?.name || 'Resident Name'}</h2>
+            <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-6">Society Member</p>
+
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-center gap-6">
+              <div className="text-center">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Wing</p>
+                <p className="font-black text-slate-700">{user?.flat?.wing?.name || user?.wing || '-'}</p>
+              </div>
+              <div className="w-px h-8 bg-slate-200" />
+              <div className="text-center">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Flat</p>
+                <p className="font-black text-slate-700">{user?.flat?.flatNumber || user?.flat || '-'}</p>
+              </div>
             </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Phone Number</label>
-            <div className="relative">
-              <input
-                type="tel"
-                value={profile.phone}
-                onChange={(e) => handleChange('phone', e.target.value)}
-                disabled={!isEditing}
-                className={`w-full px-4 py-3 pl-12 rounded-xl border transition-all ${
-                  isEditing 
-                    ? 'border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100' 
-                    : 'border-slate-200 bg-slate-50'
-                } outline-none`}
-              />
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          </Card>
+
+          <Card className="p-8 border-amber-100 bg-amber-50/30">
+            <h3 className="font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-tight text-sm">
+              <ShieldAlert className="text-amber-500" size={18} />
+              Emergency Protocol
+            </h3>
+            <div className="space-y-4">
+              <div className="bg-white p-4 rounded-xl border border-amber-100">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">ICE Contact</p>
+                <p className="font-bold text-slate-700">{user?.emergencyContact || '+91 00000 00000'}</p>
+              </div>
+              <p className="text-[10px] text-amber-600 font-bold leading-relaxed uppercase">Important: Management will use this number if you are unreachable during emergencies.</p>
             </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Occupation</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={profile.occupation}
-                onChange={(e) => handleChange('occupation', e.target.value)}
-                disabled={!isEditing}
-                className={`w-full px-4 py-3 pl-12 rounded-xl border transition-all ${
-                  isEditing 
-                    ? 'border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100' 
-                    : 'border-slate-200 bg-slate-50'
-                } outline-none`}
-              />
-              <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            </div>
-          </div>
+          </Card>
         </div>
-      </div>
 
-      {/* Flat Information */}
-      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-        <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-          <div className="bg-green-100 p-2 rounded-lg">
-            <Home className="w-5 h-5 text-green-600" />
-          </div>
-          Flat Information
-        </h3>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Wing</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={profile.wing}
-                disabled
-                className="w-full px-4 py-3 pl-12 rounded-xl border border-slate-200 bg-slate-50 outline-none"
-              />
-              <Home className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        {/* Main Forms */}
+        <div className="lg:col-span-2 space-y-8">
+          <Card className="p-10">
+            <h3 className="text-xl font-black text-slate-800 mb-8 flex items-center gap-3 uppercase tracking-tight">
+              <User className="text-indigo-600" size={20} />
+              Identity Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <Input label="Full Name" register={register('name')} disabled={!isEditing} icon={User} />
+              <Input label="Email Address" register={register('email')} disabled={!isEditing} icon={Mail} />
+              <Input label="Phone Number" register={register('phone')} disabled={!isEditing} icon={Phone} />
+              <Input label="Occupation" register={register('occupation')} disabled={!isEditing} icon={Briefcase} />
             </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Flat Number</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={profile.flatNumber}
-                disabled
-                className="w-full px-4 py-3 pl-12 rounded-xl border border-slate-200 bg-slate-50 outline-none"
-              />
-              <Home className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Vehicle Number</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={profile.vehicleNumber}
-                onChange={(e) => handleChange('vehicleNumber', e.target.value)}
-                disabled={!isEditing}
-                placeholder="Enter vehicle number"
-                className={`w-full px-4 py-3 pl-12 rounded-xl border transition-all ${
-                  isEditing 
-                    ? 'border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100' 
-                    : 'border-slate-200 bg-slate-50'
-                } outline-none`}
-              />
-              <Car className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            </div>
-          </div>
-        </div>
-      </div>
+          </Card>
 
-      {/* Emergency Contact */}
-      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-        <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-          <div className="bg-red-100 p-2 rounded-lg">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
-          </div>
-          Emergency Contact
-        </h3>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Contact Name</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={profile.emergencyName}
-                onChange={(e) => handleChange('emergencyName', e.target.value)}
-                disabled={!isEditing}
-                placeholder="Enter contact name"
-                className={`w-full px-4 py-3 pl-12 rounded-xl border transition-all ${
-                  isEditing 
-                    ? 'border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100' 
-                    : 'border-slate-200 bg-slate-50'
-                } outline-none`}
-              />
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Phone Number</label>
-            <div className="relative">
-              <input
-                type="tel"
-                value={profile.emergencyContact}
-                onChange={(e) => handleChange('emergencyContact', e.target.value)}
-                disabled={!isEditing}
-                placeholder="Enter phone number"
-                className={`w-full px-4 py-3 pl-12 rounded-xl border transition-all ${
-                  isEditing 
-                    ? 'border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100' 
-                    : 'border-slate-200 bg-slate-50'
-                } outline-none`}
-              />
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Relationship</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={profile.relation}
-                onChange={(e) => handleChange('relation', e.target.value)}
-                disabled={!isEditing}
-                placeholder="e.g., Spouse, Parent"
-                className={`w-full px-4 py-3 pl-12 rounded-xl border transition-all ${
-                  isEditing 
-                    ? 'border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100' 
-                    : 'border-slate-200 bg-slate-50'
-                } outline-none`}
-              />
-              <AlertTriangle className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Account Settings */}
-      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-        <h3 className="text-xl font-bold text-slate-800 mb-6">Account Settings</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl p-4 text-left transition-all duration-200">
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-100 p-2 rounded-lg">
-                <User className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-slate-800">Change Password</p>
-                <p className="text-sm text-slate-600">Update your account password</p>
+          <Card className="p-10">
+            <h3 className="text-xl font-black text-slate-800 mb-8 flex items-center gap-3 uppercase tracking-tight">
+              <Home className="text-indigo-600" size={20} />
+              Residency & Security
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <Input label="Assigned Wing" register={register('wing')} disabled={true} icon={Home} />
+              <Input label="Flat Number" register={register('flat')} disabled={true} icon={Home} />
+              <Input label="Vehicle Registration" register={register('vehicleNumber')} disabled={!isEditing} icon={ShieldAlert} />
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Privacy Control</label>
+                <div className="relative">
+                  <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"><Lock size={18} /></div>
+                  <div className="w-full pl-14 pr-6 py-4.5 rounded-2xl bg-slate-50 border border-transparent text-slate-400 font-mono tracking-tighter flex items-center justify-between text-xs">
+                    <span>••••••••••••</span>
+                    <button type="button" className="text-indigo-600 font-black uppercase text-[9px] tracking-widest hover:underline">Change</button>
+                  </div>
+                </div>
               </div>
             </div>
-          </button>
-          
-          <button className="bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl p-4 text-left transition-all duration-200">
-            <div className="flex items-center gap-3">
-              <div className="bg-purple-100 p-2 rounded-lg">
-                <Mail className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-slate-800">Notification Settings</p>
-                <p className="text-sm text-slate-600">Manage email and SMS preferences</p>
-              </div>
-            </div>
-          </button>
+          </Card>
         </div>
       </div>
     </div>

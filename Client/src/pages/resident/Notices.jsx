@@ -1,194 +1,139 @@
-import React, { useState } from 'react';
-import { Bell, Search, Filter, Calendar, User, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  Bell,
+  Search,
+  Calendar,
+  ChevronRight,
+  Pin,
+  AlertTriangle,
+  Info,
+  Inbox
+} from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
 
+import { apiConnector } from '../../services/apiConnector';
+import { NOTICE_API } from '../../services/apis';
+
+import { setNotices } from '../../store/store';
+
+// COMMON UI COMPONENTS
+import PageHeader from '../../components/common/PageHeader';
+import SearchInput from '../../components/common/SearchInput';
+import Card from '../../components/common/Card';
+import Badge from '../../components/common/Badge';
 
 const Notices = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState('all');
-  
-  // Data will come from backend API
-  const notices = [];
+  const dispatch = useDispatch();
+  const notices = useSelector((state) => state.notices.items);
 
-  const filteredNotices = notices.filter(notice => {
-    const matchesSearch = notice.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         notice.content?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filter === 'all' || notice.priority === filter;
-    return matchesSearch && matchesFilter;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterPriority, setFilterPriority] = useState('All');
+
+ 
+  useEffect(() => {
+    const fetchNotices = async () => {
+      try {
+        const res = await apiConnector("GET", NOTICE_API.GET_MY);
+        if (res.success) {
+          dispatch(setNotices(res.data));
+        }
+      } catch (err) {
+        console.error("Fetch Notices Error:", err);
+      }
+    };
+    fetchNotices();
+  }, [dispatch]);
+
+  const filteredNotices = (notices || []).filter(n => {
+    const matchesSearch = (n.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (n.message || n.content || '').toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
   });
 
-  const getPriorityColor = (priority) => {
-    switch(priority) {
-      case 'high': return 'bg-red-100 text-red-700 border-red-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'low': return 'bg-green-100 text-green-700 border-green-200';
-      default: return 'bg-slate-100 text-slate-700 border-slate-200';
-    }
-  };
-
-  const getCategoryIcon = (category) => {
-    switch(category) {
-      case 'meeting': return '👥';
-      case 'maintenance': return '🔧';
-      case 'event': return '🎉';
-      case 'security': return '🛡️';
-      default: return '📢';
-    }
-  };
-
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex items-center gap-2 sm:gap-3 mb-2">
-          <div className="bg-blue-100 p-1.5 sm:p-2 rounded-lg">
-            <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Society Notices</h1>
-        </div>
-        <p className="text-sm sm:text-base text-slate-600">Stay updated with important society announcements</p>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+      <PageHeader
+        title="Society Notices"
+        subtitle="Official announcements and updates from the society management."
+        icon={Bell}
+      />
+
+      {/* Filters */}
+      <div className="flex flex-col lg:flex-row gap-6 mb-10 items-start lg:items-center">
+        <SearchInput
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search announcements..."
+          className="flex-1 w-full max-w-xl"
+        />
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-3 sm:p-4 lg:p-6">
-          <div className="flex flex-col sm:flex-row items-center sm:gap-3 lg:gap-4">
-            <div className="bg-blue-100 p-2 sm:p-3 rounded-lg sm:rounded-xl mb-2 sm:mb-0">
-              <Bell className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-blue-600" />
-            </div>
-            <div className="text-center sm:text-left">
-              <p className="text-xs sm:text-sm text-slate-600">Total Notices</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800">{notices.length}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-3 sm:p-4 lg:p-6">
-          <div className="flex flex-col sm:flex-row items-center sm:gap-3 lg:gap-4">
-            <div className="bg-red-100 p-2 sm:p-3 rounded-lg sm:rounded-xl mb-2 sm:mb-0">
-              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-red-600" />
-            </div>
-            <div className="text-center sm:text-left">
-              <p className="text-xs sm:text-sm text-slate-600">High Priority</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800">{notices.filter(n => n.priority === 'high').length}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-3 sm:p-4 lg:p-6">
-          <div className="flex flex-col sm:flex-row items-center sm:gap-3 lg:gap-4">
-            <div className="bg-yellow-100 p-2 sm:p-3 rounded-lg sm:rounded-xl mb-2 sm:mb-0">
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-yellow-600" />
-            </div>
-            <div className="text-center sm:text-left">
-              <p className="text-xs sm:text-sm text-slate-600">This Week</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800">-</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-3 sm:p-4 lg:p-6">
-          <div className="flex flex-col sm:flex-row items-center sm:gap-3 lg:gap-4">
-            <div className="bg-green-100 p-2 sm:p-3 rounded-lg sm:rounded-xl mb-2 sm:mb-0">
-              <User className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-green-600" />
-            </div>
-            <div className="text-center sm:text-left">
-              <p className="text-xs sm:text-sm text-slate-600">Read</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800">-</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Search and Filter */}
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search notices..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-sm sm:text-base"
-            />
-          </div>
-          <div className="relative">
-            <Filter className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="pl-10 sm:pl-12 pr-6 sm:pr-8 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all appearance-none bg-white min-w-[120px] sm:min-w-[150px] text-sm sm:text-base"
-            >
-              <option value="all">All Priority</option>
-              <option value="high">High Priority</option>
-              <option value="medium">Medium Priority</option>
-              <option value="low">Low Priority</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Notices List */}
-      <div className="space-y-3 sm:space-y-4">
+      {/* Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {filteredNotices.length === 0 ? (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-8 sm:p-12 text-center">
-            <div className="bg-slate-100 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-              <Bell className="w-6 h-6 sm:w-8 sm:h-8 text-slate-400" />
-            </div>
-            <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-2">No notices found</h3>
-            <p className="text-sm sm:text-base text-slate-600">Notices will appear here when available from the backend</p>
+          <div className="col-span-full py-20 bg-white border border-dashed border-slate-200 rounded-[3rem] text-center flex flex-col items-center">
+            <Inbox size={64} className="text-slate-100 mb-6" />
+            <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">No notices broadcasted yet.</p>
           </div>
         ) : (
           filteredNotices.map((notice) => (
-            <div key={notice.id} className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6 hover:shadow-xl transition-all duration-300">
-              <div className="flex flex-col lg:flex-row justify-between items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
-                <div className="flex items-start gap-3 sm:gap-4 flex-1">
-                  <div className="bg-blue-100 p-2 sm:p-3 rounded-lg sm:rounded-xl flex-shrink-0">
-                    <span className="text-lg sm:text-2xl">{getCategoryIcon(notice.category)}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-2">{notice.title}</h3>
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-slate-500 mb-2 sm:mb-3">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
-                        <span>{notice.createdAt ? new Date(notice.createdAt).toLocaleDateString() : '-'}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <User className="w-3 h-3 sm:w-4 sm:h-4" />
-                        <span>{notice.author || '-'}</span>
-                      </div>
-                    </div>
-                  </div>
+            <Card key={notice._id || notice.id} className={`p-8 relative overflow-hidden group flex flex-col hover:shadow-2xl hover:shadow-indigo-100 transition-all ${notice.pinned ? 'border-indigo-100 ring-2 ring-indigo-50' : ''}`}>
+              {notice.pinned && (
+                <div className="absolute top-0 right-0 bg-indigo-600 text-white px-5 py-2 rounded-bl-2xl font-black text-[8px] uppercase tracking-widest flex items-center gap-1.5 z-20">
+                  <Pin size={10} className="fill-white" /> Featured
                 </div>
-                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold border flex-shrink-0 ${getPriorityColor(notice.priority)}`}>
-                  {notice.priority?.toUpperCase() || 'NORMAL'} PRIORITY
-                </span>
+              )}
+
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:rotate-12 transition-transform duration-500 border border-indigo-100 shadow-sm">
+                  <Bell size={20} />
+                </div>
+                <div>
+                  <Badge variant={notice.type === 'FLAT_REQUEST' ? 'warning' : 'secondary'} className="rounded-md scale-90 origin-left">
+                    {notice.type || 'General'}
+                  </Badge>
+                </div>
               </div>
-              
-              <div className="bg-slate-50 p-3 sm:p-4 rounded-lg sm:rounded-xl border-l-4 border-blue-500 mb-3 sm:mb-4">
-                <p className="text-slate-700 leading-relaxed text-sm sm:text-base">{notice.content}</p>
+
+              <div className="flex-1 space-y-4">
+                <h3 className="text-xl font-black text-slate-800 leading-tight uppercase group-hover:text-indigo-600 transition-colors">
+                  {notice.title}
+                </h3>
+                <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-50 relative overflow-hidden">
+                  <p className="text-slate-500 text-sm leading-relaxed font-medium">
+                    {notice.message || notice.content}
+                  </p>
+                  <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-50/80 to-transparent" />
+                </div>
               </div>
-              
-              <div className="flex flex-wrap gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-slate-200">
-                <button className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 sm:px-4 py-2 rounded-lg transition-colors font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2">
-                  <span>👍</span>
-                  <span className="hidden sm:inline">Mark as Read</span>
-                  <span className="sm:hidden">Read</span>
-                </button>
-                <button className="bg-green-50 hover:bg-green-100 text-green-700 px-3 sm:px-4 py-2 rounded-lg transition-colors font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2">
-                  <span>📧</span>
-                  <span className="hidden sm:inline">Email to Family</span>
-                  <span className="sm:hidden">Email</span>
-                </button>
-                <button className="bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 sm:px-4 py-2 rounded-lg transition-colors font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2">
-                  <span>📱</span>
-                  <span className="hidden sm:inline">Share via WhatsApp</span>
-                  <span className="sm:hidden">Share</span>
+
+              <div className="flex items-center justify-between pt-6 border-t border-slate-100 mt-6 mt-auto">
+                <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                  <Calendar size={14} />
+                  {notice.createdAt ? new Date(notice.createdAt).toLocaleDateString() : (notice.date || '-')}
+                </div>
+                <button className="text-indigo-600 font-black text-[10px] flex items-center gap-2 hover:translate-x-1 transition-all uppercase tracking-[0.2em] group/btn">
+                  Read Article
+                  <ChevronRight size={14} className="bg-indigo-50 rounded-full p-0.5" />
                 </button>
               </div>
-            </div>
+            </Card>
           ))
         )}
+      </div>
+
+      {/* Help Note */}
+      <div className="mt-12 bg-white/50 border border-slate-100 p-8 rounded-[3rem] flex flex-col md:flex-row items-center gap-6">
+        <div className="w-16 h-16 bg-white rounded-2xl shrink-0 flex items-center justify-center shadow-sm">
+          <AlertTriangle size={32} className="text-amber-400" />
+        </div>
+        <div className="text-center md:text-left">
+          <p className="text-sm font-black text-slate-800 uppercase tracking-tight mb-1">Missed an announcement?</p>
+          <p className="text-xs text-slate-500 font-medium">Archived notices older than 6 months are moved to the building records. Contact the secretary for older archives.</p>
+        </div>
+        <button className="md:ml-auto px-8 py-4 bg-slate-800 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 transition-all">
+          Contact Secretary
+        </button>
       </div>
     </div>
   );

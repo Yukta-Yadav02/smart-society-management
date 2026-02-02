@@ -1,279 +1,268 @@
-import React, { useState } from 'react';
-import { AlertTriangle, Plus, Search, Filter, Clock, CheckCircle, X } from 'lucide-react';
-// import { updateComplaintStatus } from "../../store/slices/residentSlice";
+import React, { useState, useEffect } from 'react';
+import {
+  AlertTriangle,
+  Plus,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  MessageCircle,
+  Inbox,
+  Filter
+} from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import toast from 'react-hot-toast';
+
+import { apiConnector } from '../../services/apiConnector';
+import { COMPLAINT_API } from '../../services/apis';
+
+import { setComplaints, addComplaint } from '../../store/store';
+
+// COMMON UI COMPONENTS
+import PageHeader from '../../components/common/PageHeader';
+import StatCard from '../../components/common/StatCard';
+import Modal from '../../components/common/Modal';
+import Input from '../../components/common/Input';
+import Select from '../../components/common/Select';
+import TextArea from '../../components/common/TextArea';
+import Button from '../../components/common/Button';
+import SearchInput from '../../components/common/SearchInput';
+import Card from '../../components/common/Card';
+import Badge from '../../components/common/Badge';
+
+// 🛡️ VALIDATION SCHEMA
+const schema = yup.object().shape({
+  title: yup.string().required('Title is required').min(5, 'Too short'),
+  description: yup.string().required('Description is required').min(10, 'Details too short'),
+  category: yup.string().required('Category is required'),
+  priority: yup.string().required('Priority is required'),
+});
 
 const Complaints = () => {
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    description: '',
-    category: 'maintenance',
-    priority: 'medium'
-  });
+  const dispatch = useDispatch();
+  const complaints = useSelector((state) => state.complaints.items);
+  const user = useSelector((state) => state.profile.data);
 
-  // Data will come from backend API
-  const [complaints, setComplaints] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [showModal, setShowModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('All');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const newComplaint = {
-      id: Date.now(), // Temporary ID, backend will provide real ID
-      ...formData,
-      status: 'pending',
-      createdAt: new Date().toISOString().split('T')[0],
-      response: null
+ 
+  useEffect(() => {
+    const fetchMyComplaints = async () => {
+      try {
+        const res = await apiConnector("GET", COMPLAINT_API.GET_MY);
+        if (res.success) {
+          dispatch(setComplaints(res.data));
+        }
+      } catch (err) {
+        console.error("Fetch Complaints Error:", err);
+        toast.error("Failed to load your complaints");
+      }
     };
-    setComplaints([newComplaint, ...complaints]);
-    setFormData({ description: '', category: 'maintenance', priority: 'medium' });
-    setShowForm(false);
-  };
+    fetchMyComplaints();
+  }, [dispatch]);
 
-  const filteredComplaints = complaints.filter(complaint => {
-    const matchesSearch = complaint.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filter === 'all' || complaint.status === filter;
-    return matchesSearch && matchesFilter;
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    resolver: yupResolver(schema),
+    defaultValues: {
+      category: 'Maintenance',
+      priority: 'Medium'
+    }
   });
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'resolved': return 'bg-green-100 text-green-700 border-green-200';
-      case 'in-progress': return 'bg-blue-100 text-blue-700 border-blue-200';
-      default: return 'bg-slate-100 text-slate-700 border-slate-200';
+  const onSubmit = async (data) => {
+    try {
+      const res = await apiConnector("POST", COMPLAINT_API.CREATE, {
+        ...data,
+        flatId: user?.flat?._id || user?.flat // Ensure ID is passed
+      });
+
+      if (res.success) {
+        dispatch(addComplaint(res.data));
+        toast.success('Complaint filed successfully! 📢');
+        setShowModal(false);
+        reset();
+      }
+    } catch (err) {
+      toast.error(err.message || "Failed to submit complaint");
     }
   };
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-700 border-red-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'low': return 'bg-green-100 text-green-700 border-green-200';
-      default: return 'bg-slate-100 text-slate-700 border-slate-200';
-    }
-  };
+  const filteredComplaints = (complaints || []).filter(c => {
+    const statusMap = { 'Open': 'Pending', 'In Progress': 'Active', 'Resolved': 'Resolved' };
+    const displayStatus = c.status === 'Open' ? 'Pending' : (c.status === 'In Progress' ? 'Active' : c.status);
 
-  const pendingCount = complaints.filter(c => c.status === 'pending').length;
-  const inProgressCount = complaints.filter(c => c.status === 'in-progress').length;
-  const resolvedCount = complaints.filter(c => c.status === 'resolved').length;
+    const matchesStatus = filterStatus === 'All' || displayStatus === filterStatus;
+    const matchesSearch = (c.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="bg-orange-100 p-2 rounded-lg">
-              <AlertTriangle className="w-6 h-6 text-orange-600" />
-            </div>
-            <h1 className="text-2xl font-bold text-slate-800">My Complaints</h1>
-          </div>
-          <p className="text-slate-600">Track and manage your society complaints</p>
-        </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
-        >
-          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {showForm ? 'Cancel' : 'New Complaint'}
-        </button>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+      <PageHeader
+        title="My Complaints"
+        subtitle="Track and manage issues reported for your flat."
+        actionLabel="File Complaint"
+        onAction={() => setShowModal(true)}
+        icon={Plus}
+      />
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <StatCard
+          label="Active"
+          value={(complaints || []).filter(c => c.status === 'Open' || c.status === 'In Progress').length}
+          icon={Clock}
+          colorClass="bg-amber-50 text-amber-600"
+          delay={0.1}
+        />
+        <StatCard
+          label="Resolved"
+          value={(complaints || []).filter(c => c.status === 'Resolved').length}
+          icon={CheckCircle2}
+          colorClass="bg-emerald-50 text-emerald-600"
+          delay={0.2}
+        />
+        <StatCard
+          label="In Progress"
+          value={(complaints || []).filter(c => c.status === 'In Progress').length}
+          icon={Inbox}
+          colorClass="bg-blue-50 text-blue-600"
+          delay={0.3}
+        />
+        <StatCard
+          label="Total Logs"
+          value={(complaints || []).length}
+          icon={Inbox}
+          colorClass="bg-indigo-50 text-indigo-600"
+          delay={0.4}
+        />
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-          <div className="flex items-center gap-4">
-            <div className="bg-yellow-100 p-3 rounded-xl">
-              <Clock className="w-6 h-6 text-yellow-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-600">Pending</p>
-              <p className="text-2xl font-bold text-slate-800">{pendingCount}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-          <div className="flex items-center gap-4">
-            <div className="bg-blue-100 p-3 rounded-xl">
-              <AlertTriangle className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-600">In Progress</p>
-              <p className="text-2xl font-bold text-slate-800">{inProgressCount}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-          <div className="flex items-center gap-4">
-            <div className="bg-green-100 p-3 rounded-xl">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-600">Resolved</p>
-              <p className="text-2xl font-bold text-slate-800">{resolvedCount}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-          <div className="flex items-center gap-4">
-            <div className="bg-purple-100 p-3 rounded-xl">
-              <AlertTriangle className="w-6 h-6 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-600">Total</p>
-              <p className="text-2xl font-bold text-slate-800">{complaints.length}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* New Complaint Form */}
-      {showForm && (
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-          <h2 className="text-xl font-bold text-slate-800 mb-6">Raise New Complaint</h2>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Description *</label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Describe your complaint in detail..."
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all resize-none"
-                rows={4}
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Category *</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all appearance-none bg-white"
-                >
-                  <option value="maintenance">Maintenance</option>
-                  <option value="security">Security</option>
-                  <option value="cleanliness">Cleanliness</option>
-                  <option value="noise">Noise</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Priority *</label>
-                <select
-                  value={formData.priority}
-                  onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all appearance-none bg-white"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-              </div>
-            </div>
-
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-6 mb-10 items-start md:items-center">
+        <SearchInput
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search your filings..."
+          className="flex-1 max-w-xl"
+        />
+        <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm shrink-0">
+          {['All', 'Pending', 'Resolved'].map(s => (
             <button
-              type="submit"
-              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+              key={s}
+              onClick={() => setFilterStatus(s)}
+              className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterStatus === s ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'
+                }`}
             >
-              <Plus className="w-4 h-4" />
-              Submit Complaint
+              {s}
             </button>
-          </form>
-        </div>
-      )}
-
-      {/* Search and Filter */}
-      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search complaints..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none transition-all"
-            />
-          </div>
-          <div className="relative">
-            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="pl-12 pr-8 py-3 rounded-xl border border-slate-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none transition-all appearance-none bg-white min-w-[150px]"
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="in-progress">In Progress</option>
-              <option value="resolved">Resolved</option>
-            </select>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Complaints List */}
-      <div className="space-y-4">
+      {/* List */}
+      <div className="space-y-6">
         {filteredComplaints.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-12 text-center">
-            <div className="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="w-8 h-8 text-slate-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-2">No complaints found</h3>
-            <p className="text-slate-600">
-              {complaints.length === 0
-                ? "You haven't submitted any complaints yet. Click 'New Complaint' to get started."
-                : "Try adjusting your search or filter criteria"
-              }
-            </p>
+          <div className="py-20 bg-white border border-dashed border-slate-200 rounded-[3rem] text-center flex flex-col items-center">
+            <AlertTriangle size={64} className="text-slate-100 mb-6" />
+            <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">No complaint records found.</p>
           </div>
         ) : (
-          filteredComplaints.map((complaint) => (
-            <div key={complaint.id} className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 hover:shadow-xl transition-all duration-300">
-              <div className="flex flex-col lg:flex-row justify-between items-start gap-4 mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-bold text-slate-800">#{complaint.id}</h3>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(complaint.priority)}`}>
-                      {complaint.priority?.toUpperCase()}
-                    </span>
+          filteredComplaints.map((c) => (
+            <Card key={c._id || c.id} className="p-8 group overflow-hidden relative">
+              <div className="flex flex-col lg:flex-row justify-between gap-8">
+                <div className="flex-1 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Badge variant={c.priority === 'High' || c.priority === 'Urgent' ? 'danger' : 'primary'}>
+                      {c.priority || 'Medium'} Priority
+                    </Badge>
+                    <Badge variant="secondary" className="opacity-60">{c.category || 'Maintenance'}</Badge>
                   </div>
-                  <p className="text-slate-700 mb-3">{complaint.description}</p>
-
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-                    <span>Category: <span className="font-semibold text-slate-700">{complaint.category}</span></span>
-                    <span>Date: <span className="font-semibold text-slate-700">{complaint.createdAt ? new Date(complaint.createdAt).toLocaleDateString() : '-'}</span></span>
+                  <h3 className="text-2xl font-black text-slate-800 tracking-tight group-hover:text-indigo-600 transition-colors uppercase">{c.title}</h3>
+                  <p className="text-slate-500 font-medium leading-relaxed italic">"{c.description}"</p>
+                  <div className="flex items-center gap-6 text-[10px] font-black text-slate-300 uppercase tracking-widest pt-2">
+                    <span className="flex items-center gap-2"><Clock size={14} /> Filed on {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '-'}</span>
+                    <span className="flex items-center gap-2"><MessageCircle size={14} /> Ref: #{c._id?.slice(-6) || c.id?.toString().slice(-6)}</span>
                   </div>
                 </div>
 
-                <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(complaint.status)}`}>
-                  {complaint.status?.replace('-', ' ').toUpperCase()}
-                </span>
+                <div className="lg:w-1/4 flex flex-col justify-center items-center lg:items-end border-t lg:border-t-0 lg:border-l border-slate-100 pt-8 lg:pt-0 lg:pl-8">
+                  <Badge
+                    variant={c.status === 'Resolved' ? 'success' : c.status === 'Open' ? 'warning' : 'info'}
+                    className="mb-4 py-2 px-6 rounded-xl shadow-sm text-sm"
+                  >
+                    {c.status === 'Open' ? 'Pending' : c.status}
+                  </Badge>
+                  {c.status === 'Resolved' && <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-2 flex items-center gap-1"><CheckCircle2 size={12} /> Verified by Admin</p>}
+                </div>
               </div>
-
-              {complaint.response && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="bg-green-100 p-2 rounded-lg flex-shrink-0">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-green-800 mb-1">Management Response:</p>
-                      <p className="text-green-700">{complaint.response}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            </Card>
           ))
         )}
       </div>
+
+      {/* Modal */}
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title="File a New Complaint"
+        subtitle="Describe the issue accurately so management can resolve it quickly."
+        icon={AlertTriangle}
+        maxWidth="max-w-xl"
+      >
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <Input
+            label="Issue Title"
+            placeholder="e.g. Water Leakage in Kitchen"
+            register={register('title')}
+            error={errors.title?.message}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Select
+              label="Category"
+              options={[
+                { label: 'Maintenance', value: 'Maintenance' },
+                { label: 'Security', value: 'Security' },
+                { label: 'Amenities', value: 'Amenities' },
+                { label: 'Utility', value: 'Utility' },
+                { label: 'Other', value: 'Other' },
+              ]}
+              register={register('category')}
+              error={errors.category?.message}
+            />
+            <Select
+              label="Priority Level"
+              options={[
+                { label: 'Low', value: 'Low' },
+                { label: 'Medium', value: 'Medium' },
+                { label: 'High', value: 'High' },
+                { label: 'Urgent', value: 'Urgent' },
+              ]}
+              register={register('priority')}
+              error={errors.priority?.message}
+            />
+          </div>
+
+          <TextArea
+            label="Detailed Description"
+            placeholder="Provide details like exact location, time since issue started, etc."
+            rows={5}
+            register={register('description')}
+            error={errors.description?.message}
+          />
+
+          <div className="pt-4 flex gap-4">
+            <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 font-black text-slate-400 hover:bg-slate-50 transition-all uppercase tracking-widest text-[10px]">Discard</button>
+            <Button type="submit" fullWidth className="flex-[1.5] py-4">Register Complaint</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

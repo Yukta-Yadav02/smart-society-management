@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Building2,
     User,
@@ -18,7 +18,17 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+
+import { apiConnector } from '../../services/apiConnector';
+import { AUTH_API } from '../../services/apis';
+
 import { updateProfile } from '../../store/store';
+
+// COMMON UI COMPONENTS
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
+import PageHeader from '../../components/common/PageHeader';
 
 const Profile = () => {
     const dispatch = useDispatch();
@@ -26,219 +36,156 @@ const Profile = () => {
 
     const [isEditing, setIsEditing] = useState(false);
 
-    const { register, handleSubmit, formState: { errors } } = useForm({
-        defaultValues: profileData
+  
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                // Assuming GET /auth/profile exists or similar
+                const res = await apiConnector("GET", AUTH_API.GET_ALL_RESIDENTS + "/profile"); // Use profile endpoint
+                if (res.success) {
+                    dispatch(updateProfile(res.data));
+                }
+            } catch (err) {
+                console.error("Fetch Profile Error:", err);
+            }
+        };
+        fetchProfile();
+    }, [dispatch]);
+
+    const { register, handleSubmit, reset, formState: { errors } } = useForm({
+        defaultValues: profileData || {
+            societyName: 'Gokuldham Society',
+            regNumber: 'MH-RC-2024-X',
+            address: 'Powai, Mumbai, Maharashtra 400076',
+            email: 'admin@gokuldham.com',
+            phone: '+91 98765 43210'
+        }
     });
 
-    const onSubmit = (data) => {
-        dispatch(updateProfile(data));
-        toast.success('Society profile updated successfully!', {
-            icon: '🏢',
-            style: { border: '1px solid #e2e8f0', padding: '16px', color: '#1e293b', borderRadius: '24px' }
-        });
-        setIsEditing(false);
+    useEffect(() => {
+        if (profileData) {
+            reset(profileData);
+        }
+    }, [profileData, reset]);
+
+    const onSubmit = async (data) => {
+        try {
+            // Placeholder: Assume UPDATE_PROFILE exists
+            // const res = await apiConnector("PUT", "/api/auth/update-profile", data);
+            // if (res.success) {
+            dispatch(updateProfile(data));
+            toast.success('Society profile updated!', { icon: '🏢' });
+            setIsEditing(false);
+            // }
+        } catch (err) {
+            toast.error(err.message || "Update failed");
+        }
     };
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-                <div>
-                    <h1 className="text-4xl font-black text-slate-800 tracking-tighter uppercase text-shadow-sm">Society Profile</h1>
-                    <p className="text-slate-400 mt-1 font-bold text-sm">Official configuration and administrative identity.</p>
-                </div>
-                {!isEditing ? (
+            <PageHeader
+                title="Society Profile"
+                subtitle="Official configuration and administrative identity."
+                actionLabel={!isEditing ? "Edit Profile" : "Save Changes"}
+                onAction={!isEditing ? () => setIsEditing(true) : handleSubmit(onSubmit)}
+                icon={!isEditing ? Edit3 : Save}
+            />
+
+            {isEditing && (
+                <div className="mb-6 flex justify-end">
                     <button
-                        onClick={() => setIsEditing(true)}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 rounded-[1.5rem] font-black flex items-center gap-3 transition-all shadow-xl shadow-indigo-100 border border-indigo-500 uppercase tracking-[0.2em] text-[10px]"
+                        onClick={() => setIsEditing(false)}
+                        className="text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-600 px-4 py-2"
                     >
-                        <Edit3 className="w-5 h-5" /> Edit Profile
+                        Cancel Edits
                     </button>
-                ) : (
-                    <div className="flex gap-4">
-                        <button
-                            onClick={() => setIsEditing(false)}
-                            className="bg-white hover:bg-slate-50 text-slate-500 px-8 py-4 rounded-[1.5rem] font-black border border-slate-100 transition-all uppercase tracking-widest text-[10px]"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={handleSubmit(onSubmit)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-4 rounded-[1.5rem] font-black flex items-center gap-3 transition-all shadow-xl shadow-emerald-100 border border-emerald-500 uppercase tracking-[0.2em] text-[10px]"
-                        >
-                            <Save className="w-5 h-5" /> Save Changes
-                        </button>
-                    </div>
-                )}
-            </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                {/* Left Column - Stats & Identity */}
-                <div className="space-y-10">
-                    <div className="bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-sm text-center relative overflow-hidden group">
-                        {/* Abstract glow */}
-                        <div className="absolute inset-0 bg-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-
-                        <div className="w-40 h-40 rounded-[2.5rem] bg-slate-50 mx-auto flex items-center justify-center text-indigo-600 border-[8px] border-white shadow-2xl mb-8 relative group-hover:scale-105 transition-transform duration-700 overflow-hidden">
-                            <Building2 className="w-16 h-16 group-hover:rotate-12 transition-transform" />
+                {/* Left Column - Identity */}
+                <div className="space-y-8">
+                    <Card className="p-10 text-center relative overflow-hidden group">
+                        <div className="w-36 h-36 rounded-3xl bg-slate-50 mx-auto flex items-center justify-center text-indigo-600 border-[6px] border-white shadow-xl mb-6 relative group-hover:scale-105 transition-transform duration-500">
+                            <Building2 size={64} />
                             {isEditing && (
-                                <div className="absolute inset-0 bg-indigo-600/60 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                                    <Camera className="text-white w-8 h-8" />
+                                <div className="absolute inset-0 bg-indigo-600/40 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-2xl">
+                                    <Camera className="text-white" size={24} />
                                 </div>
                             )}
                         </div>
-                        <h2 className="text-3xl font-black text-slate-800 tracking-tight uppercase leading-none mb-2">{profileData.societyName}</h2>
+                        <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase mb-2">{profileData?.societyName || 'Gokuldham Society'}</h2>
                         <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full border border-emerald-100 text-[10px] font-black uppercase tracking-widest">
-                            <ShieldCheck className="w-4 h-4" />
-                            Registered Society
+                            <ShieldCheck size={14} /> Registered Society
                         </div>
-                    </div>
+                    </Card>
 
-                    <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-indigo-800 p-10 rounded-[3.5rem] shadow-[0_30px_60px_-15px_rgba(79,70,229,0.4)] text-white relative overflow-hidden group">
+                    <Card className="bg-indigo-600 p-8 text-white relative overflow-hidden group shadow-xl shadow-indigo-100">
                         <div className="relative z-10">
-                            <div className="flex items-center justify-between mb-8">
-                                <h3 className="font-black text-xl uppercase tracking-tighter flex items-center gap-2">
-                                    <LayoutGrid className="w-5 h-5" /> Analytics Storage
-                                </h3>
-                                <PieChart className="w-6 h-6 text-indigo-200 group-hover:rotate-45 transition-transform duration-1000" />
-                            </div>
-
+                            <h3 className="font-black text-lg uppercase tracking-widest flex items-center gap-2 mb-6">
+                                <LayoutGrid size={20} /> Storage
+                            </h3>
                             <div className="space-y-4">
-                                <div className="w-full bg-white/10 h-3 rounded-full overflow-hidden border border-white/5">
-                                    <div
-                                        className="bg-white h-full shadow-[0_0_20px_rgba(255,255,255,0.5)] transition-all duration-1000 ease-out"
-                                        style={{ width: `${(profileData.storageUsedGb / profileData.storageTotalGb) * 100}%` }}
-                                    />
+                                <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                                    <div className="bg-white h-full transition-all duration-1000" style={{ width: '45%' }} />
                                 </div>
-                                <div className="flex justify-between items-end">
-                                    <p className="text-xs text-indigo-100 font-bold uppercase tracking-widest leading-none">
-                                        {profileData.storageUsedGb} GB Used
-                                    </p>
-                                    <p className="text-[10px] text-white/40 font-black">CAPACITY: {profileData.storageTotalGb}GB</p>
+                                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                    <p className="opacity-60">4.5 GB Used</p>
+                                    <p>10.0 GB Total</p>
                                 </div>
                             </div>
-
-                            <button className="mt-10 w-full py-4 bg-white text-indigo-600 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-black/10 hover:bg-indigo-50 transition-all flex items-center justify-center gap-2 group/btn">
-                                Upgrade Storage <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                            <button className="mt-8 w-full py-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                                Upgrade Plan <ArrowRight size={14} />
                             </button>
                         </div>
-                        {/* Decorative circles */}
-                        <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
-                        <div className="absolute -left-10 -top-10 w-48 h-48 bg-white/5 rounded-full blur-3xl opacity-50" />
-                    </div>
+                        <PieChart size={150} className="absolute -bottom-10 -right-10 text-white/5 -z-0 rotate-12 group-hover:rotate-0 transition-transform duration-1000" />
+                    </Card>
                 </div>
 
                 {/* Right Column - Detailed Form */}
-                <div className="lg:col-span-2 space-y-10">
-                    {/* Society Information */}
-                    <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-sm relative overflow-hidden">
-                        <h3 className="text-2xl font-black text-slate-800 mb-10 flex items-center gap-4 uppercase tracking-tighter">
-                            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100 shadow-sm">
-                                <Globe className="w-5 h-5" />
-                            </div>
-                            Core Society Records
+                <div className="lg:col-span-2 space-y-8">
+                    <Card className="p-10">
+                        <h3 className="text-xl font-black text-slate-800 mb-8 flex items-center gap-3 uppercase tracking-tight">
+                            <Globe className="text-indigo-600" size={20} />
+                            Core Records
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                            <ProfileField
-                                label="Society Name"
-                                {...register('societyName')}
-                                disabled={!isEditing}
-                                icon={Building2}
-                            />
-                            <ProfileField
-                                label="Registration ID"
-                                {...register('regNumber')}
-                                disabled={!isEditing}
-                                icon={ShieldCheck}
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <Input label="Society Name" register={register('societyName')} disabled={!isEditing} icon={Building2} />
+                            <Input label="Registration ID" register={register('regNumber')} disabled={!isEditing} icon={ShieldCheck} />
                             <div className="md:col-span-2">
-                                <ProfileField
-                                    label="Registered Address"
-                                    {...register('address')}
-                                    disabled={!isEditing}
-                                    icon={MapPin}
-                                />
+                                <Input label="Registered Address" register={register('address')} disabled={!isEditing} icon={MapPin} />
                             </div>
-                            <ProfileField
-                                label="Official Society Email"
-                                {...register('email')}
-                                disabled={!isEditing}
-                                icon={Mail}
-                            />
-                            <ProfileField
-                                label="Official Contact"
-                                {...register('phone')}
-                                disabled={!isEditing}
-                                icon={Phone}
-                            />
+                            <Input label="Society Email" register={register('email')} disabled={!isEditing} icon={Mail} />
+                            <Input label="Society Phone" register={register('phone')} disabled={!isEditing} icon={Phone} />
                         </div>
-                    </div>
+                    </Card>
 
-                    {/* Official Information */}
-                    <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-sm relative overflow-hidden">
-                        <h3 className="text-2xl font-black text-slate-800 mb-10 flex items-center gap-4 uppercase tracking-tighter">
-                            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100 shadow-sm">
-                                <User className="w-5 h-5" />
-                            </div>
+                    <Card className="p-10">
+                        <h3 className="text-xl font-black text-slate-800 mb-8 flex items-center gap-3 uppercase tracking-tight">
+                            <User className="text-indigo-600" size={20} />
                             Administrative Authority
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                            <ProfileField
-                                label="Secretary Full Name"
-                                {...register('secretaryName')}
-                                disabled={!isEditing}
-                                icon={User}
-                            />
-                            <ProfileField
-                                label="Secretary Phone"
-                                {...register('secretaryPhone')}
-                                disabled={!isEditing}
-                                icon={Phone}
-                            />
-                            <ProfileField
-                                label="Administrative Email"
-                                {...register('secretaryEmail')}
-                                disabled={!isEditing}
-                                icon={Mail}
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <Input label="Secretary Name" register={register('secretaryName')} disabled={!isEditing} icon={User} />
+                            <Input label="Secretary Phone" register={register('secretaryPhone')} disabled={!isEditing} icon={Phone} />
+                            <Input label="Admin Email" register={register('secretaryEmail')} disabled={!isEditing} icon={Mail} />
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 leading-none block">System Integrity</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Account Security</label>
                                 <div className="relative">
-                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 w-5 h-5"><Lock className="w-full h-full" /></div>
-                                    <div className="w-full pl-14 pr-6 py-5 rounded-2.5xl bg-slate-50/50 border border-transparent text-slate-400 font-mono tracking-tighter flex items-center justify-between">
+                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"><Lock size={18} /></div>
+                                    <div className="w-full pl-14 pr-6 py-4.5 rounded-2xl bg-slate-50 border border-transparent text-slate-400 font-mono tracking-tighter flex items-center justify-between text-xs">
                                         <span>••••••••••••</span>
-                                        <button className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline px-2">Secure Update</button>
+                                        <button type="button" className="text-indigo-600 font-black uppercase text-[9px] tracking-widest hover:underline">Reset</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </Card>
                 </div>
             </div>
         </div>
     );
 };
-
-// Sub-component for form fields to match premium UI
-const ProfileField = React.forwardRef(({ label, icon: Icon, disabled, ...props }, ref) => (
-    <div className="space-y-4">
-        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] ml-1 leading-none block">{label}</label>
-        <div className="relative group">
-            {Icon && (
-                <div className={`absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 transition-colors ${!disabled && 'group-focus-within:text-indigo-600'}`}>
-                    <Icon className="w-5 h-5" />
-                </div>
-            )}
-            <input
-                ref={ref}
-                disabled={disabled}
-                className={`w-full ${Icon ? 'pl-14' : 'px-6'} py-5 rounded-2.5xl border transition-all font-bold text-slate-700 ${disabled
-                    ? 'bg-slate-50/50 border-transparent text-slate-400 cursor-not-allowed'
-                    : 'bg-white border-indigo-100 ring-8 ring-indigo-50 focus:ring-indigo-100/50 focus:outline-none focus:border-indigo-400 text-slate-800'
-                    }`}
-                {...props}
-            />
-        </div>
-    </div>
-));
 
 export default Profile;

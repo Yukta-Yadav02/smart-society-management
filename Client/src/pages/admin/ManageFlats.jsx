@@ -1,15 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    Building2,
     Plus,
-    Search,
-    Filter,
-    ChevronDown,
-    ExternalLink,
+    Building2,
     MapPin,
-    Layers,
-    X,
-    AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -18,32 +11,66 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import toast from 'react-hot-toast';
 
+import { apiConnector } from '../../services/apiConnector';
+import { FLAT_API, WING_API } from '../../services/apis';
+
 import {
-    addFlat
+    addFlat,
+    setFlats
 } from '../../store/store';
+
+// COMMON UI COMPONENTS
+import PageHeader from '../../components/common/PageHeader';
+import SearchInput from '../../components/common/SearchInput';
+import Card from '../../components/common/Card';
+import Modal from '../../components/common/Modal';
+import Input from '../../components/common/Input';
+import Select from '../../components/common/Select';
+import Button from '../../components/common/Button';
+import Badge from '../../components/common/Badge';
 
 /* ================= VALIDATION ================= */
 const schema = yup.object().shape({
     flatNumber: yup
         .string()
-        .required('Flat number is required')
-        .matches(/^\d+$/, 'Must be a number'),
+        .required('Flat number is required'),
     wingId: yup.string().required('Wing is required'),
 });
 
-/* ================= COMPONENT ================= */
 const ManageFlats = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
     /* ---------- REDUX ---------- */
-    const { items: flats, status } = useSelector((state) => state.flats);
+    const { items: flats } = useSelector((state) => state.flats);
 
     /* ---------- LOCAL STATE ---------- */
     const [showAddModal, setShowAddModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedWing, setSelectedWing] = useState(null);
-    const [showWingDropdown, setShowWingDropdown] = useState(false);
+    const [wings, setWings] = useState([]);
+
+   
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Fetch Wings
+                const wingRes = await apiConnector("GET", WING_API.GET_ALL);
+                if (wingRes.success) {
+                    setWings(wingRes.data);
+                }
+
+                // Fetch Flats
+                const flatRes = await apiConnector("GET", FLAT_API.CREATE); 
+                if (flatRes.success) {
+                    dispatch(setFlats(flatRes.data));
+                }
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                toast.error("Failed to fetch society data");
+            }
+        };
+        fetchData();
+    }, [dispatch]);
 
     /* ---------- FORM ---------- */
     const {
@@ -55,161 +82,147 @@ const ManageFlats = () => {
         resolver: yupResolver(schema),
     });
 
-    /* ---------- FETCH FLATS (Using local state now) ---------- */
-    // useEffect(() => {
-    //     if (selectedWing) {
-    //         // filtering handled locally now
-    //     }
-    // }, [selectedWing, dispatch]);
-
-    /* ---------- SUBMIT ---------- */
     const onSubmit = async (data) => {
         try {
-            dispatch(addFlat({
-                id: Date.now(),
+            const res = await apiConnector("POST", FLAT_API.CREATE, {
                 flatNumber: data.flatNumber,
-                wing: data.wingId.replace('WING_ID_', ''), // Simple mapping for demo
-                block: 'Tower 1',
-                currentResident: null,
-                residentType: null,
-                status: 'Vacant'
-            }));
-            toast.success('Flat created successfully 🏢');
-            reset();
-            setShowAddModal(false);
+                wing: data.wingId
+            });
+
+            if (res.success) {
+                dispatch(addFlat(res.data));
+                toast.success('Flat created successfully 🏢');
+                reset();
+                setShowAddModal(false);
+            }
         } catch (err) {
-            toast.error(err || 'Failed to create flat');
+            toast.error(err.message || 'Failed to create flat');
         }
     };
 
     /* ---------- FILTER ---------- */
-    const filteredFlats = flats.filter((f) =>
-        f.flatNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredFlats = (flats || []).filter((f) =>
+        f.flatNumber?.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+        f.wing?.name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
-
-    /* ---------- STATUS BADGE ---------- */
-    const StatusBadge = ({ resident }) => {
-        const occupied = Boolean(resident);
-        return (
-            <span
-                className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5
-                ${occupied
-                        ? 'bg-emerald-50 text-emerald-600'
-                        : 'bg-amber-50 text-amber-600'
-                    }`}
-            >
-                <div
-                    className={`w-1.5 h-1.5 rounded-full
-                    ${occupied ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                />
-                {occupied ? 'Occupied' : 'Vacant'}
-            </span>
-        );
-    };
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
-            {/* ================= HEADER ================= */}
-            <div className="flex justify-between mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-800">Manage Flats</h1>
-                    <p className="text-slate-500">Backend-connected flat management</p>
-                </div>
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className="bg-indigo-600 text-white px-8 py-3.5 rounded-2xl font-bold flex items-center gap-2"
-                >
-                    <Plus />
-                    Add Flat
-                </button>
-            </div>
-
-            {/* ================= SEARCH ================= */}
-            <input
-                placeholder="Search flat number..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full mb-8 px-6 py-4 rounded-2xl bg-slate-50"
+            {/* Header */}
+            <PageHeader
+                title="Manage Flats"
+                subtitle="Configure and assign society flats to wings."
+                actionLabel="Add Flat"
+                onAction={() => setShowAddModal(true)}
+                icon={Plus}
             />
 
-            {/* ================= GRID ================= */}
+            {/* Search */}
+            <SearchInput
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search flat number or wing..."
+                className="mb-8"
+            />
+
+            {/* Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredFlats.map((flat) => (
-                    <div
-                        key={flat._id}
-                        className="bg-white rounded-3xl p-6 border shadow-sm"
-                    >
-                        <div className="flex justify-between mb-4">
-                            <div className="text-2xl font-black">
-                                {flat.flatNumber}
-                            </div>
-                            <StatusBadge resident={flat.currentResident} />
-                        </div>
-
-                        <div className="space-y-2 text-slate-600">
-                            <div className="flex gap-2 items-center">
-                                <MapPin size={16} />
-                                Wing
-                            </div>
-                        </div>
-
-                        {flat.currentResident && (
-                            <button
-                                onClick={() => navigate('/residents')}
-                                className="mt-4 w-full py-3 bg-indigo-50 text-indigo-600 rounded-xl font-bold"
-                            >
-                                View Resident
-                            </button>
-                        )}
+                {(flats || []).length === 0 ? (
+                    <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border border-dashed border-slate-200">
+                        <Building2 size={48} className="mx-auto text-slate-200 mb-4" />
+                        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No flats registered in database.</p>
                     </div>
-                ))}
+                ) : (
+                    filteredFlats.map((flat) => (
+                        <Card key={flat._id || flat.id} className="p-6 transition-all">
+                            <div className="flex justify-between items-start mb-6">
+                                <div>
+                                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1 block">Flat Number</span>
+                                    <h3 className="text-3xl font-black text-slate-800">{flat.flatNumber}</h3>
+                                </div>
+                                <Badge variant={flat.isOccupied ? 'success' : 'warning'}>
+                                    {flat.isOccupied ? 'Occupied' : 'Vacant'}
+                                </Badge>
+                            </div>
+
+                            <div className="space-y-3 mb-6">
+                                <div className="flex items-center gap-3 text-slate-500 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                    <Building2 size={18} className="text-indigo-500" />
+                                    <span className="text-sm font-bold">Wing {flat.wing?.name || flat.wing || 'N/A'}</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-slate-500 px-3">
+                                    <MapPin size={16} className="text-slate-300" />
+                                    <span className="text-xs font-semibold">{flat.wing?.block || 'Tower 1'}</span>
+                                </div>
+                            </div>
+
+                            {flat.isOccupied ? (
+                                <Button
+                                    variant="secondary"
+                                    fullWidth
+                                    onClick={() => navigate('/admin/residents')}
+                                    className="py-3"
+                                >
+                                    View Resident
+                                </Button>
+                            ) : (
+                                <div className="h-[48px] flex items-center justify-center text-[10px] font-bold text-slate-300 uppercase tracking-widest border border-dashed border-slate-200 rounded-2xl">
+                                    No Resident Assigned
+                                </div>
+                            )}
+                        </Card>
+                    ))
+                )}
             </div>
 
-            {/* ================= MODAL ================= */}
-            {showAddModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <form
-                        onSubmit={handleSubmit(onSubmit)}
-                        className="bg-white p-8 rounded-3xl w-full max-w-md"
-                    >
-                        <h2 className="text-2xl font-black mb-6">Create Flat</h2>
+            {/* Modal */}
+            <Modal
+                isOpen={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                title="Create New Flat"
+                subtitle="Add a new residential unit to the society database."
+                icon={Building2}
+                maxWidth="max-w-md"
+            >
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    <Input
+                        label="Flat Number"
+                        placeholder="e.g. 101"
+                        register={register('flatNumber')}
+                        error={errors.flatNumber?.message}
+                    />
 
-                        <input
-                            {...register('flatNumber')}
-                            placeholder="Flat Number"
-                            className="w-full mb-3 px-4 py-3 rounded-xl bg-slate-50"
-                        />
-                        {errors.flatNumber && (
-                            <p className="text-red-500 text-xs">{errors.flatNumber.message}</p>
-                        )}
+                    <Select
+                        label="Assign to Wing"
+                        options={[
+                            { label: 'Select Wing', value: '' },
+                            ...wings.map(wing => ({
+                                label: `${wing.name} Wing`,
+                                value: wing._id
+                            }))
+                        ]}
+                        register={register('wingId')}
+                        error={errors.wingId?.message}
+                    />
 
-                        <select
-                            {...register('wingId')}
-                            className="w-full mb-6 px-4 py-3 rounded-xl bg-slate-50"
+                    <div className="flex gap-4 pt-4">
+                        <button
+                            type="button"
+                            onClick={() => setShowAddModal(false)}
+                            className="flex-1 py-4 rounded-2xl border border-slate-100 text-slate-500 font-bold hover:bg-slate-50 transition-all text-sm"
                         >
-                            <option value="">Select Wing</option>
-                            <option value="WING_ID_A">A Wing</option>
-                            <option value="WING_ID_B">B Wing</option>
-                        </select>
-
-                        <div className="flex gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setShowAddModal(false)}
-                                className="flex-1 py-3 border rounded-xl"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                className="flex-1 py-3 bg-indigo-600 text-white rounded-xl"
-                            >
-                                Create
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            )}
+                            Cancel
+                        </button>
+                        <Button
+                            type="submit"
+                            fullWidth
+                            className="flex-1 py-4"
+                        >
+                            Create Flat
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     );
 };

@@ -1,147 +1,173 @@
-import React from 'react';
-import { LayoutDashboard, Home, Users, AlertTriangle, Wrench, Bell, TrendingUp } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { LayoutDashboard, Home, AlertTriangle, Wrench, Bell, TrendingUp } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+
+import { apiConnector } from '../../services/apiConnector';
+import { DASHBOARD_API } from '../../services/apis';
+
+// 🏗️ COMMON UI COMPONENTS
+import StatCard from '../../components/common/StatCard';
+import PageHeader from '../../components/common/PageHeader';
+import Card from '../../components/common/Card';
 
 const ResidentDashboard = () => {
-  // Data will come from backend API
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user } = useSelector(state => state.profile);
+
+  const [statsData, setStatsData] = useState({
+    flatNumber: '-',
+    wingName: '-',
+    pendingComplaints: 0,
+    totalDue: 0,
+    newNotices: 0
+  });
+
+ 
+  useEffect(() => {
+    const fetchResidentStats = async () => {
+      try {
+        const res = await apiConnector("GET", DASHBOARD_API.GET_RESIDENT_STATS);
+        if (res.success) {
+          setStatsData(res.data.stats);
+        }
+      } catch (err) {
+        console.error("Resident Dashboard Fetch Error:", err);
+      }
+    };
+    fetchResidentStats();
+  }, []);
+
   const stats = [
-    { title: 'My Flat', value: '-', subtitle: 'Loading...', icon: Home, color: 'bg-blue-100 text-blue-600', bgColor: 'bg-blue-50' },
-    { title: 'Pending Complaints', value: '-', subtitle: 'Loading...', icon: AlertTriangle, color: 'bg-orange-100 text-orange-600', bgColor: 'bg-orange-50' },
-    { title: 'Maintenance Due', value: '-', subtitle: 'Loading...', icon: Wrench, color: 'bg-red-100 text-red-600', bgColor: 'bg-red-50' },
-    { title: 'New Notices', value: '-', subtitle: 'Loading...', icon: Bell, color: 'bg-green-100 text-green-600', bgColor: 'bg-green-50' },
+    {
+      title: 'My Flat',
+      value: statsData.flatNumber || '-',
+      subtitle: `Wing ${statsData.wingName || '-'}`,
+      icon: Home,
+      colorClass: 'bg-blue-50 text-blue-600',
+      path: '/resident/profile'
+    },
+    {
+      title: 'Pending Complaints',
+      value: statsData.pendingComplaints.toString(),
+      subtitle: statsData.pendingComplaints > 0 ? 'Action Required' : 'All Clear',
+      icon: AlertTriangle,
+      colorClass: 'bg-orange-50 text-orange-600',
+      path: '/resident/complaints'
+    },
+    {
+      title: 'Maintenance Due',
+      value: `₹${statsData.totalDue}`,
+      subtitle: statsData.totalDue > 0 ? 'Pay Now' : 'Fully Paid',
+      icon: Wrench,
+      colorClass: 'bg-rose-50 text-rose-600',
+      path: '/resident/maintenance'
+    },
+    {
+      title: 'New Notices',
+      value: statsData.newNotices.toString(),
+      subtitle: 'Broadcasts',
+      icon: Bell,
+      colorClass: 'bg-emerald-50 text-emerald-600',
+      path: '/resident/notices'
+    },
   ];
 
-  const recentActivity = [];
-
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="animate-in fade-in duration-700 pb-10">
       {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex items-center gap-2 sm:gap-3 mb-2">
-          <div className="bg-indigo-100 p-1.5 sm:p-2 rounded-lg">
-            <LayoutDashboard className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Dashboard</h1>
-        </div>
-        <p className="text-sm sm:text-base text-slate-600">Welcome back! Here's what's happening in your society.</p>
-      </div>
+      <PageHeader
+        title={`Welcome, ${user?.name || 'Resident'}`}
+        subtitle="Here's what's happening in Gokuldham Society today."
+        icon={LayoutDashboard}
+      />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
         {stats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6 hover:shadow-xl transition-all duration-300">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${stat.color}`}>
-                <stat.icon className="w-4 h-4 sm:w-6 sm:h-6" />
-              </div>
-              <div className="text-right">
-                <p className="text-lg sm:text-2xl font-bold text-slate-800">{stat.value}</p>
-                <p className="text-xs sm:text-sm text-slate-600">{stat.subtitle}</p>
-              </div>
-            </div>
-            <h3 className="font-semibold text-slate-700 text-sm sm:text-base">{stat.title}</h3>
+          <div key={index} onClick={() => navigate(stat.path)} className="cursor-pointer group">
+            <StatCard
+              label={stat.title}
+              value={stat.value}
+              subStats={[{ label: stat.subtitle, value: '', color: 'text-slate-400' }]}
+              icon={stat.icon}
+              colorClass={stat.colorClass}
+              delay={0.1 * index}
+            />
           </div>
         ))}
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-10">
         {/* Quick Actions */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-4 sm:mb-6">Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            <button className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center transition-all duration-200 group">
-              <div className="bg-blue-100 group-hover:bg-blue-200 w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center mx-auto mb-2 sm:mb-3">
-                <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-              </div>
-              <p className="font-semibold text-slate-700 text-xs sm:text-sm">New Complaint</p>
-            </button>
-            
-            <button className="bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center transition-all duration-200 group">
-              <div className="bg-green-100 group-hover:bg-green-200 w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center mx-auto mb-2 sm:mb-3">
-                <Wrench className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-              </div>
-              <p className="font-semibold text-slate-700 text-xs sm:text-sm">Pay Maintenance</p>
-            </button>
-            
-            <button className="bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center transition-all duration-200 group">
-              <div className="bg-purple-100 group-hover:bg-purple-200 w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center mx-auto mb-2 sm:mb-3">
-                <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-              </div>
-              <p className="font-semibold text-slate-700 text-xs sm:text-sm">View Notices</p>
-            </button>
-            
-            <button className="bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center transition-all duration-200 group">
-              <div className="bg-orange-100 group-hover:bg-orange-200 w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center mx-auto mb-2 sm:mb-3">
-                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
-              </div>
-              <p className="font-semibold text-slate-700 text-xs sm:text-sm">My Profile</p>
-            </button>
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-4 sm:mb-6">Recent Activity</h2>
-          <div className="space-y-3 sm:space-y-4">
-            {recentActivity.length === 0 ? (
-              <div className="text-center py-6 sm:py-8 text-slate-500">
-                <p className="text-sm sm:text-base">No recent activity</p>
-              </div>
-            ) : (
-              recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-slate-50 rounded-lg sm:rounded-xl">
-                  <div className="bg-indigo-100 p-1.5 sm:p-2 rounded-lg flex-shrink-0">
-                    {activity.type === 'complaint' && <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-600" />}
-                    {activity.type === 'maintenance' && <Wrench className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-600" />}
-                    {activity.type === 'notice' && <Bell className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-600" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-800 text-xs sm:text-sm">{activity.title}</p>
-                    <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    activity.status === 'completed' ? 'bg-green-100 text-green-700' :
-                    activity.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-blue-100 text-blue-700'
-                  }`}>
-                    {activity.status}
-                  </span>
+        <Card className="p-8">
+          <h2 className="text-xl font-black text-slate-800 mb-8 uppercase tracking-tight">Quick Actions</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { label: 'New Complaint', icon: AlertTriangle, color: 'text-blue-600', bg: 'bg-blue-50', path: '/resident/complaints' },
+              { label: 'Pay Maintenance', icon: Wrench, color: 'text-emerald-600', bg: 'bg-emerald-50', path: '/resident/maintenance' },
+              { label: 'View Notices', icon: Bell, color: 'text-purple-600', bg: 'bg-purple-50', path: '/resident/notices' },
+              { label: 'My Profile', icon: Home, color: 'text-orange-600', bg: 'bg-orange-50', path: '/resident/profile' },
+            ].map((action, i) => (
+              <button
+                key={i}
+                onClick={() => navigate(action.path)}
+                className={`${action.bg} hover:brightness-95 border border-transparent hover:border-slate-100 rounded-[2rem] p-6 text-center transition-all group`}
+              >
+                <div className={`${action.bg} brightness-95 group-hover:scale-110 w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm transition-transform`}>
+                  <action.icon className={`w-6 h-6 ${action.color}`} />
                 </div>
-              ))
-            )}
+                <p className="font-black text-slate-700 text-xs uppercase tracking-widest">{action.label}</p>
+              </button>
+            ))}
           </div>
+        </Card>
+
+        {/* Info Card */}
+        <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-10 rounded-[3rem] shadow-xl shadow-indigo-100 text-white relative overflow-hidden flex flex-col justify-center">
+          <div className="relative z-10 text-center">
+            <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mb-8 backdrop-blur-md mx-auto">
+              <Bell className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-3xl font-black mb-4 uppercase tracking-tighter">Stay Connected</h2>
+            <p className="text-indigo-100 text-base font-medium leading-relaxed max-w-sm mx-auto">
+              Check the notices section regularly for official updates from the society management.
+            </p>
+            <button
+              onClick={() => navigate('/resident/notices')}
+              className="mt-10 px-10 py-4 bg-white text-indigo-600 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-indigo-50 transition-colors shadow-lg"
+            >
+              View Announcements
+            </button>
+          </div>
+          {/* Decorative elements */}
+          <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute -left-20 -top-20 w-64 h-64 bg-indigo-400/20 rounded-full blur-3xl" />
         </div>
       </div>
 
       {/* Monthly Overview */}
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6">
-        <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-4 sm:mb-6">Monthly Overview</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-          <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-lg sm:rounded-xl">
-            <div className="bg-blue-100 w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center mx-auto mb-2 sm:mb-3">
-              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+      <Card className="mt-8 p-10 overflow-hidden relative">
+        <h2 className="text-xl font-black text-slate-800 mb-8 uppercase tracking-tight">Monthly Health Check</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 relative z-10">
+          {[
+            { label: 'Maintenance', value: statsData.totalDue === 0 ? 'Clear' : 'Pending', icon: TrendingUp, color: statsData.totalDue === 0 ? 'text-emerald-600' : 'text-rose-600', bg: statsData.totalDue === 0 ? 'bg-emerald-50' : 'bg-rose-50' },
+            { label: 'Open Issues', value: statsData.pendingComplaints, icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50' },
+            { label: 'Unread Notices', value: statsData.newNotices, icon: Bell, color: 'text-purple-600', bg: 'bg-purple-50' },
+          ].map((item, i) => (
+            <div key={i} className="text-center p-8 bg-slate-50/30 border border-slate-100/50 rounded-[3rem]">
+              <div className={`${item.bg} w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm`}>
+                <item.icon className={`w-7 h-7 ${item.color}`} />
+              </div>
+              <p className={`text-4xl font-black ${item.color} mb-1 tracking-tighter`}>{item.value}</p>
+              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{item.label}</p>
             </div>
-            <p className="text-xl sm:text-2xl font-bold text-blue-600">-</p>
-            <p className="text-xs sm:text-sm text-slate-600">Maintenance Paid</p>
-          </div>
-          
-          <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg sm:rounded-xl">
-            <div className="bg-green-100 w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center mx-auto mb-2 sm:mb-3">
-              <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-            </div>
-            <p className="text-xl sm:text-2xl font-bold text-green-600">-</p>
-            <p className="text-xs sm:text-sm text-slate-600">Complaints Resolved</p>
-          </div>
-          
-          <div className="text-center p-3 sm:p-4 bg-purple-50 rounded-lg sm:rounded-xl">
-            <div className="bg-purple-100 w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center mx-auto mb-2 sm:mb-3">
-              <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-            </div>
-            <p className="text-xl sm:text-2xl font-bold text-purple-600">-</p>
-            <p className="text-xs sm:text-sm text-slate-600">Notices Received</p>
-          </div>
+          ))}
         </div>
-      </div>
+        <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-50" />
+      </Card>
     </div>
   );
 };
