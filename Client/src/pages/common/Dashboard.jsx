@@ -1,5 +1,5 @@
-import React from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import { motion } from 'framer-motion';
 import { User, Mail, Calendar, Clock, CheckCircle, XCircle, Layout, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -7,11 +7,20 @@ import { Link } from 'react-router-dom';
 const Dashboard = () => {
     const { user } = useAuth();
 
-    /**
-     * BACKEND INTEGRATION:
-     * Replace this mock 'requests' array with data fetched from your API.
-     * Example: useEffect(() => { fetchRequests(); }, []);
-     */
+    if (!user) return <Navigate to="/login" replace />;
+
+    // Redirect based on role and status
+    if (user.role === 'ADMIN') {
+        return <Navigate to="/admin/dashboard" replace />;
+    }
+    if (user.role === 'SECURITY') {
+        return <Navigate to="/security/dashboard" replace />;
+    }
+    if (user.role === 'RESIDENT' && user.status === 'ACTIVE') {
+        return <Navigate to="/resident/dashboard" replace />;
+    }
+
+
     const requests = [
         {
             id: 1,

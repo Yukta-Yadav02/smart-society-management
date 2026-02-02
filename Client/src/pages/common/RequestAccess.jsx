@@ -11,6 +11,13 @@ import {
 } from 'lucide-react';
 import { apiConnector } from '../../services/apiConnector';
 import { FLAT_REQUEST_API } from '../../services/apis';
+import toast from 'react-hot-toast';
+
+// COMMON UI COMPONENTS
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import TextArea from '../../components/common/TextArea';
+import ToggleGroup from '../../components/common/ToggleGroup';
 
 const RequestAccess = () => {
   const [searchParams] = useSearchParams();
@@ -25,16 +32,21 @@ const RequestAccess = () => {
   // Early return if flatId is missing
   if (!flatId) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-red-600 font-bold">
-          Flat information missing. Please select a flat again.
-        </p>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Card className="p-10 text-center max-w-sm">
+          <p className="text-rose-600 font-black uppercase tracking-widest text-sm mb-4">
+            Flat information missing
+          </p>
+          <Button onClick={() => navigate('/')} variant="secondary">
+            Back to Selection
+          </Button>
+        </Card>
       </div>
     );
   }
 
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [residentType, setResidentType] = useState('Owner'); // Owner | Resident
+  const [residentType, setResidentType] = useState('OWNER');
   const [message, setMessage] = useState('');
 
   const handleSubmit = async (e) => {
@@ -46,63 +58,57 @@ const RequestAccess = () => {
       remark: message,
     };
 
-    console.log(" SENDING PAYLOAD →", payload);
-
     try {
-      const res = await apiConnector(
-        "POST",
-        FLAT_REQUEST_API.CREATE,
-        payload
-      );
-
-      console.log(" BACKEND RESPONSE →", res);
+      await apiConnector("POST", FLAT_REQUEST_API.CREATE, payload);
       setIsSubmitted(true);
+      toast.success("Request submitted!");
     } catch (err) {
       console.error(" REQUEST FAILED →", err);
-      alert(err?.message || "Request failed");
+      toast.error(err?.message || "Request failed");
     }
   };
 
   /* ================= SUCCESS SCREEN ================= */
   if (isSubmitted) {
     return (
-      <div className="min-h-screen pt-20 flex items-center justify-center bg-gray-50 px-4">
-        <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-xl text-center animate-in zoom-in duration-500">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="text-green-600" size={40} />
+      <div className="min-h-screen pt-20 flex items-center justify-center bg-slate-50 px-4">
+        <Card className="max-w-md w-full p-10 text-center animate-in zoom-in duration-500 shadow-2xl">
+          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="text-emerald-500" size={40} />
           </div>
 
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl font-black text-slate-800 mb-4">
             Request Sent!
           </h2>
 
-          <p className="text-gray-600 leading-relaxed mb-8">
+          <p className="text-slate-500 leading-relaxed mb-8 font-medium">
             Your request for{' '}
-            <span className="font-bold text-gray-900">
+            <span className="font-black text-indigo-600">
               Wing {wing}, Flat {flat}
             </span>{' '}
             has been sent to the society secretary.
             You will be notified once it is approved.
           </p>
 
-          <button
+          <Button
             onClick={() => navigate('/')}
-            className="w-full py-4 bg-gray-900 text-white font-bold rounded-xl hover:bg-black transition-all"
+            fullWidth
+            className="py-4"
           >
             Back to Home
-          </button>
-        </div>
+          </Button>
+        </Card>
       </div>
     );
   }
 
   /* ================= FORM SCREEN ================= */
   return (
-    <div className="min-h-screen pt-32 pb-12 bg-gray-50 px-4">
+    <div className="min-h-screen pt-32 pb-12 bg-slate-50 px-4">
       <div className="max-w-4xl mx-auto">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-500 hover:text-primary-600 font-bold text-sm uppercase tracking-widest mb-8 transition-colors group"
+          className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 font-black text-xs uppercase tracking-[0.2em] mb-8 transition-all group"
         >
           <ArrowLeft
             size={18}
@@ -112,139 +118,113 @@ const RequestAccess = () => {
         </button>
 
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">
+          <h2 className="text-4xl font-black text-slate-800 tracking-tight">
             Request Flat Access
           </h2>
-          <p className="text-gray-600 mt-2">
+          <p className="text-slate-500 mt-2 font-medium">
             Submit your details for verification by the society management.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* ================= FORM ================= */}
+          {/* Form */}
           <div className="lg:col-span-2">
-            <form
-              onSubmit={handleSubmit}
-              className="bg-white p-8 rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 space-y-6"
-            >
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                  <span className="text-xs font-bold text-gray-400 uppercase">
-                    Wing
-                  </span>
-                  <p className="text-lg font-bold text-gray-900">
-                    {wing}
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                  <span className="text-xs font-bold text-gray-400 uppercase">
-                    Flat
-                  </span>
-                  <p className="text-lg font-bold text-gray-900">
-                    {flat}
-                  </p>
-                </div>
-              </div>
-
-              {/* Resident Type */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Resident Type
-                </label>
-
+            <Card className="p-8 shadow-xl shadow-slate-200/50">
+              <form onSubmit={handleSubmit} className="space-y-8">
                 <div className="grid grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setResidentType('OWNER')}
-                    className={`py-3 rounded-xl font-bold border-2 transition-all ${
-                      residentType === 'OWNER'
-                        ? 'border-primary-600 bg-primary-50 text-primary-700'
-                        : 'border-gray-100 text-gray-400 hover:border-gray-200'
-                    }`}
-                  >
-                    Owner
-                  </button>
+                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex flex-col items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                      Wing
+                    </span>
+                    <p className="text-2xl font-black text-slate-800">
+                      {wing}
+                    </p>
+                  </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setResidentType('RESIDENT')}
-                    className={`py-3 rounded-xl font-bold border-2 transition-all ${
-                      residentType === 'RESIDENT'
-                        ? 'border-primary-600 bg-primary-50 text-primary-700'
-                        : 'border-gray-100 text-gray-400 hover:border-gray-200'
-                    }`}
-                  >
-                    Resident
-                  </button>
+                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex flex-col items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                      Flat Number
+                    </span>
+                    <p className="text-2xl font-black text-slate-800">
+                      {flat}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Message */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Remark (Optional)
-                </label>
+                <ToggleGroup
+                  label="Resident Type"
+                  options={[
+                    { label: 'Owner', value: 'OWNER' },
+                    { label: 'Resident', value: 'RESIDENT' },
+                  ]}
+                  value={residentType}
+                  onChange={setResidentType}
+                />
 
-                <textarea
+                <TextArea
+                  label="Remark (Optional)"
                   rows="4"
-                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all font-medium"
                   placeholder="Tell us a bit about yourself..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                 />
-              </div>
 
-              <button
-                type="submit"
-                className="w-full py-4 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 shadow-lg shadow-primary-200 transition-all flex items-center justify-center gap-2"
-              >
-                <Send size={18} />
-                Submit Request
-              </button>
-            </form>
+                <Button
+                  type="submit"
+                  fullWidth
+                  className="py-4 flex items-center justify-center gap-2"
+                >
+                  <Send size={18} />
+                  Submit Request
+                </Button>
+              </form>
+            </Card>
           </div>
 
-          {/* ================= USER INFO ================= */}
+          {/* User Info */}
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <Info size={18} className="text-primary-600" />
+            <Card className="p-6">
+              <h3 className="font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-tight text-sm">
+                <Info size={18} className="text-indigo-600" />
                 My Details
               </h3>
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400">
-                    <User size={18} />
+              <div className="space-y-5">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-500 shadow-sm font-black">
+                    <User size={20} />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-400 font-bold uppercase">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">
                       Name
                     </p>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-bold text-slate-700 break-all">
                       {user?.name || 'Guest User'}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400">
-                    <Mail size={18} />
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-500 shadow-sm font-black">
+                    <Mail size={20} />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-400 font-bold uppercase">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">
                       Email
                     </p>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-bold text-slate-700 break-all">
                       {user?.email || 'guest@example.com'}
                     </p>
                   </div>
                 </div>
               </div>
+            </Card>
+
+            <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100">
+              <p className="text-xs font-black uppercase tracking-widest mb-2 opacity-80">Security Note</p>
+              <p className="text-sm font-medium leading-relaxed">Your data is stored securely and only accessible to verified society management.</p>
             </div>
           </div>
-          {/* ================= END ================= */}
         </div>
       </div>
     </div>

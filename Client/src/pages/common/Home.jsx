@@ -1,9 +1,9 @@
 import React from 'react';
-import Hero from '../../components/Hero';
-import SocietyFeatures from '../../components/SocietyFeatures';
-import SocietyOverview from '../../components/SocietyOverview';
-import WingsLayout from '../../components/WingsLayout';
-import Testimonials from '../../components/Testimonials';
+import Hero from '../../components/home/Hero.jsx';
+import SocietyFeatures from '../../components/home/Features.jsx';
+import SocietyOverview from '../../components/home/Overview.jsx';
+import WingsLayout from '../../components/home/Wings.jsx';
+import Testimonials from '../../components/home/Testimonials.jsx';
 
 const Home = () => {
     return (

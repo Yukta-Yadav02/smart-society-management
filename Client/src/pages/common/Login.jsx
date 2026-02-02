@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { Mail, Lock, Loader2, Building2, AlertCircle } from 'lucide-react';
 
 const Login = () => {
@@ -24,7 +24,11 @@ const Login = () => {
             if (userRole === 'ADMIN') {
                 navigate('/admin/dashboard');
             } else if (userRole === 'RESIDENT') {
-                navigate('/resident/dashboard');
+                if (result.user?.status === 'ACTIVE') {
+                    navigate('/resident/dashboard');
+                } else {
+                    navigate('/dashboard');
+                }
             } else if (userRole === 'SECURITY') {
                 navigate('/security/dashboard');
             } else {
