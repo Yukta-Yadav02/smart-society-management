@@ -59,3 +59,13 @@ body {
 .pause-animation {
   animation-play-state: paused;
 }
+
+/* Global Interactivity - Force hand cursor on all buttons and links */
+button,
+a,
+select,
+input[type="button"],
+input[type="submit"],
+[role="button"] {
+  cursor: pointer !important;
+}

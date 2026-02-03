@@ -29,7 +29,6 @@ const WingsLayout = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-
   /* ================= FETCH WINGS ================= */
   useEffect(() => {
     const fetchWings = async () => {
@@ -60,7 +59,6 @@ const WingsLayout = () => {
     }
   };
 
-
   return (
     <section id="wings" className="py-24 bg-white relative overflow-hidden">
       <div className="absolute top-0 right-0 -translate-y-1/2 w-96 h-96 bg-indigo-50 rounded-full blur-3xl opacity-50 z-0" />
@@ -72,7 +70,7 @@ const WingsLayout = () => {
               Explore Our Wings
             </h2>
             <p className="text-slate-500 text-lg font-medium">
-              Discover the layout and available units in Gokuldham Society.
+              Discover the layout and available units in our Society.
             </p>
           </div>
 
@@ -116,8 +114,12 @@ const WingsLayout = () => {
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Residential Zone</span>
-                    <h3 className="text-3xl font-black text-slate-800">Wing {wing.name}</h3>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                      Residential Zone
+                    </span>
+                    <h3 className="text-3xl font-black text-slate-800">
+                      Wing {wing.name}
+                    </h3>
                   </Card>
                 ))}
               </motion.div>
@@ -131,24 +133,35 @@ const WingsLayout = () => {
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
               >
                 {flats.map((flat) => (
-                  <Card key={flat._id} className="p-8 group shadow-xl shadow-slate-200/50">
+                  <Card
+                    key={flat._id}
+                    className="p-8 group shadow-xl shadow-slate-200/50"
+                  >
                     <div className="flex justify-between items-start mb-6">
                       <div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Unit</span>
-                        <h4 className="text-4xl font-black text-slate-800">{flat.flatNumber}</h4>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">
+                          Unit
+                        </span>
+                        <h4 className="text-4xl font-black text-slate-800">
+                          {flat.flatNumber}
+                        </h4>
                       </div>
-                      <Badge variant={flat.isOccupied ? 'default' : 'success'}>
+                      <Badge variant={flat.isOccupied ? "default" : "success"}>
                         {flat.isOccupied ? "OCCUPIED" : "VACANT"}
                       </Badge>
                     </div>
 
                     <Link
-                      to={!user ? "/signup" : `/request-access?flatId=${flat._id}&wing=${selectedWing.name}&flat=${flat.flatNumber}`}
+                      to={
+                        !user
+                          ? "/signup"
+                          : `/request-access?flatId=${flat._id}&wing=${selectedWing.name}&flat=${flat.flatNumber}`
+                      }
                       className="w-full block relative z-20"
                     >
                       <Button
                         fullWidth
-                        variant={user ? 'primary' : 'secondary'}
+                        variant={user ? "primary" : "secondary"}
                         className="py-4 flex items-center justify-center gap-2 group-hover:scale-105"
                       >
                         {user ? <UserCheck size={18} /> : <Lock size={18} />}
@@ -162,7 +175,6 @@ const WingsLayout = () => {
           </AnimatePresence>
         )}
       </div>
-
     </section>
   );
 };
