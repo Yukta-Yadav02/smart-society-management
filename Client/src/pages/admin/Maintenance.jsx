@@ -57,7 +57,7 @@ const Maintenance = () => {
     const [filterStatus, setFilterStatus] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
 
-  
+
     useEffect(() => {
         const fetchData = async () => {
             try {
