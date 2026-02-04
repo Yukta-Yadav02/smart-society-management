@@ -1,4 +1,4 @@
-const Flat = require("../models/FLat");
+const Flat = require("../models/Flat");
 
 const Wing = require("../models/Wing");
 
@@ -32,8 +32,7 @@ exports.createFlat = async(req,res)=>{
         flatNumber,
  
     })
-    
-    console.log(flat);
+   
     return res.status(201).json({
         success:true,
         message:"flat created successfully",
@@ -75,7 +74,7 @@ exports.getFlatsByBlock = async(req,res)=>{
         .populate("currentResident","name email")
         .sort({flatNumber:1});
 
-        console.log(flats);
+       
 
         return res.status(200).json({
             success:true,

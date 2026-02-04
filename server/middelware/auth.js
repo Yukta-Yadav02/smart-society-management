@@ -4,13 +4,13 @@ const User = require("../models/User");
    PROTECT MIDDLEWARE
 ========================= */
 exports.protect = (req, res, next) => {
-  console.log(req.body)
+  
   try {
     const token = req.cookies.token ||
                   req.body.token ||
                   req.header("Authorization")?.replace("Bearer", "");
 
-                  console.log(token)
+                
 
                   
     if (!token) {

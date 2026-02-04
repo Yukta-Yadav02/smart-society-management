@@ -3,31 +3,41 @@ const express = require("express");
 const router = express.Router();
 
 const {
-  createMaintenance,
+  getAllMaintenance,
   getMyMaintenance,
   payMaintenance,
+  createMaintenance,
 } = require("../controllers/Maintenance");
 
 const { protect, authorizeRoles } = require("../middelware/auth");
 
-// Admin
+// ADMIN
 router.post(
-  "/",
+  "/all",
   protect,
   authorizeRoles("ADMIN"),
   createMaintenance
 );
 
-// Resident
+router.get(
+  "/",
+  protect,
+  authorizeRoles("ADMIN"),
+  getAllMaintenance
+);
+
+// RESIDENT
 router.get(
   "/my",
   protect,
+  authorizeRoles("RESIDENT"),
   getMyMaintenance
 );
 
 router.put(
   "/pay/:id",
   protect,
+  authorizeRoles("RESIDENT"),
   payMaintenance
 );
 

@@ -33,5 +33,5 @@ flatSchema.index({ wing: 1, flatNumber: 1 }, { unique: true });
 
 
 
-// 🔥 FIX IS HERE
+// FIX IS HERE
 module.exports = mongoose.models.Flat || mongoose.model("Flat", flatSchema);

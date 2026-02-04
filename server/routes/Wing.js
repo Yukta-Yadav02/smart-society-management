@@ -7,7 +7,7 @@ const router = express.Router();
 router.post(
 "/",
 protect,
-authorizeRoles("Admin"),
+authorizeRoles("ADMIN"),
 createWing
 );
 router.get("/",getWings);

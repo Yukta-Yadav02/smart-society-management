@@ -40,13 +40,11 @@ if (exists) {
     }
 
     const request = await FlatRequest.create({
-        user: req.user.id,
+      user: req.user.id,
       flat: flatId,
       ownershipType,
       remark,
     });
-
-    console.log(request)
 
     return res.status(201).json({
       success: true,
@@ -84,8 +82,7 @@ exports.getAllFlatRequests = async (req, res) => {
   }
 };
 
-/* 3. Resident gives opinion (Accept / Reject) */
-exports.residentResponse = async (req, res) => {
+exports.residentOpinion = async (req, res) => {
   try {
     const { response } = req.body;
     const { requestId } = req.params;
@@ -106,26 +103,39 @@ exports.residentResponse = async (req, res) => {
       });
     }
 
+    // only current resident can respond
     if (
-      request.flat.currentResident.toString() !== req.user.id
-      ) {
-      return res.status(403).json({ message: "Not allowed" });
-      }
+      request.flat.currentResident?.toString() !== req.user.id
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Not allowed",
+      });
+    }
+
+    // opinion only once
+    if (request.residentOpinion !== "Pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Already responded",
+      });
+    }
 
     request.residentOpinion = response;
     await request.save();
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       message: `Resident ${response} the request`,
     });
   } catch (error) {
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      message: "Failed to update resident response",
+      message: "Failed to save resident opinion",
     });
   }
 };
+
 
 /* 4. Admin final decision */
 exports.adminDecision = async (req, res) => {
@@ -198,6 +208,7 @@ exports.adminDecision = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: `Request ${decision} successfully`,
+      
     });
   } catch (error) {
     return res.status(500).json({

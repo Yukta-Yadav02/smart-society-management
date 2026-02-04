@@ -20,7 +20,7 @@ exports.createWing = async(req, res)=>{
     }
 
     const wing = await Wing.create({name});
-    console.log(wing)
+   
 
     res.status(201).json({
         success:true,
@@ -30,11 +30,25 @@ exports.createWing = async(req, res)=>{
 
 }
 exports.getWings = async(req,res)=>{
-    const Wings = await Wing.find();
-    console.log(Wings)
 
-    res.status(200).json({
-        success:true,
-        data:Wings,
-    })
+    try {
+         const Wings = await Wing.find();
+
+
+         return   res.status(200).json({
+                  success:true,
+                  message:"wings fetch ",
+                   data:Wings,
+             })
+        
+    } catch (error) {
+
+        return res.status(500).json({
+            success:false,
+            message:"wings not fetch",
+            error:error.message
+        })
+        
+    }
+   
 }

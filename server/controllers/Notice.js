@@ -4,41 +4,21 @@ const Flat = require("../models/Flat");
 
 exports.createNotice = async (req, res) => {
   try {
-    const { title, message, targetUser, targetFlat, type } = req.body;
+    const { title, message, flat } = req.body;
 
     if (!title || !message) {
       return res.status(400).json({
         success: false,
-        message: "Title and message are required",
+        message: "Title and message required",
       });
     }
 
-    //  both user & flat together not allowed
-    if (targetUser && targetFlat) {
-      return res.status(400).json({
-        success: false,
-        message: "Provide either targetUser or targetFlat, not both",
-      });
-    }
-
-    // validate target user
-    if (targetUser) {
-      const user = await User.findById(targetUser);
-      if (!user) {
+    if (flat) {
+      const flatExists = await Flat.findById(flat);
+      if (!flatExists) {
         return res.status(404).json({
           success: false,
-          message: "Target user not found",
-        });
-      }
-    }
-
-    // validate target flat
-    if (targetFlat) {
-      const flat = await Flat.findById(targetFlat);
-      if (!flat || !flat.currentResident) {
-        return res.status(400).json({
-          success: false,
-          message: "Flat not occupied or invalid",
+          message: "Flat not found",
         });
       }
     }
@@ -46,100 +26,75 @@ exports.createNotice = async (req, res) => {
     const notice = await Notice.create({
       title,
       message,
-      type,
-      targetUser: targetUser || null,
-      targetFlat: targetFlat || null,
+      flat: flat || null,
       createdBy: req.user.id,
     });
 
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
-      message: "Notice sent successfully",
       data: notice,
     });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to create notice",
-      error: error.message,
-    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 // get my notice
 
 exports.getMyNotices = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
+  const user = await User.findById(req.user.id).select("flat");
 
-    const notices = await Notice.find({
-      $or: [
-        { targetUser: user._id },
-        { targetFlat: user.flat },
-        { targetUser: null }, // general
-      ],
-    }).sort({ createdAt: -1 });
+  const notices = await Notice.find({
+    $or: [
+      { flat: null },        // general
+      { flat: user.flat },   // my flat
+    ],
+  }).sort({ createdAt: -1 });
 
-    return res.status(200).json({
-      success: true,
-      data: notices,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch notices",
-    });
-  }
+  res.status(200).json({
+    success: true,
+    data: notices,
+  });
 };
+
 
 exports.respondToNotice = async (req, res) => {
-  
-  try {
-    const { response } = req.body;
-    const noticeId = req.params.id;
+  const { response } = req.body;
 
-    if (!["ACCEPTED", "REJECTED"].includes(response)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid response",
-      });
-    }
-
-    const notice = await Notice.findById(noticeId);
-    if (!notice) {
-      return res.status(404).json({
-        success: false,
-        message: "Notice not found",
-      });
-    }
-
-    const user = await User.findById(req.user.id);
-
-    // validation: only assigned user can respond
-    if (
-      notice.targetUser?.toString() !== user._id.toString() &&
-      notice.targetFlat?.toString() !== user.flat?.toString()
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "You are not allowed to respond to this notice",
-      });
-    }
-
-    notice.status = response;
-    await notice.save();
-
-    return res.status(200).json({
-      success: true,
-      message: `Notice ${response}`,
-    });
-  } catch (error) {
-    return res.status(500).json({
+  if (!["ACCEPTED", "REJECTED"].includes(response)) {
+    return res.status(400).json({
       success: false,
-      message: "Failed to respond to notice",
+      message: "Invalid response",
     });
   }
+
+  const notice = await Notice.findById(req.params.id);
+  const user = await User.findById(req.user.id);
+
+  if (!notice || !notice.flat) {
+    return res.status(400).json({
+      success: false,
+      message: "Not a respondable notice",
+    });
+  }
+
+  if (notice.flat.toString() !== user.flat.toString()) {
+    return res.status(403).json({
+      success: false,
+      message: "Unauthorized",
+    });
+  }
+
+  notice.responseStatus = response;
+  await notice.save();
+
+  res.status(200).json({
+    success: true,
+    message: `Notice ${response}`,
+  });
 };
+
 
 
 exports.getAllNotices = async (req, res) => {
@@ -152,4 +107,4 @@ exports.getAllNotices = async (req, res) => {
     success: true,
     data: notices,
   });
-};
+}

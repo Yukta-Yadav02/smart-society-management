@@ -8,6 +8,13 @@ exports.createComplaint = async (req, res) => {
   try {
     const { title, description, flatId } = req.body;
 
+    if (!title || !description || !flatId) {
+  return res.status(400).json({
+    success: false,
+    message: "All fields are required",
+  });
+}
+
     // Fetch user
     const user = await User.findById(req.user.id);
 
@@ -33,7 +40,7 @@ exports.createComplaint = async (req, res) => {
       description,
       flat: flatId,
     });
-    console.log(complaint)
+   
     res.status(201).json({ success: true, data: complaint });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -81,15 +88,19 @@ exports.getAllComplaints = async (req, res) => {
 exports.updateComplaintStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    if (!["Open", "In Progress", "Resolved"].includes(status)) {
-      return res.status(400).json({ message: "Invalid status" });
-    }
+    const allowedStatuses = ["OPEN", "IN PROGRESS", "RESOLVED", "REJECTED"];
+
+     if (!allowedStatuses.includes(status)) {
+     return res.status(400).json({ message: "Invalid status" });
+   }
+
 
     const complaint = await Complaint.findByIdAndUpdate(
       req.params.id,
       { status },
       { new: true },
     );
+    
 
     res.json({ success: true, data: complaint });
   } catch (err) {
@@ -97,20 +108,5 @@ exports.updateComplaintStatus = async (req, res) => {
   }
 };
 
-/**
- * 28. Delete complaint
- */
-exports.deleteComplaint = async (req, res) => {
-  try {
-    await Complaint.findByIdAndDelete(req.params.id);
-    if (
-      req.user.role !== "ADMIN" &&
-      Complaint.user.toString() !== req.user.id
-    ) {
-     return res.status(403).json({ message: "Not allowed" });
- }
-    res.json({ success: true, message: "Complaint deleted" });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
+
+
