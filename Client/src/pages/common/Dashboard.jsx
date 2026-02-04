@@ -20,6 +20,7 @@ const Dashboard = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  //if no user, redirect to login
   if (!user) return <Navigate to="/login" replace />;
 
   // Redirect based on role and status
