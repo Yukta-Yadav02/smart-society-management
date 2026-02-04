@@ -18,7 +18,7 @@ router.post("/flat-requests", protect, createFlatRequest);
 router.get(
   "/flat-requests",
   protect,
-  authorizeRoles("Admin"),
+  authorizeRoles("Admin","RESIDENT"),
   getAllFlatRequests
 );
 

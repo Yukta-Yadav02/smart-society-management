@@ -24,12 +24,18 @@ const RequestAccess = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Get flat info from URL params
+  // URL params
   const flatId = searchParams.get("flatId");
   const wing = searchParams.get("wing");
   const flat = searchParams.get("flat");
 
-  // Early return if flatId is missing
+  // STATES
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [residentType, setResidentType] = useState('OWNER');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // SAFETY CHECK
   if (!flatId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -45,12 +51,18 @@ const RequestAccess = () => {
     );
   }
 
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [residentType, setResidentType] = useState('OWNER');
-  const [message, setMessage] = useState('');
-
+  // SUBMIT HANDLER
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
+
+    // 🔐 LOGIN CHECK
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Session expired. Please login again.");
+      navigate("/login");
+      return;
+    }
 
     const payload = {
       flatId,
@@ -58,13 +70,31 @@ const RequestAccess = () => {
       remark: message,
     };
 
+    // 🧪 DEBUG (VERY IMPORTANT)
+    console.log("FLAT ID =>", flatId);
+    console.log("REQUEST PAYLOAD =>", payload);
+
     try {
-      await apiConnector("POST", FLAT_REQUEST_API.CREATE, payload);
+      setLoading(true);
+
+      await apiConnector(
+        "POST",
+        FLAT_REQUEST_API.CREATE,
+        payload
+      );
+
       setIsSubmitted(true);
-      toast.success("Request submitted!");
+      toast.success("Request submitted successfully!");
     } catch (err) {
-      console.error(" REQUEST FAILED →", err);
-      toast.error(err?.message || "Request failed");
+      console.error("REQUEST FAILED →", err);
+
+      toast.error(
+        err?.response?.data?.message ||
+        err?.message ||
+        "Request failed"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -127,7 +157,7 @@ const RequestAccess = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Form */}
+          {/* FORM */}
           <div className="lg:col-span-2">
             <Card className="p-8 shadow-xl shadow-slate-200/50">
               <form onSubmit={handleSubmit} className="space-y-8">
@@ -171,17 +201,18 @@ const RequestAccess = () => {
 
                 <Button
                   type="submit"
+                  disabled={loading}
                   fullWidth
                   className="py-4 flex items-center justify-center gap-2"
                 >
                   <Send size={18} />
-                  Submit Request
+                  {loading ? "Submitting..." : "Submit Request"}
                 </Button>
               </form>
             </Card>
           </div>
 
-          {/* User Info */}
+          {/* USER INFO */}
           <div className="space-y-6">
             <Card className="p-6">
               <h3 className="font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-tight text-sm">
@@ -194,11 +225,11 @@ const RequestAccess = () => {
                   <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-500 shadow-sm font-black">
                     <User size={20} />
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div>
                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">
                       Name
                     </p>
-                    <p className="text-sm font-bold text-slate-700 break-all">
+                    <p className="text-sm font-bold text-slate-700">
                       {user?.name || 'Guest User'}
                     </p>
                   </div>
@@ -208,11 +239,11 @@ const RequestAccess = () => {
                   <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-500 shadow-sm font-black">
                     <Mail size={20} />
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div>
                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">
                       Email
                     </p>
-                    <p className="text-sm font-bold text-slate-700 break-all">
+                    <p className="text-sm font-bold text-slate-700">
                       {user?.email || 'guest@example.com'}
                     </p>
                   </div>
@@ -221,8 +252,12 @@ const RequestAccess = () => {
             </Card>
 
             <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100">
-              <p className="text-xs font-black uppercase tracking-widest mb-2 opacity-80">Security Note</p>
-              <p className="text-sm font-medium leading-relaxed">Your data is stored securely and only accessible to verified society management.</p>
+              <p className="text-xs font-black uppercase tracking-widest mb-2 opacity-80">
+                Security Note
+              </p>
+              <p className="text-sm font-medium leading-relaxed">
+                Your data is stored securely and only accessible to verified society management.
+              </p>
             </div>
           </div>
         </div>
