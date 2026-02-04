@@ -1,166 +1,123 @@
 // controllers/maintenance.js
 const Maintenance = require("../models/Maintenance");
-const Flat = require("../models/FLat");
+const Flat = require("../models/Flat");
 const User = require("../models/User");
 
-// Admin creates maintenance
+/* ================= ADMIN ================= */
+
+// ADMIN → create maintenance for ALL flats
 exports.createMaintenance = async (req, res) => {
-  try {
-    const { flatId, month, year, amount } = req.body;
+  const { title, amount, month, year, flat } = req.body;
 
-    if (!flatId || !month || !year || !amount) {
-      return res.status(400).json({
-        success: false,
-        message: "All fields are required",
-      });
-    }
+  if (!title || !amount) {
+    return res.status(400).json({
+      success: false,
+      message: "Title and amount required",
+    });
+  }
 
-    //  Flat + resident fetch
-    const flat = await Flat.findById(flatId).populate("currentResident");
-    if (!flat) {
+  if (flat) {
+    const exists = await Flat.findById(flat);
+    if (!exists) {
       return res.status(404).json({
         success: false,
         message: "Flat not found",
       });
     }
+  }
 
-    //  Flat must be occupied
-    if (!flat.currentResident) {
-      return res.status(400).json({
-        success: false,
-        message: "Flat is not occupied, maintenance not applicable",
-      });
-    }
+  const maintenance = await Maintenance.create({
+    title,
+    amount,
+    month,
+    year,
+    flat: flat || null,
+    createdBy: req.user.id,
+  });
 
-    //  Resident must be ACTIVE
-    if (flat.currentResident.status !== "ACTIVE") {
-      return res.status(400).json({
-        success: false,
-        message: "Resident account is not active, maintenance not applicable",
-      });
-    }
+  res.status(201).json({
+    success: true,
+    data: maintenance,
+  });
+};
 
-    //  Create maintenance
-    const maintenance = await Maintenance.create({
-      flat: flatId,
-      month,
-      year,
-      amount,
-    });
+// ADMIN → get all maintenance
+exports.getAllMaintenance = async (req, res) => {
+  try {
+    const data = await Maintenance.find()
+      .populate("flat", "flatNumber")
+      .populate("paidBy", "name email")
+      .sort({ createdAt: -1 });
 
-    console.log(maintenance);
-
-    res.status(201).json({
+    res.status(200).json({
       success: true,
-      message: "Maintenance created successfully",
-      data: maintenance,
+      count: data.length,
+      data,
     });
   } catch (error) {
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: "Maintenance already exists for this month",
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to create maintenance",
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
+/* ================= RESIDENT ================= */
+
+// RESIDENT → my maintenance
 exports.getMyMaintenance = async (req, res) => {
-  try {
-    const { month, year } = req.query;
+  const user = await User.findById(req.user.id).select("flat");
 
-    const user = await User.findById(req.user.id).select("flat");
+  const maintenance = await Maintenance.find({
+    $or: [
+      { flat: null },       // society-wide
+      { flat: user.flat },  // my flat
+    ],
+  }).sort({ createdAt: -1 });
 
-    if (!user || !user.flat) {
-      return res.status(403).json({
-        success: false,
-        message: "Flat not assigned",
-      });
-    }
-
-    const filter = { flat: user.flat };
-    if (month) filter.month = month;
-    if (year) filter.year = year;
-
-    const maintenance = await Maintenance.find(filter).sort({
-      year: -1,
-      createdAt: -1,
-    });
-
-    res.status(200).json({
-      success: true,
-      data: maintenance,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch maintenance",
-    });
-  }
+  res.status(200).json({
+    success: true,
+    data: maintenance,
+  });
 };
 
+
+// RESIDENT → fake payment
 exports.payMaintenance = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select("flat");
+  const maintenance = await Maintenance.findById(req.params.id);
+  const user = await User.findById(req.user.id).select("flat");
 
-    if (!user || !user.flat) {
-      return res.status(403).json({
-        success: false,
-        message: "Flat not assigned",
-      });
-    }
-
-    const maintenance = await Maintenance.findById(req.params.id);
-
-    if (!maintenance) {
-      return res.status(404).json({
-        success: false,
-        message: "Maintenance not found",
-      });
-    }
-
-    //  SAFETY CHECK
-    if (!maintenance.flat) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid maintenance record (flat missing)",
-      });
-    }
-
-    if (maintenance.flat.toString() !== user.flat.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: "You can pay only your flat's maintenance",
-      });
-    }
-
-    if (maintenance.status === "PAID") {
-      return res.status(400).json({
-        success: false,
-        message: "Already paid",
-      });
-    }
-
-    maintenance.status = "PAID";
-    maintenance.paidAt = new Date();
-
-    await maintenance.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Maintenance paid successfully",
-    });
-  } catch (error) {
-    console.error("PAYMENT ERROR 👉", error);
-    res.status(500).json({
+  if (!maintenance) {
+    return res.status(404).json({
       success: false,
-      message: error.message,
+      message: "Maintenance not found",
     });
   }
+
+  // check ownership
+  if (
+    maintenance.flat &&
+    maintenance.flat.toString() !== user.flat.toString()
+  ) {
+    return res.status(403).json({
+      success: false,
+      message: "Unauthorized",
+    });
+  }
+
+  if (maintenance.status === "PAID") {
+    return res.status(400).json({
+      success: false,
+      message: "Already paid",
+    });
+  }
+
+  maintenance.status = "PAID";
+  maintenance.paidBy = req.user.id;
+  maintenance.paidAt = new Date();
+
+  await maintenance.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Payment successful",
+  });
 };
+

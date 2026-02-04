@@ -3,29 +3,26 @@ const mongoose = require("mongoose");
 
 const maintenanceSchema = new mongoose.Schema(
   {
-    flat: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Flat",
-      required: true,
-    },
-
-    month: {
+    title: {
       type: String,
       required: true,
-      enum: [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-      ],
-    },
-
-    year: {
-      type: Number,
-      required: true,
+      trim: true,
     },
 
     amount: {
       type: Number,
       required: true,
+      min: 1,
+    },
+
+    month: String,
+    year: Number,
+
+    // null = ALL flats
+    flat: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Flat",
+      default: null,
     },
 
     status: {
@@ -34,18 +31,21 @@ const maintenanceSchema = new mongoose.Schema(
       default: "PENDING",
     },
 
+    paidBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
     paidAt: Date,
 
-    paidBy: {
-     type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-},
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
-  
   { timestamps: true }
 );
 
-//  prevent duplicate maintenance for same flat + month + year
-maintenanceSchema.index({ flat: 1, month: 1, year: 1 }, { unique: true });
 
 module.exports = mongoose.model("Maintenance", maintenanceSchema);
