@@ -50,8 +50,6 @@ const Sidebar = () => {
   const securityMenuItems = [
     { name: 'Add Visitor', icon: UserPlus, path: '/security/add-visitor' },
     { name: 'Exit Visitor', icon: UserMinus, path: '/security/exit-visitor' },
-    { name: 'Notices', icon: Bell, path: '/security/notices' },
-    { name: 'Profile', icon: UserCircle, path: '/security/profile' },
   ];
 
   let menuItems = [];

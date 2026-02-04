@@ -75,24 +75,24 @@ const ManageResidents = () => {
 
     const onSubmit = async (data) => {
         try {
-            // Note: Since this is a UI-first request, we'll simulate the backend call or use dummy behavior
-            // if the backend doesn't support these specific fields yet.
             if (isEditing) {
-                // Mock update for now to keep UI responsive
-                dispatch(updateResident({ _id: selectedResidentId, ...data }));
-                toast.success(`${data.name} updated successfully!`, { icon: '🔄' });
+                const res = await apiConnector("PUT", AUTH_API.UPDATE_RESIDENT(selectedResidentId), data);
+                if (res.success) {
+                    dispatch(updateResident(res.data));
+                    toast.success(`${data.name} updated successfully!`, { icon: '🔄' });
+                }
             } else {
-                // Mock add for now
-                const residentToAdd = {
-                    _id: Date.now().toString(),
-                    ...data,
-                    status: 'ACTIVE'
-                };
-                dispatch(addResident(residentToAdd));
-                toast.success(`${data.name} added successfully!`, { icon: '👤' });
+                // Add default password for new residents if not present in form
+                const payload = { ...data, password: "password123", confirmPassword: "password123", role: "Resident" };
+                const res = await apiConnector("POST", AUTH_API.REGISTER_RESIDENT, payload);
+                if (res.success) {
+                    dispatch(addResident(res.data));
+                    toast.success(`${data.name} added successfully!`, { icon: '👤' });
+                }
             }
             closeModal();
         } catch (err) {
+            console.error("Resident Operation Error:", err);
             toast.error(err.message || 'Operation failed');
         }
     };
@@ -127,8 +127,16 @@ const ManageResidents = () => {
 
     const handleDelete = async (id, name) => {
         if (window.confirm(`Are you sure you want to remove ${name}?`)) {
-            dispatch(deleteResident(id));
-            toast.error(`${name} removed from directory`, { icon: '🗑️' });
+            try {
+                const res = await apiConnector("DELETE", AUTH_API.DELETE_USER(id));
+                if (res.success) {
+                    dispatch(deleteResident(id));
+                    toast.error(`${name} removed from directory`, { icon: '🗑️' });
+                }
+            } catch (err) {
+                console.error("Delete Error:", err);
+                toast.error(err.message || "Failed to remove resident");
+            }
         }
     };
 
