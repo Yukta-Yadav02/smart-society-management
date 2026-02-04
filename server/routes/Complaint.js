@@ -6,21 +6,20 @@ const {
   getMyComplaints,
   getAllComplaints,
   updateComplaintStatus,
-  deleteComplaint,
 } = require("../controllers/Complaint");
 
 
 const { hasFlat, protect, authorizeRoles } = require("../middelware/auth");
 
 // Resident
-router.post("/complaints", protect, authorizeRoles("Resident"),hasFlat, createComplaint);
-router.get("/complaints/my", protect, authorizeRoles("Resident"), hasFlat,getMyComplaints);
+router.post("/complaints", protect, authorizeRoles("RESIDENT"),hasFlat, createComplaint);
+router.get("/complaints/my", protect, authorizeRoles("RESIDENT"), hasFlat,getMyComplaints);
 
 // Admin
-router.get("/complaints", protect, authorizeRoles("Admin"), getAllComplaints);
-router.put("/complaints/:id/status", protect, authorizeRoles("Admin"), updateComplaintStatus);
+router.get("/complaints", protect, authorizeRoles("ADMIN"), getAllComplaints);
+router.put("/complaints/:id/status", protect, authorizeRoles("ADMIN"), updateComplaintStatus);
 
 // Delete (any authenticated)
-router.delete("/complaints/:id", protect, deleteComplaint);
+// router.delete("/complaints/:id", protect, deleteComplaint);
 
 module.exports = router;

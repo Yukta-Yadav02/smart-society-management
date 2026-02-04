@@ -5,8 +5,8 @@ const router = express.Router();
 const {
   createFlatRequest,
   getAllFlatRequests,
-  residentResponse,
   adminDecision,
+  residentOpinion,
 } = require("../controllers/flatRequest");
 
 const { protect, authorizeRoles } = require("../middelware/auth");
@@ -18,7 +18,7 @@ router.post("/flat-requests", protect, createFlatRequest);
 router.get(
   "/flat-requests",
   protect,
-  authorizeRoles("Admin"),
+  authorizeRoles("ADMIN"),
   getAllFlatRequests
 );
 
@@ -26,15 +26,15 @@ router.get(
 router.put(
   "/flat-requests/:requestId/resident-response",
   protect,
-  authorizeRoles("Resident"),
-  residentResponse
+  authorizeRoles("RESIDENT"),
+  residentOpinion
 );
 
 // Admin final decision
 router.put(
   "/flat-requests/:requestId/admin-decision",
   protect,
-  authorizeRoles("Admin"),
+  authorizeRoles("ADMIN"),
   adminDecision
 );
 

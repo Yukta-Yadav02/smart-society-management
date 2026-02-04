@@ -1,4 +1,3 @@
-// models/FlatRequest.js
 const mongoose = require("mongoose");
 
 const flatRequestSchema = new mongoose.Schema(
@@ -26,22 +25,23 @@ const flatRequestSchema = new mongoose.Schema(
       trim: true,
     },
 
-    status: {
-      type: String,
-      enum: ["Pending", "Approved", "Rejected"],
-      default: "Pending",
-    },
-
+    // resident (current occupant) opinion
     residentOpinion: {
       type: String,
       enum: ["Pending", "Accepted", "Rejected"],
       default: "Pending",
     },
 
+    // admin final decision
+    status: {
+      type: String,
+      enum: ["Pending", "Approved", "Rejected"],
+      default: "Pending",
+    },
+
     decidedByAdmin: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      
     },
   },
   { timestamps: true }

@@ -14,26 +14,15 @@ const noticeSchema = new mongoose.Schema(
       trim: true,
     },
 
-    type: {
-      type: String,
-      enum: ["GENERAL", "FLAT_REQUEST"],
-      default: "GENERAL",
-    },
-
-    // null => all residents
-    targetUser: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-    },
-
-    targetFlat: {
+    // null => ALL residents
+    flat: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Flat",
       default: null,
     },
 
-    status: {
+    // only for flat notices
+    responseStatus: {
       type: String,
       enum: ["PENDING", "ACCEPTED", "REJECTED"],
       default: "PENDING",
@@ -47,5 +36,6 @@ const noticeSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
 
 module.exports = mongoose.model("Notice", noticeSchema);
