@@ -82,59 +82,59 @@ exports.getAllFlatRequests = async (req, res) => {
   }
 };
 
-exports.residentOpinion = async (req, res) => {
-  try {
-    const { response } = req.body;
-    const { requestId } = req.params;
+// exports.residentOpinion = async (req, res) => {
+//   try {
+//     const { response } = req.body;
+//     const { requestId } = req.params;
 
-    if (!["Accepted", "Rejected"].includes(response)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid response",
-      });
-    }
+//     if (!["Accepted", "Rejected"].includes(response)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid response",
+//       });
+//     }
 
-    const request = await FlatRequest.findById(requestId).populate("flat");
+//     const request = await FlatRequest.findById(requestId).populate("flat");
 
-    if (!request) {
-      return res.status(404).json({
-        success: false,
-        message: "Request not found",
-      });
-    }
+//     if (!request) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Request not found",
+//       });
+//     }
 
-    // only current resident can respond
-    if (
-      request.flat.currentResident?.toString() !== req.user.id
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Not allowed",
-      });
-    }
+//     // only current resident can respond
+//     if (
+//       request.flat.currentResident?.toString() !== req.user.id
+//     ) {
+//       return res.status(403).json({
+//         success: false,
+//         message: "Not allowed",
+//       });
+//     }
 
-    // opinion only once
-    if (request.residentOpinion !== "Pending") {
-      return res.status(400).json({
-        success: false,
-        message: "Already responded",
-      });
-    }
+//     // opinion only once
+//     if (request.residentOpinion !== "Pending") {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Already responded",
+//       });
+//     }
 
-    request.residentOpinion = response;
-    await request.save();
+//     request.residentOpinion = response;
+//     await request.save();
 
-    res.status(200).json({
-      success: true,
-      message: `Resident ${response} the request`,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to save resident opinion",
-    });
-  }
-};
+//     res.status(200).json({
+//       success: true,
+//       message: `Resident ${response} the request`,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to save resident opinion",
+//     });
+//   }
+// };
 
 
 /* 4. Admin final decision */

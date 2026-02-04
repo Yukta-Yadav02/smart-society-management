@@ -6,7 +6,6 @@ const {
   createFlatRequest,
   getAllFlatRequests,
   adminDecision,
-  residentOpinion,
 } = require("../controllers/flatRequest");
 
 const { protect, authorizeRoles } = require("../middelware/auth");
@@ -23,12 +22,12 @@ router.get(
 );
 
 // Resident (only opinion)
-router.put(
-  "/flat-requests/:requestId/resident-response",
-  protect,
-  authorizeRoles("RESIDENT"),
-  residentOpinion
-);
+// router.put(
+//   "/flat-requests/:requestId/resident-response",
+//   protect,
+//   authorizeRoles("RESIDENT"),
+//   residentOpinion
+// );
 
 // Admin final decision
 router.put(
