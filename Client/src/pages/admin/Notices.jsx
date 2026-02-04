@@ -85,7 +85,8 @@ const Notices = () => {
     const handleDelete = async (id, title) => {
         if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
             try {
-                const res = await apiConnector("DELETE", `/api/notice/${id}`);
+                // Assuming DELETE endpoint is BASE_URL/notice/:id
+                const res = await apiConnector("DELETE", NOTICE_API.GET_ALL + `/${id}`);
                 if (res.success || res) {
                     dispatch(deleteNotice(id));
                     toast.error('Notice removed', { icon: '🗑️' });

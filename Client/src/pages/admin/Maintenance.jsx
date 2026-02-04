@@ -24,7 +24,8 @@ import { MAINTENANCE_API, FLAT_API } from '../../services/apis';
 import {
     setMaintenance,
     addMaintenance,
-    updateMaintenance
+    updateMaintenance,
+    setFlats
 } from '../../store/store';
 
 // 🛡️ VALIDATION SCHEMAS
@@ -50,6 +51,7 @@ const Maintenance = () => {
     const [filterStatus, setFilterStatus] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
 
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -61,7 +63,9 @@ const Maintenance = () => {
                 // Ensure flats are loaded for the special charge dropdown
                 if (!flats || flats.length === 0) {
                     const flatRes = await apiConnector("GET", FLAT_API.CREATE);
-                    // If we had a setFlats action we would dispatch it here
+                    if (flatRes.success) {
+                        dispatch(setFlats(flatRes.data));
+                    }
                 }
             } catch (err) {
                 console.error("Fetch Maintenance Error:", err);
