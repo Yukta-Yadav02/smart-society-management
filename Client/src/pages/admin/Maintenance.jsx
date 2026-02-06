@@ -254,14 +254,6 @@ const Maintenance = () => {
                     <p className="text-slate-500 mt-1">Generate bills and track payment status for society records.</p>
                 </div>
                 <div className="flex gap-3">
-                    {records && records.length > 0 && (
-                        <button 
-                            onClick={handleDeleteAll}
-                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-bold text-sm"
-                        >
-                            🗑️ Delete All
-                        </button>
-                    )}
                     <button onClick={() => setShowCommonModal(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3.5 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-xl shadow-indigo-100 border border-indigo-500 text-sm">
                         <Users className="w-4 h-4" /> Generate Common Bill
                     </button>
@@ -329,7 +321,7 @@ const Maintenance = () => {
                                     <div>
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Status</label>
                                         <div className="flex gap-2">
-                                            {['All', 'Paid', 'Unpaid', 'Vacant'].map(status => (
+                                            {['All', 'Paid', 'Unpaid'].map(status => (
                                                 <button
                                                     key={status}
                                                     onClick={() => setFilterStatus(status)}
@@ -427,11 +419,7 @@ const Maintenance = () => {
                                         <div>
                                             <p className="text-xs text-slate-500 font-medium">Flat Details</p>
                                             <p className="font-bold text-slate-700">Wing {r.flat?.wing?.name || '-'}, Flat {r.flat?.flatNumber || '-'}</p>
-                                            {!r.flat?.resident?.name ? (
-                                                <p className="text-xs text-amber-600 font-medium mt-1">⚠️ Vacant Flat</p>
-                                            ) : (
-                                                <p className="text-xs text-slate-600 font-medium mt-1">👤 {r.flat.resident.name}</p>
-                                            )}
+    
                                         </div>
                                         <div className="text-right">
                                             <p className="text-xs text-slate-500 font-medium">Amount</p>

@@ -3,16 +3,12 @@ const router = express.Router();
 
 const {
   createFlatRequest,
+  getMyFlatRequests,
   getAllFlatRequests,
   adminDecision,
-<<<<<<< HEAD
-=======
-  residentOpinion,
-  getMyFlatRequests,
-  getMyFlatTransferRequests,
-  updateOldRequestsToOwner
->>>>>>> f057846 (all pages connectivity)
+  updateOldRequestsToOwner,
 } = require("../controllers/flatRequest");
+
 
 const { protect, authorizeRoles } = require("../middelware/auth");
 
@@ -34,7 +30,6 @@ router.get(
   getMyFlatRequests
 );
 
-<<<<<<< HEAD
 // Resident (only opinion)
 // router.put(
 //   "/flat-requests/:requestId/resident-response",
@@ -42,23 +37,6 @@ router.get(
 //   authorizeRoles("RESIDENT"),
 //   residentOpinion
 // );
-=======
-// Resident → get flat transfer requests for their flat
-router.get(
-  "/flat-requests/transfer-requests",
-  protect,
-  authorizeRoles("RESIDENT"),
-  getMyFlatTransferRequests
-);
-
-// Resident response
-router.put(
-  "/flat-requests/:requestId/resident-response",
-  protect,
-  authorizeRoles("RESIDENT"),
-  residentOpinion
-);
->>>>>>> f057846 (all pages connectivity)
 
 // ================= ADMIN =================
 

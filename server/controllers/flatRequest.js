@@ -97,7 +97,6 @@ exports.getAllFlatRequests = async (req, res) => {
 //     const { response } = req.body;
 //     const { requestId } = req.params;
 
-<<<<<<< HEAD
 //     if (!["Accepted", "Rejected"].includes(response)) {
 //       return res.status(400).json({
 //         success: false,
@@ -106,24 +105,6 @@ exports.getAllFlatRequests = async (req, res) => {
 //     }
 
 //     const request = await FlatRequest.findById(requestId).populate("flat");
-=======
-    console.log('Resident opinion request:', {
-      requestId,
-      response,
-      userId: req.user.id
-    });
-
-    if (!["Accepted", "Rejected"].includes(response)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid response",
-      });
-    }
-
-    const request = await FlatRequest.findById(requestId)
-      .populate("flat")
-      .populate("user", "name email");
->>>>>>> f057846 (all pages connectivity)
 
 //     if (!request) {
 //       return res.status(404).json({
@@ -132,7 +113,6 @@ exports.getAllFlatRequests = async (req, res) => {
 //       });
 //     }
 
-<<<<<<< HEAD
 //     // only current resident can respond
 //     if (
 //       request.flat.currentResident?.toString() !== req.user.id
@@ -150,44 +130,10 @@ exports.getAllFlatRequests = async (req, res) => {
 //         message: "Already responded",
 //       });
 //     }
-=======
-    console.log('Request details:', {
-      flatId: request.flat._id,
-      currentResident: request.flat.currentResident,
-      requestingUserId: req.user.id
-    });
-
-    // Check if current user is the flat's current resident
-    const currentUser = await User.findById(req.user.id).populate('flat');
-    
-    // More flexible authorization - check if user's flat matches request flat
-    const isAuthorized = currentUser.flat && 
-                        currentUser.flat._id.toString() === request.flat._id.toString();
-    
-    if (!isAuthorized) {
-      console.log('Authorization failed:', {
-        userFlat: currentUser.flat?._id,
-        requestFlat: request.flat._id
-      });
-      return res.status(403).json({
-        success: false,
-        message: "You are not authorized to respond to this request",
-      });
-    }
-
-    // Check if already responded
-    if (request.residentOpinion !== "Pending") {
-      return res.status(400).json({
-        success: false,
-        message: "Already responded to this request",
-      });
-    }
->>>>>>> f057846 (all pages connectivity)
 
 //     request.residentOpinion = response;
 //     await request.save();
 
-<<<<<<< HEAD
 //     res.status(200).json({
 //       success: true,
 //       message: `Resident ${response} the request`,
@@ -199,27 +145,6 @@ exports.getAllFlatRequests = async (req, res) => {
 //     });
 //   }
 // };
-=======
-    // Admin notification
-    console.log(`🔔 ADMIN NOTIFICATION:`);
-    console.log(`   Resident Response: ${response.toUpperCase()}`);
-    console.log(`   Flat: ${request.flat.flatNumber}`);
-    console.log(`   Status: ${response === 'Accepted' ? 'READY FOR ADMIN APPROVAL ✅' : 'REQUEST REJECTED ❌'}`);
-    console.log(`   Time: ${new Date().toLocaleString()}`);
-
-    res.status(200).json({
-      success: true,
-      message: `Resident ${response} the request. Admin has been notified.`,
-    });
-  } catch (error) {
-    console.error('Resident opinion error:', error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to save resident opinion",
-    });
-  }
-};
->>>>>>> f057846 (all pages connectivity)
 
 
 /* 4. Admin final decision */
