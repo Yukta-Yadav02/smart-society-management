@@ -1,11 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserMinus, Clock, MapPin, Search, Filter } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { apiConnector } from '../../services/apiConnector';
+import { VISITOR_API } from '../../services/apis';
 
 const ExitVisitor = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
 
-  const visitors = [];
+  const [visitors, setVisitors] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchActiveVisitors();
+  }, []);
+
+  const fetchActiveVisitors = async () => {
+    try {
+      // Mock fetch from localStorage since backend doesn't exist
+      const storedVisitors = JSON.parse(localStorage.getItem('visitors') || '[]');
+      setVisitors(storedVisitors);
+    } catch (error) {
+      console.error('Failed to load visitors:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredVisitors = visitors.filter(visitor => {
     const matchesSearch = visitor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -14,8 +34,18 @@ const ExitVisitor = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const handleExit = (visitorId, visitorName) => {
-    alert(`${visitorName} has been marked as exited successfully!`);
+  const handleExit = async (visitorId, visitorName) => {
+    try {
+      // Mock exit - remove from localStorage
+      const storedVisitors = JSON.parse(localStorage.getItem('visitors') || '[]');
+      const updatedVisitors = storedVisitors.filter(v => v.id !== visitorId);
+      localStorage.setItem('visitors', JSON.stringify(updatedVisitors));
+      
+      setVisitors(updatedVisitors);
+      toast.success(`${visitorName} has been marked as exited!`);
+    } catch (error) {
+      toast.error('Error marking exit');
+    }
   };
 
   const getTypeColor = (type) => {
@@ -90,7 +120,7 @@ const ExitVisitor = () => {
                   <h3 className="font-semibold text-slate-800 text-lg">{visitor.name}</h3>
                   <div className="flex items-center gap-1 text-slate-500 text-sm">
                     <MapPin className="w-3 h-3" />
-                    <span>{visitor.flat}</span>
+                    <span>Flat {visitor.flat}</span>
                   </div>
                 </div>
               </div>
@@ -106,14 +136,14 @@ const ExitVisitor = () => {
                   <Clock className="w-3 h-3" />
                   <span>Entry Time</span>
                 </div>
-                <p className="font-semibold text-slate-800">{visitor.time}</p>
+                <p className="font-semibold text-slate-800">{new Date(visitor.entryTime || visitor.createdAt).toLocaleTimeString()}</p>
               </div>
               <div className="bg-slate-50 rounded-lg p-3">
                 <div className="flex items-center gap-2 text-slate-600 text-xs mb-1">
                   <Clock className="w-3 h-3" />
                   <span>Duration</span>
                 </div>
-                <p className="font-semibold text-slate-800">{visitor.duration}</p>
+                <p className="font-semibold text-slate-800">{Math.floor((Date.now() - new Date(visitor.entryTime || visitor.createdAt)) / (1000 * 60))} min</p>
               </div>
             </div>
 

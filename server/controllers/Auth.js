@@ -51,7 +51,7 @@ exports.setupAdmin = async (req, res) => {
 ========================= */
 exports.registerResident = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, type } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -70,12 +70,16 @@ exports.registerResident = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Map frontend type to backend residentType
+    const residentType = type === 'Owner' ? 'OWNER' : 'TENANT';
+
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
       role: "RESIDENT",
       status: "PENDING",
+      residentType
     });
 
     return res.status(201).json({
@@ -219,4 +223,60 @@ exports.toggleUserStatus = async (req, res) => {
     success: true,
     message: `Account ${user.isActive ? "activated" : "deactivated"}`,
   });
+};
+
+// Get all residents
+exports.getAllResidents = async (req, res) => {
+  try {
+    const residents = await User.find({ role: "RESIDENT" })
+      .populate('flat', 'flatNumber wing')
+      .populate({
+        path: 'flat',
+        populate: {
+          path: 'wing',
+          select: 'name'
+        }
+      })
+      .select("-password")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      data: residents
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch residents",
+      error: error.message
+    });
+  }
+};
+
+// Update old RENTAL to TENANT
+exports.updateResidentTypes = async (req, res) => {
+  try {
+    console.log('Starting update of resident types...');
+    
+    const result = await User.updateMany(
+      { residentType: 'RENTAL' },
+      { $set: { residentType: 'TENANT' } }
+    );
+    
+    console.log('Update result:', result);
+    
+    return res.status(200).json({
+      success: true,
+      message: `Updated ${result.modifiedCount} residents to TENANT`,
+      modifiedCount: result.modifiedCount
+    });
+    
+  } catch (error) {
+    console.error('Update error:', error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update resident types",
+      error: error.message
+    });
+  }
 };

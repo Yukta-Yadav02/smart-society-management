@@ -8,29 +8,21 @@ exports.createComplaint = async (req, res) => {
   try {
     const { title, description, flatId } = req.body;
 
-    if (!title || !description || !flatId) {
-  return res.status(400).json({
-    success: false,
-    message: "All fields are required",
-  });
-}
+    if (!title || !description) {
+      return res.status(400).json({
+        success: false,
+        message: "Title and description are required",
+      });
+    }
 
-    // Fetch user
-    const user = await User.findById(req.user.id);
+    // Fetch user with flat info
+    const user = await User.findById(req.user.id).populate('flat');
 
     // User must have a flat assigned
     if (!user.flat) {
       return res.status(403).json({
         success: false,
-        message: "You cannot create a complaint without an assigned flat",
-      });
-    }
-
-    //  Validate: user can only create complaint for their own flat
-    if (user.flat.toString() !== flatId) {
-      return res.status(403).json({
-        success: false,
-        message: "You can only create complaints for your assigned flat",
+        message: "You cannot create a complaint without an assigned flat. Please contact admin to assign a flat.",
       });
     }
 
@@ -38,7 +30,7 @@ exports.createComplaint = async (req, res) => {
       user: req.user.id,
       title,
       description,
-      flat: flatId,
+      flat: user.flat._id,
     });
    
     res.status(201).json({ success: true, data: complaint });
@@ -57,9 +49,9 @@ exports.getMyComplaints = async (req, res) => {
       });
     }
 
-    const complaints = await Complaint.find({ user: req.user.id }).sort({
-      createdAt: -1,
-    });
+    const complaints = await Complaint.find({ user: req.user.id })
+      .populate("flat", "flatNumber")
+      .sort({ createdAt: -1 });
      console.log(complaints)
     res.json({ success: true, data: complaints });
   } catch (err) {
@@ -74,6 +66,7 @@ exports.getAllComplaints = async (req, res) => {
   try {
     const complaints = await Complaint.find()
       .populate("user", "name email")
+      .populate("flat", "flatNumber")
       .sort({ createdAt: -1 });
 
     res.json({ success: true, data: complaints });

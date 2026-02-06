@@ -46,7 +46,7 @@ const Notices = () => {
 
   const filteredNotices = (notices || []).filter(n => {
     const matchesSearch = (n.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (n.message || n.content || '').toLowerCase().includes(searchQuery.toLowerCase());
+      (n.message || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
@@ -77,20 +77,14 @@ const Notices = () => {
           </div>
         ) : (
           filteredNotices.map((notice) => (
-            <Card key={notice._id || notice.id} className={`p-8 relative overflow-hidden group flex flex-col hover:shadow-2xl hover:shadow-indigo-100 transition-all ${notice.pinned ? 'border-indigo-100 ring-2 ring-indigo-50' : ''}`}>
-              {notice.pinned && (
-                <div className="absolute top-0 right-0 bg-indigo-600 text-white px-5 py-2 rounded-bl-2xl font-black text-[8px] uppercase tracking-widest flex items-center gap-1.5 z-20">
-                  <Pin size={10} className="fill-white" /> Featured
-                </div>
-              )}
-
+            <Card key={notice._id || notice.id} className="p-8 relative overflow-hidden group flex flex-col hover:shadow-2xl hover:shadow-indigo-100 transition-all">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:rotate-12 transition-transform duration-500 border border-indigo-100 shadow-sm">
                   <Bell size={20} />
                 </div>
                 <div>
-                  <Badge variant={notice.type === 'FLAT_REQUEST' ? 'warning' : 'secondary'} className="rounded-md scale-90 origin-left">
-                    {notice.type || 'General'}
+                  <Badge variant="secondary" className="rounded-md scale-90 origin-left">
+                    General Notice
                   </Badge>
                 </div>
               </div>
@@ -101,7 +95,7 @@ const Notices = () => {
                 </h3>
                 <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-50 relative overflow-hidden">
                   <p className="text-slate-500 text-sm leading-relaxed font-medium">
-                    {notice.message || notice.content}
+                    {notice.message}
                   </p>
                   <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-50/80 to-transparent" />
                 </div>

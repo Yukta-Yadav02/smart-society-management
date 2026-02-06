@@ -50,8 +50,81 @@ const WingsLayout = () => {
     try {
       setSelectedWing(wing);
       setLoading(true);
-      const res = await apiConnector("GET", FLAT_API.GET_BY_WING(wing._id));
-      setFlats(res.data || []);
+      
+      // Show success popup
+      const popup = document.createElement('div');
+      popup.className = 'fixed top-4 right-4 z-50 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-4 rounded-2xl shadow-2xl transform translate-x-full transition-transform duration-500';
+      popup.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+            <span class="text-lg font-bold">${wing.name}</span>
+          </div>
+          <div>
+            <p class="font-bold text-sm">Wing ${wing.name} Selected</p>
+            <p class="text-xs opacity-90">Loading flats...</p>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(popup);
+      
+      // Animate in
+      setTimeout(() => {
+        popup.style.transform = 'translateX(0)';
+      }, 100);
+      
+      // Remove after 3 seconds
+      setTimeout(() => {
+        popup.style.transform = 'translateX(full)';
+        setTimeout(() => popup.remove(), 500);
+      }, 3000);
+      
+      // First try wing-based API
+      let res = await apiConnector("GET", FLAT_API.GET_BY_WING(wing._id));
+      
+      // If no data from wing API, try getting all flats and filter
+      if (!res.data || res.data.length === 0) {
+        const allFlatsRes = await apiConnector("GET", FLAT_API.GET_ALL);
+        const wingFlats = (allFlatsRes.data || []).filter(flat => 
+          flat.wing === wing._id || 
+          flat.wing?._id === wing._id ||
+          flat.wing?.name === wing.name
+        );
+        res = { data: wingFlats };
+      }
+      
+      // Enhanced occupied status detection
+      const cleanedFlats = (res.data || []).map(flat => {
+        // Multiple ways to check if flat is occupied
+        const hasResident = 
+          // Check resident object
+          (flat.resident && (flat.resident.name || flat.resident._id)) ||
+          // Check isOccupied flag
+          (flat.isOccupied === true) ||
+          // Check status field
+          (flat.status === 'OCCUPIED') ||
+          // Check if flat has any user assigned
+          (flat.assignedTo && flat.assignedTo._id);
+          
+        return { ...flat, isOccupied: hasResident };
+      });
+      
+      setFlats(cleanedFlats);
+      
+      // Update popup to show completion
+      if (document.body.contains(popup)) {
+        popup.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+              <span class="text-lg">✓</span>
+            </div>
+            <div>
+              <p class="font-bold text-sm">Wing ${wing.name} Loaded</p>
+              <p class="text-xs opacity-90">${cleanedFlats.length} flats found</p>
+            </div>
+          </div>
+        `;
+      }
+      
     } catch (error) {
       console.error("❌ Error fetching flats:", error);
     } finally {

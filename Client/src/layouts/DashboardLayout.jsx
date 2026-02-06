@@ -9,15 +9,22 @@ const DashboardLayout = () => {
     const { user } = useAuth();
     const location = useLocation();
 
+    console.log('Current user:', user);
+    console.log('Current path:', location.pathname);
+
     if (!user) {
         return <Navigate to="/login" replace />;
     }
 
     const path = location.pathname;
 
-    // Admin route protection
-    if (path.startsWith('/admin') && user.role !== 'ADMIN') {
-        return <Navigate to="/login" replace />;
+    // Admin route protection - check both ADMIN and admin
+    if (path.startsWith('/admin')) {
+        const userRole = user.role?.toUpperCase();
+        if (userRole !== 'ADMIN') {
+            console.log('Access denied - User role:', user.role, 'Required: ADMIN');
+            return <Navigate to="/login" replace />;
+        }
     }
 
     // Resident route protection

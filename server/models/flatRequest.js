@@ -16,7 +16,7 @@ const flatRequestSchema = new mongoose.Schema(
 
     ownershipType: {
       type: String,
-      enum: ["OWNER", "RESIDENT"],
+      enum: ["OWNER", "TENANT"],
       required: true,
     },
 

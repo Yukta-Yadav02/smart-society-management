@@ -1,6 +1,6 @@
 import React from 'react';
 
-const TextArea = ({ label, error, className = '', ...props }) => {
+const TextArea = ({ label, error, className = '', register, ...props }) => {
     return (
         <div className={`space-y-1.5 ${className}`}>
             {label && (
@@ -11,6 +11,7 @@ const TextArea = ({ label, error, className = '', ...props }) => {
             <textarea
                 className={`w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none ${error ? 'border-rose-500 ring-rose-500/20' : ''
                     }`}
+                {...register}
                 {...props}
             />
             {error && (

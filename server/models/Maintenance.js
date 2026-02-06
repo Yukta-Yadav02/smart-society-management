@@ -17,6 +17,8 @@ const maintenanceSchema = new mongoose.Schema(
 
     month: String,
     year: Number,
+    period: String,
+    description: String,
 
     // null = ALL flats
     flat: {
@@ -25,10 +27,16 @@ const maintenanceSchema = new mongoose.Schema(
       default: null,
     },
 
+    type: {
+      type: String,
+      enum: ["Common", "Special"],
+      default: "Common",
+    },
+
     status: {
       type: String,
-      enum: ["PENDING", "PAID"],
-      default: "PENDING",
+      enum: ["UNPAID", "PAID"],
+      default: "UNPAID",
     },
 
     paidBy: {

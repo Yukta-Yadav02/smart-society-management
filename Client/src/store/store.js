@@ -12,23 +12,23 @@ import profileReducer from './slices/profileSlice';
 
 // Import Actions for re-export (Maintains backward compatibility)
 import { setComplaints, addComplaint, updateComplaint, deleteComplaint } from './slices/complaintsSlice';
-import { setMaintenance, addMaintenance, updateMaintenance } from './slices/maintenanceSlice';
+import { setMaintenance, addMaintenance, updateMaintenance, clearMaintenance, deleteMaintenance } from './slices/maintenanceSlice';
 import { setRequests, addRequest, updateRequest } from './slices/requestsSlice';
 import { setFlats, addFlat, updateFlat } from './slices/flatsSlice';
 import { setNotices, addNotice, deleteNotice } from './slices/noticesSlice';
 import { setResidents, addResident, updateResident, deleteResident } from './slices/residentsSlice';
-import { updateStats, setRecentRequests } from './slices/dashboardSlice';
+import { updateStats, setRecentRequests, setLoading, setError } from './slices/dashboardSlice';
 import { updateProfile } from './slices/profileSlice';
 
 // Re-export Actions
 export {
   setComplaints, addComplaint, updateComplaint, deleteComplaint,
-  setMaintenance, addMaintenance, updateMaintenance,
+  setMaintenance, addMaintenance, updateMaintenance, clearMaintenance, deleteMaintenance,
   setRequests, addRequest, updateRequest,
   setFlats, addFlat, updateFlat,
   setNotices, addNotice, deleteNotice,
   setResidents, addResident, updateResident, deleteResident,
-  updateStats, setRecentRequests,
+  updateStats, setRecentRequests, setLoading, setError,
   updateProfile
 };
 

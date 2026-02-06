@@ -5,18 +5,11 @@ import {
     Calendar,
     Trash2,
     Edit,
-    Pin,
     Megaphone,
-    Clock,
-    X,
-    Search,
-    MoreVertical,
-    AlertCircle
+    MoreVertical
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
 import toast from 'react-hot-toast';
 
 import { apiConnector } from '../../services/apiConnector';
@@ -30,11 +23,7 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import TextArea from '../../components/common/TextArea';
 
-// 🛡️ VALIDATION SCHEMA
-const schema = yup.object().shape({
-    title: yup.string().required('Title is required').min(5, 'Title too short'),
-    description: yup.string().required('Description is required').min(10, 'Description too short'),
-});
+
 
 const Notices = () => {
     const dispatch = useDispatch();
@@ -47,59 +36,70 @@ const Notices = () => {
         const fetchNotices = async () => {
             try {
                 const res = await apiConnector("GET", NOTICE_API.GET_ALL);
-                if (res.success) {
-                    dispatch(setNotices(res.data));
+                console.log('Fetch notices response:', res);
+                if (res && res.success) {
+                    dispatch(setNotices(res.data || []));
                 }
             } catch (err) {
                 console.error("Fetch Notices Error:", err);
-                toast.error("Failed to load announcements");
+                toast.error("Failed to load notices");
             }
         };
         fetchNotices();
     }, [dispatch]);
 
-    const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
-        resolver: yupResolver(schema),
-        defaultValues: { pinned: false }
-    });
+    const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
     const onSubmit = async (data) => {
+        if (!data.title || !data.description) {
+            toast.error('Please fill both fields');
+            return;
+        }
+        
         try {
             const res = await apiConnector("POST", NOTICE_API.CREATE, {
                 title: data.title,
-                content: data.description,
-                pinned: data.pinned
+                message: data.description,
+                flat: null
             });
 
-            if (res.success) {
+            if (res && res.success) {
                 dispatch(addNotice(res.data));
-                toast.success(`Announcement broadcasted!`, { icon: '📢' });
+                toast.success('Notice published!');
                 setShowAddModal(false);
                 reset();
+            } else {
+                toast.error('Failed to create notice');
             }
         } catch (err) {
-            toast.error(err.message || "Failed to post notice");
+            toast.error('Error creating notice');
         }
     };
 
     const handleDelete = async (id, title) => {
         if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
             try {
-                // Assuming DELETE endpoint is BASE_URL/notice/:id
-                const res = await apiConnector("DELETE", NOTICE_API.GET_ALL + `/${id}`);
-                if (res.success || res) {
+                console.log('Deleting notice with ID:', id);
+                const res = await apiConnector("DELETE", NOTICE_API.DELETE(id));
+                console.log('Delete response:', res);
+                
+                if (res && (res.success || res.status === 200)) {
                     dispatch(deleteNotice(id));
-                    toast.error('Notice removed', { icon: '🗑️' });
+                    toast.success('Notice deleted successfully', { icon: '🗑️' });
+                } else {
+                    console.error('Delete failed:', res);
+                    toast.error('Failed to delete notice');
                 }
             } catch (err) {
-                toast.error(err.message || "Failed to delete notice");
+                console.error('Delete error:', err);
+                toast.error('Failed to delete notice');
             }
         }
     };
 
     const filteredNotices = (notices || []).filter(n =>
         (n.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (n.description || n.content || '').toLowerCase().includes(searchQuery.toLowerCase())
+        (n.message || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
@@ -109,13 +109,33 @@ const Notices = () => {
                     <h1 className="text-3xl font-black text-slate-800 tracking-tight text-shadow-sm uppercase">Society Broadcasts</h1>
                     <p className="text-slate-500 mt-1 font-bold">Manage and view all official society announcements.</p>
                 </div>
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-xl shadow-indigo-100 border border-indigo-500 uppercase tracking-widest text-[10px]"
-                >
-                    <Plus className="w-5 h-5" />
-                    New Notice
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={async () => {
+                            try {
+                                const res = await apiConnector("GET", NOTICE_API.GET_ALL);
+                                if (res && res.success) {
+                                    dispatch(setNotices(res.data || []));
+                                    toast.success('Notices refreshed!');
+                                } else {
+                                    toast.error('Failed to fetch notices');
+                                }
+                            } catch (err) {
+                                toast.error('Error fetching notices');
+                            }
+                        }}
+                        className="bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold"
+                    >
+                        Refresh
+                    </button>
+                    <button
+                        onClick={() => setShowAddModal(true)}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-xl shadow-indigo-100 border border-indigo-500 uppercase tracking-widest text-[10px]"
+                    >
+                        <Plus className="w-5 h-5" />
+                        New Broadcast
+                    </button>
+                </div>
             </div>
 
             <SearchInput
@@ -128,16 +148,10 @@ const Notices = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {filteredNotices.map((notice) => (
                     <div key={notice._id || notice.id} className="bg-white rounded-[2.5rem] border border-slate-100 p-2 shadow-sm hover:shadow-xl hover:translate-y-[-4px] transition-all duration-300 group overflow-hidden relative">
-                        {notice.pinned && (
-                            <div className="absolute top-2 right-2 bg-indigo-600 text-white px-4 py-1.5 rounded-[1.5rem] font-black text-[9px] uppercase tracking-widest flex items-center gap-1.5 z-20 shadow-lg shadow-indigo-100">
-                                <Pin size={10} className="fill-current" /> Pinned
-                            </div>
-                        )}
-
                         <div className="rounded-[2.2rem] bg-slate-50/50 p-8 sm:p-10">
                             <div className="flex justify-between items-start mb-8">
                                 <div className="flex items-center gap-5">
-                                    <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-lg transform transition-transform group-hover:rotate-12 duration-500 z-10 ${notice.pinned ? 'bg-indigo-600 text-white shadow-indigo-200' : 'bg-white text-indigo-600 border border-slate-100 shadow-sm'}`}>
+                                    <div className="w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-lg transform transition-transform group-hover:rotate-12 duration-500 z-10 bg-white text-indigo-600 border border-slate-100 shadow-sm">
                                         <Bell size={28} />
                                     </div>
                                     <div className="flex-1">
@@ -159,7 +173,7 @@ const Notices = () => {
 
                             <div className="bg-white/70 p-6 sm:p-8 rounded-[2rem] border border-white shadow-sm mb-2 min-h-[120px]">
                                 <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-bold">
-                                    {notice.description || notice.content}
+                                    {notice.message}
                                 </p>
                             </div>
                         </div>
@@ -197,28 +211,24 @@ const Notices = () => {
                 subtitle="Create a notice that will be visible to all residents."
                 icon={Megaphone}
             >
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                    <Input
-                        label="Notice Title"
-                        placeholder="e.g. Annual Society Meeting"
-                        register={register('title')}
-                        error={errors.title?.message}
-                    />
-                    <TextArea
-                        label="Announcement Content"
-                        placeholder="Describe the notice in detail here..."
-                        rows={6}
-                        register={register('description')}
-                        error={errors.description?.message}
-                    />
-
-                    <div className="flex items-center gap-3 p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/40 cursor-pointer" onClick={() => setValue('pinned', !watch('pinned'))}>
-                        <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${watch('pinned') ? 'bg-indigo-600 border-indigo-600' : 'border-indigo-200'}`}>
-                            {watch('pinned') && <Pin size={12} className="text-white fill-current" />}
-                        </div>
-                        <label className="text-[10px] font-black text-indigo-900/40 uppercase tracking-widest cursor-pointer select-none">
-                            Pin this broadcast for priority notice
-                        </label>
+                <div className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Notice Title</label>
+                        <input
+                            name="title"
+                            type="text"
+                            placeholder="e.g. Annual Society Meeting"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Announcement Content</label>
+                        <textarea
+                            name="description"
+                            placeholder="Describe the notice in detail here..."
+                            rows={6}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                        />
                     </div>
 
                     <div className="pt-4 flex gap-4">
@@ -229,14 +239,55 @@ const Notices = () => {
                         >
                             Cancel
                         </button>
-                        <button type="submit" className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4.5 rounded-2xl transition-all shadow-xl shadow-indigo-100 border border-indigo-500 uppercase tracking-widest text-[10px]">
+                        <button 
+                            type="button"
+                            onClick={async () => {
+                                const titleInput = document.querySelector('input[name="title"]');
+                                const descInput = document.querySelector('textarea[name="description"]');
+                                
+                                if (!titleInput.value || !descInput.value) {
+                                    toast.error('Please fill both fields');
+                                    return;
+                                }
+                                
+                                try {
+                                    const res = await apiConnector("POST", NOTICE_API.CREATE, {
+                                        title: titleInput.value,
+                                        message: descInput.value,
+                                        flat: null
+                                    });
+                                    
+                                    if (res && res.success) {
+                                        dispatch(addNotice(res.data));
+                                        toast.success('Notice published!');
+                                        setShowAddModal(false);
+                                        titleInput.value = '';
+                                        descInput.value = '';
+                                    } else {
+                                        toast.error('Failed to create notice');
+                                    }
+                                } catch (err) {
+                                    toast.error('Error creating notice');
+                                }
+                            }}
+                            className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4.5 rounded-2xl transition-all shadow-xl shadow-indigo-100 border border-indigo-500 uppercase tracking-widest text-[10px]"
+                        >
                             Publish Notice
                         </button>
                     </div>
-                </form>
+                </div>
             </Modal>
         </div>
     );
 };
 
 export default Notices;
+
+
+
+
+
+
+
+
+

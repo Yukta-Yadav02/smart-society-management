@@ -1,5 +1,5 @@
 const express = require("express");
-const { setupAdmin,login, registerResident, createSecurity, toggleUserStatus } = require("../controllers/Auth");
+const { setupAdmin,login, registerResident, createSecurity, toggleUserStatus, getAllResidents } = require("../controllers/Auth");
 const { protect, authorizeRoles } = require("../middelware/auth");
 
 const router = express.Router();
@@ -15,6 +15,7 @@ router.post(
 
 router.put("/toggle-status/", protect,authorizeRoles("ADMIN"), toggleUserStatus);
 
-
+// Get all residents (ADMIN only)
+router.get("/residents", protect, authorizeRoles("ADMIN"), getAllResidents);
 
 module.exports = router;

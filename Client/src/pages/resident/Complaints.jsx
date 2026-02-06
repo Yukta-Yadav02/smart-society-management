@@ -36,14 +36,12 @@ import Badge from '../../components/common/Badge';
 const schema = yup.object().shape({
   title: yup.string().required('Title is required').min(5, 'Too short'),
   description: yup.string().required('Description is required').min(10, 'Details too short'),
-  category: yup.string().required('Category is required'),
-  priority: yup.string().required('Priority is required'),
 });
 
 const Complaints = () => {
   const dispatch = useDispatch();
   const complaints = useSelector((state) => state.complaints.items);
-  const user = useSelector((state) => state.profile.data);
+  const user = useSelector((state) => state.profile.user);
 
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,7 +51,7 @@ const Complaints = () => {
   useEffect(() => {
     const fetchMyComplaints = async () => {
       try {
-        const res = await apiConnector("GET", COMPLAINT_API.GET_MY);
+        const res = await apiConnector("GET", COMPLAINT_API.MY_COMPLAINTS);
         if (res.success) {
           dispatch(setComplaints(res.data));
         }
@@ -66,19 +64,23 @@ const Complaints = () => {
   }, [dispatch]);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    resolver: yupResolver(schema),
-    defaultValues: {
-      category: 'Maintenance',
-      priority: 'Medium'
-    }
+    resolver: yupResolver(schema)
   });
 
   const onSubmit = async (data) => {
+    console.log('Form submitted with data:', data);
+    
     try {
-      const res = await apiConnector("POST", COMPLAINT_API.CREATE, {
-        ...data,
-        flatId: user?.flat?._id || user?.flat // Ensure ID is passed
-      });
+      const payload = {
+        title: data.title,
+        description: data.description
+      };
+      
+      console.log('API payload:', payload);
+      
+      const res = await apiConnector("POST", COMPLAINT_API.CREATE, payload);
+      
+      console.log('API response:', res);
 
       if (res.success) {
         dispatch(addComplaint(res.data));
@@ -87,13 +89,14 @@ const Complaints = () => {
         reset();
       }
     } catch (err) {
+      console.error('Submit error:', err);
       toast.error(err.message || "Failed to submit complaint");
     }
   };
 
   const filteredComplaints = (complaints || []).filter(c => {
     const statusMap = { 'Open': 'Pending', 'In Progress': 'Active', 'Resolved': 'Resolved' };
-    const displayStatus = c.status === 'Open' ? 'Pending' : (c.status === 'In Progress' ? 'Active' : c.status);
+    const displayStatus = c.status === 'OPEN' ? 'Pending' : (c.status === 'IN PROGRESS' ? 'Active' : c.status);
 
     const matchesStatus = filterStatus === 'All' || displayStatus === filterStatus;
     const matchesSearch = (c.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -115,21 +118,21 @@ const Complaints = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <StatCard
           label="Active"
-          value={(complaints || []).filter(c => c.status === 'Open' || c.status === 'In Progress').length}
+          value={(complaints || []).filter(c => c.status === 'OPEN' || c.status === 'IN PROGRESS').length}
           icon={Clock}
           colorClass="bg-amber-50 text-amber-600"
           delay={0.1}
         />
         <StatCard
           label="Resolved"
-          value={(complaints || []).filter(c => c.status === 'Resolved').length}
+          value={(complaints || []).filter(c => c.status === 'RESOLVED').length}
           icon={CheckCircle2}
           colorClass="bg-emerald-50 text-emerald-600"
           delay={0.2}
         />
         <StatCard
           label="In Progress"
-          value={(complaints || []).filter(c => c.status === 'In Progress').length}
+          value={(complaints || []).filter(c => c.status === 'IN PROGRESS').length}
           icon={Inbox}
           colorClass="bg-blue-50 text-blue-600"
           delay={0.3}
@@ -152,7 +155,7 @@ const Complaints = () => {
           className="flex-1 max-w-xl"
         />
         <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm shrink-0">
-          {['All', 'Pending', 'Resolved'].map(s => (
+          {['All', 'OPEN', 'RESOLVED'].map(s => (
             <button
               key={s}
               onClick={() => setFilterStatus(s)}
@@ -178,10 +181,9 @@ const Complaints = () => {
               <div className="flex flex-col lg:flex-row justify-between gap-8">
                 <div className="flex-1 space-y-4">
                   <div className="flex items-center gap-3">
-                    <Badge variant={c.priority === 'High' || c.priority === 'Urgent' ? 'danger' : 'primary'}>
-                      {c.priority || 'Medium'} Priority
+                    <Badge variant="primary">
+                      Complaint
                     </Badge>
-                    <Badge variant="secondary" className="opacity-60">{c.category || 'Maintenance'}</Badge>
                   </div>
                   <h3 className="text-2xl font-black text-slate-800 tracking-tight group-hover:text-indigo-600 transition-colors uppercase">{c.title}</h3>
                   <p className="text-slate-500 font-medium leading-relaxed italic">"{c.description}"</p>
@@ -193,12 +195,12 @@ const Complaints = () => {
 
                 <div className="lg:w-1/4 flex flex-col justify-center items-center lg:items-end border-t lg:border-t-0 lg:border-l border-slate-100 pt-8 lg:pt-0 lg:pl-8">
                   <Badge
-                    variant={c.status === 'Resolved' ? 'success' : c.status === 'Open' ? 'warning' : 'info'}
+                    variant={c.status === 'RESOLVED' ? 'success' : c.status === 'OPEN' ? 'warning' : 'info'}
                     className="mb-4 py-2 px-6 rounded-xl shadow-sm text-sm"
                   >
-                    {c.status === 'Open' ? 'Pending' : c.status}
+                    {c.status === 'OPEN' ? 'Pending' : c.status}
                   </Badge>
-                  {c.status === 'Resolved' && <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-2 flex items-center gap-1"><CheckCircle2 size={12} /> Verified by Admin</p>}
+                  {c.status === 'RESOLVED' && <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-2 flex items-center gap-1"><CheckCircle2 size={12} /> Verified by Admin</p>}
                 </div>
               </div>
             </Card>
@@ -223,32 +225,6 @@ const Complaints = () => {
             error={errors.title?.message}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Select
-              label="Category"
-              options={[
-                { label: 'Maintenance', value: 'Maintenance' },
-                { label: 'Security', value: 'Security' },
-                { label: 'Amenities', value: 'Amenities' },
-                { label: 'Utility', value: 'Utility' },
-                { label: 'Other', value: 'Other' },
-              ]}
-              register={register('category')}
-              error={errors.category?.message}
-            />
-            <Select
-              label="Priority Level"
-              options={[
-                { label: 'Low', value: 'Low' },
-                { label: 'Medium', value: 'Medium' },
-                { label: 'High', value: 'High' },
-                { label: 'Urgent', value: 'Urgent' },
-              ]}
-              register={register('priority')}
-              error={errors.priority?.message}
-            />
-          </div>
-
           <TextArea
             label="Detailed Description"
             placeholder="Provide details like exact location, time since issue started, etc."
@@ -258,8 +234,19 @@ const Complaints = () => {
           />
 
           <div className="pt-4 flex gap-4">
-            <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 font-black text-slate-400 hover:bg-slate-50 transition-all uppercase tracking-widest text-[10px]">Discard</button>
-            <Button type="submit" fullWidth className="flex-[1.5] py-4">Register Complaint</Button>
+            <button 
+              type="button" 
+              onClick={() => setShowModal(false)} 
+              className="flex-1 py-4 font-black text-slate-400 hover:bg-slate-50 transition-all uppercase tracking-widest text-[10px]"
+            >
+              Discard
+            </button>
+            <button 
+              type="submit" 
+              className="flex-[1.5] py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest text-xs transition-all"
+            >
+              Register Complaint
+            </button>
           </div>
         </form>
       </Modal>
