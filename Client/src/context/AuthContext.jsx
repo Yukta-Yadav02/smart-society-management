@@ -23,18 +23,14 @@ export const AuthProvider = ({ children }) => {
         AUTH_API.LOGIN,
         { email, password }
       );
-
       console.log("✅ LOGIN RESPONSE:", response);
-
       if (response.success) {
         localStorage.setItem("token", response.token);
         localStorage.setItem("user", JSON.stringify(response.user));
         setUser(response.user);
-
         console.log("🔐 Token stored, user set");
         return { success: true, user: response.user };
       }
-
       return { success: false, message: response.message };
     } catch (error) {
       console.error("❌ LOGIN FAILED:", error);
@@ -46,22 +42,17 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-
   /* ================= SIGNUP (RESIDENT) ================= */
   const signup = async ({ name, email, password }) => {
     console.log("➡️ SIGNUP CALLED:", email);
-
     try {
       setLoading(true);
-
       const response = await apiConnector(
         "POST",
         AUTH_API.REGISTER_RESIDENT,
         { name, email, password }
       );
-
       console.log("✅ SIGNUP RESPONSE:", response);
-
       return {
         success: response.success,
         message: response.message,
@@ -95,5 +86,4 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
 export const useAuth = () => useContext(AuthContext);

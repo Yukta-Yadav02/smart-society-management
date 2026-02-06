@@ -91,7 +91,6 @@ const ManageRequests = () => {
             toast.error(err.message || "Failed to update request");
         }
     };
-
     const handleRejectClick = (request) => {
         setSelectedRequest(request);
         setShowRejectionModal(true);

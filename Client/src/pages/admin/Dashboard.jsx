@@ -118,7 +118,6 @@ const Dashboard = () => {
                     />
                 ))}
             </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-10">
                 {/* Recent Access Requests */}
                 <Card className="lg:col-span-2 p-8 relative transition-all hover:shadow-indigo-100/50">
@@ -136,7 +135,6 @@ const Dashboard = () => {
                             View All <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </button>
                     </div>
-
                     <div className="space-y-4">
                         {(recentRequests || []).slice(0, 3).map((req) => (
                             <div key={req._id || req.id} className="group flex items-center gap-5 p-4 rounded-[2rem] hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100">
@@ -150,6 +148,7 @@ const Dashboard = () => {
                                             }`}>
                                             {req.userRole || req.type || 'Resident'}
                                         </span>
+
                                     </div>
                                     <div className="flex gap-4 mt-1">
                                         <p className="text-xs text-slate-400 font-black flex items-center gap-1.5 uppercase tracking-tighter">
@@ -171,7 +170,6 @@ const Dashboard = () => {
                             </div>
                         ))}
                     </div>
-
                     {(recentRequests || []).length === 0 && (
                         <div className="py-20 text-center">
                             <ClipboardList className="w-12 h-12 text-slate-100 mx-auto mb-4" />
@@ -179,7 +177,6 @@ const Dashboard = () => {
                         </div>
                     )}
                 </Card>
-
                 <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-8 rounded-[2.5rem] shadow-xl shadow-indigo-100 text-white relative overflow-hidden">
                     <div className="relative z-10 h-full flex flex-col justify-between">
                         <div>
