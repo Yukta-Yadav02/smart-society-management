@@ -31,18 +31,26 @@ const Dashboard = () => {
   }
 
   // FETCH REQUESTS FROM BACKEND
-  useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        setLoading(true);
+ useEffect(() => {
+  // console.log("API RESPONSE =>", res);
 
-        const res = await apiConnector(
-          "GET",
-          FLAT_REQUEST_API.GET_ALL
-        );
+  const fetchRequests = async () => {
+    try {
+      setLoading(true);
 
-        // Backend → UI mapping (UI SAME)
-        const formatted = (res?.data || []).map((item) => ({
+      const res = await apiConnector(
+        "GET",
+        FLAT_REQUEST_API.GET_MY_REQUESTS 
+      );
+
+      console.log("API Response:", res);
+      console.log("Full response structure:", JSON.stringify(res, null, 2));
+
+      const formatted = (res?.data || []).map((item) => {
+        console.log("Raw item:", item);
+        console.log("Current user ID:", user?.id);
+        console.log("Request user ID:", item.user?._id || item.user);
+        return {
           id: item._id,
           wing: item.flat?.wing?.name || '-',
           flat: item.flat?.number || '-',
@@ -50,7 +58,7 @@ const Dashboard = () => {
           date: new Date(item.createdAt).toLocaleDateString('en-IN', {
             day: '2-digit',
             month: 'short',
-            year: 'numeric'
+            year: 'numeric',
           }),
           status: item.status === 'APPROVED' ? 'Approved' : 'Pending',
           statusColor:
@@ -61,19 +69,22 @@ const Dashboard = () => {
             item.status === 'APPROVED'
               ? <CheckCircle size={16} />
               : <Clock size={16} />,
-        }));
+        };
+      });
 
-        setRequests(formatted);
-      } catch (err) {
-        console.error("DASHBOARD ERROR →", err);
-        toast.error("Failed to load access requests");
-      } finally {
-        setLoading(false);
-      }
-    };
+      console.log("Formatted requests:", formatted);
+      setRequests(formatted);
+    } catch (err) {
+      console.error("DASHBOARD ERROR →", err);
+      toast.error("Failed to load access requests");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchRequests();
-  }, []);
+  fetchRequests();
+}, []);
+
 
   return (
     <div className="min-h-screen pt-32 pb-12 bg-gray-50 px-4">

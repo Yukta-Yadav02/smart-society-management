@@ -6,6 +6,7 @@ const Input = ({
     className = '',
     type = 'text',
     icon: Icon,
+    register,
     ...props
 }) => {
     return (
@@ -25,6 +26,7 @@ const Input = ({
                     type={type}
                     className={`w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${Icon ? 'pl-12' : ''
                         } ${error ? 'border-rose-500 ring-rose-500/20' : ''}`}
+                    {...register}
                     {...props}
                 />
             </div>

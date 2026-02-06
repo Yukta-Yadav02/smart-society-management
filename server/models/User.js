@@ -35,6 +35,13 @@ const userSchema = new mongoose.Schema(
       ref: "Flat",
       default: null,
     },
+    
+    residentType: {
+      type: String,
+      enum: ["OWNER", "TENANT"],
+      default: "OWNER",
+    },
+    
     isActive: {
      type: Boolean,
      default: true,

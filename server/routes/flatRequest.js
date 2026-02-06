@@ -1,4 +1,3 @@
-// routes/flatRequestRoutes.js
 const express = require("express");
 const router = express.Router();
 
@@ -6,22 +5,36 @@ const {
   createFlatRequest,
   getAllFlatRequests,
   adminDecision,
+<<<<<<< HEAD
+=======
+  residentOpinion,
+  getMyFlatRequests,
+  getMyFlatTransferRequests,
+  updateOldRequestsToOwner
+>>>>>>> f057846 (all pages connectivity)
 } = require("../controllers/flatRequest");
 
 const { protect, authorizeRoles } = require("../middelware/auth");
 
-// User
-router.post("/flat-requests", protect, createFlatRequest);
+// ================= USER / RESIDENT =================
 
-// Admin
+// Create flat request
+router.post(
+  "/flat-requests",
+  protect,
+  authorizeRoles("RESIDENT"),
+  createFlatRequest
+);
+
+// Resident → view own requests
 router.get(
   "/flat-requests",
   protect,
-  authorizeRoles("Admin","RESIDENT"),
-  authorizeRoles("ADMIN"),
-  getAllFlatRequests
+  authorizeRoles("RESIDENT"),
+  getMyFlatRequests
 );
 
+<<<<<<< HEAD
 // Resident (only opinion)
 // router.put(
 //   "/flat-requests/:requestId/resident-response",
@@ -29,6 +42,33 @@ router.get(
 //   authorizeRoles("RESIDENT"),
 //   residentOpinion
 // );
+=======
+// Resident → get flat transfer requests for their flat
+router.get(
+  "/flat-requests/transfer-requests",
+  protect,
+  authorizeRoles("RESIDENT"),
+  getMyFlatTransferRequests
+);
+
+// Resident response
+router.put(
+  "/flat-requests/:requestId/resident-response",
+  protect,
+  authorizeRoles("RESIDENT"),
+  residentOpinion
+);
+>>>>>>> f057846 (all pages connectivity)
+
+// ================= ADMIN =================
+
+// Admin → view all requests
+router.get(
+  "/flat-requests/all",
+  protect,
+  authorizeRoles("ADMIN"),
+  getAllFlatRequests
+);
 
 // Admin final decision
 router.put(
@@ -36,6 +76,14 @@ router.put(
   protect,
   authorizeRoles("ADMIN"),
   adminDecision
+);
+
+// Update old requests to OWNER
+router.post(
+  "/flat-requests/update-old",
+  protect,
+  authorizeRoles("ADMIN"),
+  updateOldRequestsToOwner
 );
 
 module.exports = router;

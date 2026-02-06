@@ -8,9 +8,10 @@ const Button = ({
   fullWidth = false,
   className = "",
   onClick,
+  icon: Icon,
 }) => {
   const baseStyles =
-    "rounded-2xl font-black uppercase tracking-widest text-xs transition-all duration-200 flex items-center justify-center";
+    "rounded-2xl font-black uppercase tracking-widest text-xs transition-all duration-200 flex items-center justify-center gap-2";
 
   const variants = {
     primary:
@@ -25,7 +26,7 @@ const Button = ({
 
   return (
     <button
-      type={type}   // ✅ YE SABSE IMPORTANT LINE HAI
+      type={type}
       onClick={onClick}
       disabled={disabled}
       className={`
@@ -37,6 +38,7 @@ const Button = ({
         px-6 py-3
       `}
     >
+      {Icon && <Icon size={16} />}
       {children}
     </button>
   );

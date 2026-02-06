@@ -24,6 +24,15 @@ const flatSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+
+    resident: {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+      },
+      name: String,
+      email: String
+    },
   },
   { timestamps: true }
 );

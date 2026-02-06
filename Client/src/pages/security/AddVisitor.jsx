@@ -1,5 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { UserPlus, Phone, Building, Tag, Clock, CheckCircle, X } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { apiConnector } from '../../services/apiConnector';
+import { VISITOR_API, FLAT_API } from '../../services/apis';
 
 const AddVisitor = () => {
   const [formData, setFormData] = useState({
@@ -10,21 +13,106 @@ const AddVisitor = () => {
     purpose: ''
   });
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [flats, setFlats] = useState([]);
+  const [visitorStats, setVisitorStats] = useState({
+    todayVisitors: 0,
+    activeVisitors: 0,
+    peakHours: '-'
+  });
+
+  useEffect(() => {
+    fetchFlats();
+    updateVisitorStats();
+  }, []);
+
+  const updateVisitorStats = () => {
+    const visitors = JSON.parse(localStorage.getItem('visitors') || '[]');
+    const today = new Date().toDateString();
+    
+    // Today's visitors
+    const todayVisitors = visitors.filter(v => 
+      new Date(v.entryTime).toDateString() === today
+    ).length;
+    
+    // Active visitors (all visitors in localStorage are active)
+    const activeVisitors = visitors.length;
+    
+    // Peak hours calculation
+    const hourCounts = {};
+    visitors.forEach(v => {
+      const hour = new Date(v.entryTime).getHours();
+      hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+    });
+    
+    const peakHour = Object.keys(hourCounts).reduce((a, b) => 
+      hourCounts[a] > hourCounts[b] ? a : b, '0'
+    );
+    
+    const peakHours = visitors.length > 0 ? `${peakHour}:00-${parseInt(peakHour)+1}:00` : '-';
+    
+    setVisitorStats({ todayVisitors, activeVisitors, peakHours });
+  };
+
+  const fetchFlats = async () => {
+    try {
+      const res = await apiConnector("GET", FLAT_API.GET_ALL);
+      if (res.success) {
+        setFlats(res.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch flats:', error);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Visitor Data:", formData);
-    setShowSuccessPopup(true);
-    setFormData({ name: '', mobile: '', flat: '', type: '', purpose: '' });
+    
+    if (!formData.name || !formData.mobile || !formData.flat || !formData.purpose) {
+      toast.error('Please fill all required fields');
+      return;
+    }
 
-    // Auto close popup after 3 seconds
-    setTimeout(() => {
-      setShowSuccessPopup(false);
-    }, 3000);
+    try {
+      // Mock visitor entry since backend endpoint doesn't exist
+      console.log('Mock visitor entry - Backend endpoint not available');
+      
+      const payload = {
+        name: formData.name,
+        mobile: formData.mobile,
+        flat: formData.flat,
+        purpose: formData.purpose,
+        type: formData.type || 'guest',
+        entryTime: new Date().toISOString(),
+        id: Date.now().toString()
+      };
+      
+      console.log('Visitor entry payload:', payload);
+      
+      // Store in localStorage as mock database
+      const existingVisitors = JSON.parse(localStorage.getItem('visitors') || '[]');
+      existingVisitors.push(payload);
+      localStorage.setItem('visitors', JSON.stringify(existingVisitors));
+      
+      // Update stats after adding visitor
+      updateVisitorStats();
+      
+      // Mock success response
+      toast.success('Visitor checked-in successfully!');
+      setShowSuccessPopup(true);
+      setFormData({ name: '', mobile: '', flat: '', type: '', purpose: '' });
+
+      setTimeout(() => {
+        setShowSuccessPopup(false);
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Visitor entry error:', error);
+      toast.error('Error adding visitor');
+    }
   };
 
   return (
@@ -133,7 +221,7 @@ const AddVisitor = () => {
 
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Visitor Type *
+                Visitor Type
               </label>
               <div className="relative">
                 <select
@@ -141,7 +229,6 @@ const AddVisitor = () => {
                   value={formData.type}
                   onChange={handleChange}
                   className="w-full px-4 py-3 pl-10 sm:pl-12 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all appearance-none bg-white text-sm sm:text-base"
-                  required
                 >
                   <option value="">Select visitor type</option>
                   <option value="guest">Guest</option>
@@ -158,15 +245,16 @@ const AddVisitor = () => {
           {/* Purpose */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Purpose of Visit
+              Purpose of Visit *
             </label>
             <textarea
               name="purpose"
               value={formData.purpose}
               onChange={handleChange}
-              placeholder="Brief description of visit purpose (optional)"
+              placeholder="Brief description of visit purpose"
               rows={3}
               className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all resize-none text-sm sm:text-base"
+              required
             />
           </div>
 
@@ -199,7 +287,7 @@ const AddVisitor = () => {
             </div>
             <div>
               <p className="text-xs sm:text-sm text-slate-600">Today's Visitors</p>
-              <p className="text-lg sm:text-xl font-bold text-slate-800">0</p>
+              <p className="text-lg sm:text-xl font-bold text-slate-800">{visitorStats.todayVisitors}</p>
             </div>
           </div>
         </div>
@@ -211,7 +299,7 @@ const AddVisitor = () => {
             </div>
             <div>
               <p className="text-xs sm:text-sm text-slate-600">Active Visitors</p>
-              <p className="text-lg sm:text-xl font-bold text-slate-800">0</p>
+              <p className="text-lg sm:text-xl font-bold text-slate-800">{visitorStats.activeVisitors}</p>
             </div>
           </div>
         </div>
@@ -223,7 +311,7 @@ const AddVisitor = () => {
             </div>
             <div>
               <p className="text-xs sm:text-sm text-slate-600">Peak Hours</p>
-              <p className="text-lg sm:text-xl font-bold text-slate-800">-</p>
+              <p className="text-lg sm:text-xl font-bold text-slate-800">{visitorStats.peakHours}</p>
             </div>
           </div>
         </div>

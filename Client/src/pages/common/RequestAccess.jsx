@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -7,10 +7,11 @@ import {
   Info,
   User,
   Mail,
-  ArrowLeft
+  ArrowLeft,
+  AlertTriangle
 } from 'lucide-react';
 import { apiConnector } from '../../services/apiConnector';
-import { FLAT_REQUEST_API } from '../../services/apis';
+import { FLAT_REQUEST_API, FLAT_API } from '../../services/apis';
 import toast from 'react-hot-toast';
 
 // COMMON UI COMPONENTS
@@ -34,6 +35,32 @@ const RequestAccess = () => {
   const [residentType, setResidentType] = useState('OWNER');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [flatStatus, setFlatStatus] = useState(null);
+  const [checkingStatus, setCheckingStatus] = useState(true);
+
+  // CHECK FLAT STATUS - Allow requests for occupied flats too
+  useEffect(() => {
+    const checkFlatStatus = async () => {
+      if (!flatId) return;
+      
+      try {
+        const response = await apiConnector("GET", `${FLAT_API.CREATE}/${flatId}`);
+        if (response.success) {
+          const flat = response.data;
+          setFlatStatus({
+            isOccupied: flat.resident?.name && flat.resident.name.trim() !== '',
+            residentName: flat.resident?.name
+          });
+        }
+      } catch (err) {
+        console.error("Failed to check flat status:", err);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+
+    checkFlatStatus();
+  }, [flatId]);
 
   // SAFETY CHECK
   if (!flatId) {
@@ -46,6 +73,47 @@ const RequestAccess = () => {
           <Button onClick={() => navigate('/')} variant="secondary">
             Back to Selection
           </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // OCCUPIED FLAT CHECK
+  if (checkingStatus) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (flatStatus?.isOccupied) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+        <Card className="p-10 text-center max-w-md">
+          <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertTriangle className="text-amber-500" size={40} />
+          </div>
+          <h2 className="text-3xl font-black text-slate-800 mb-4">
+            Flat Currently Occupied
+          </h2>
+          <p className="text-slate-500 leading-relaxed mb-2 font-medium">
+            Wing {wing}, Flat {flat} is currently occupied by {flatStatus.residentName}
+          </p>
+          <p className="text-amber-600 font-bold mb-6 text-sm">
+            You can still request this flat. If approved, the current resident will be notified for transfer approval.
+          </p>
+          <div className="flex gap-3">
+            <Button onClick={() => navigate('/')} variant="secondary" className="py-4 flex-1">
+              Back to Selection
+            </Button>
+            <Button 
+              onClick={() => window.location.reload()} 
+              className="py-4 flex-1"
+            >
+              Request Anyway
+            </Button>
+          </div>
         </Card>
       </div>
     );
@@ -69,10 +137,6 @@ const RequestAccess = () => {
       ownershipType: residentType,
       remark: message,
     };
-
-    // 🧪 DEBUG (VERY IMPORTANT)
-    console.log("FLAT ID =>", flatId);
-    console.log("REQUEST PAYLOAD =>", payload);
 
     try {
       setLoading(true);
@@ -182,10 +246,10 @@ const RequestAccess = () => {
                 </div>
 
                 <ToggleGroup
-                  label="Resident Type"
+                  label="Ownership Type"
                   options={[
                     { label: 'Owner', value: 'OWNER' },
-                    { label: 'Resident', value: 'RESIDENT' },
+                    { label: 'Tenant', value: 'TENANT' },
                   ]}
                   value={residentType}
                   onChange={setResidentType}

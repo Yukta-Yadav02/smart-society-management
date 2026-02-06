@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { LayoutDashboard, Home, AlertTriangle, Wrench, Bell, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Home, AlertTriangle, Wrench, Bell, TrendingUp, UserCheck, UserX } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 import { apiConnector } from '../../services/apiConnector';
-import { DASHBOARD_API } from '../../services/apis';
+import { DASHBOARD_API, FLAT_REQUEST_API } from '../../services/apis';
 
 // 🏗️ COMMON UI COMPONENTS
 import StatCard from '../../components/common/StatCard';
@@ -21,23 +22,81 @@ const ResidentDashboard = () => {
     wingName: '-',
     pendingComplaints: 0,
     totalDue: 0,
-    newNotices: 0
+    newNotices: 0,
+    flatInfo: null
   });
 
- 
+  const [transferRequests, setTransferRequests] = useState([]);
+
   useEffect(() => {
     const fetchResidentStats = async () => {
       try {
         const res = await apiConnector("GET", DASHBOARD_API.GET_RESIDENT_STATS);
         if (res.success) {
-          setStatsData(res.data.stats);
+          const { stats, flatInfo } = res.data;
+          setStatsData({
+            flatNumber: flatInfo?.flatNumber || '-',
+            wingName: flatInfo?.wing || '-',
+            pendingComplaints: stats?.pendingComplaints || 0,
+            totalDue: stats?.unpaidAmount || 0,
+            newNotices: stats?.myNotices || 0,
+            flatInfo
+          });
         }
       } catch (err) {
         console.error("Resident Dashboard Fetch Error:", err);
       }
     };
+
+    const fetchTransferRequests = async () => {
+      try {
+        const res = await apiConnector("GET", FLAT_REQUEST_API.GET_TRANSFER_REQUESTS);
+        if (res.success) {
+          setTransferRequests(res.data || []);
+        }
+      } catch (err) {
+        console.error("Transfer Requests Fetch Error:", err);
+      }
+    };
+
     fetchResidentStats();
+    fetchTransferRequests();
   }, []);
+
+  const handleTransferResponse = async (requestId, response) => {
+    try {
+      console.log('Transfer response attempt:', { requestId, response });
+      
+      const res = await apiConnector("PUT", FLAT_REQUEST_API.RESIDENT_RESPONSE(requestId), {
+        response: response // 'Accepted' or 'Rejected'
+      });
+      
+      console.log('Transfer response result:', res);
+      
+      if (res && res.success) {
+        // Show success message with details
+        toast.success(
+          `🎉 Transfer Request ${response}!\nAdmin has been notified and will process your response.`, 
+          {
+            duration: 4000,
+            style: {
+              background: response === 'Accepted' ? '#10B981' : '#EF4444',
+              color: 'white',
+              fontWeight: 'bold'
+            }
+          }
+        );
+        
+        // Remove request from UI
+        setTransferRequests(prev => prev.filter(req => req._id !== requestId));
+      } else {
+        throw new Error(res?.message || 'Failed to respond');
+      }
+    } catch (err) {
+      console.error('Transfer response error:', err);
+      toast.error(err?.message || 'Failed to respond to request');
+    }
+  };
 
   const stats = [
     {
@@ -50,7 +109,7 @@ const ResidentDashboard = () => {
     },
     {
       title: 'Pending Complaints',
-      value: statsData.pendingComplaints.toString(),
+      value: (statsData.pendingComplaints || 0).toString(),
       subtitle: statsData.pendingComplaints > 0 ? 'Action Required' : 'All Clear',
       icon: AlertTriangle,
       colorClass: 'bg-orange-50 text-orange-600',
@@ -66,7 +125,7 @@ const ResidentDashboard = () => {
     },
     {
       title: 'New Notices',
-      value: statsData.newNotices.toString(),
+      value: (statsData.newNotices || 0).toString(),
       subtitle: 'Broadcasts',
       icon: Bell,
       colorClass: 'bg-emerald-50 text-emerald-600',
@@ -101,6 +160,52 @@ const ResidentDashboard = () => {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-10">
+        {/* Flat Transfer Requests */}
+        {transferRequests.length > 0 && (
+          <div className="lg:col-span-2">
+            <div className="bg-amber-50 border border-amber-200 rounded-[2.5rem] p-8 mb-8">
+              <h2 className="text-xl font-black text-amber-800 mb-6 uppercase tracking-tight flex items-center gap-3">
+                <Bell className="w-6 h-6" />
+                Flat Transfer Requests ({transferRequests.length})
+              </h2>
+              <div className="space-y-4">
+                {transferRequests.map((request) => (
+                  <div key={request._id} className="bg-white rounded-2xl p-6 border border-amber-100">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-black text-slate-800 text-lg">{request.user?.name || 'Unknown User'}</h3>
+                        <p className="text-slate-500 text-sm">{request.user?.email || 'No email'}</p>
+                        <p className="text-amber-600 text-xs font-bold mt-1">Wants to move to Flat {request.flat?.flatNumber || 'Unknown'}</p>
+                      </div>
+                    </div>
+                    <p className="text-slate-600 mb-4 italic">"{request.remark || 'No additional message'}"</p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => {
+                          console.log('Accept button clicked for request:', request._id);
+                          handleTransferResponse(request._id, 'Accepted');
+                        }}
+                        className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-xl flex items-center justify-center gap-2 transition-all text-sm"
+                      >
+                        <UserCheck className="w-4 h-4" /> Accept Transfer
+                      </button>
+                      <button
+                        onClick={() => {
+                          console.log('Reject button clicked for request:', request._id);
+                          handleTransferResponse(request._id, 'Rejected');
+                        }}
+                        className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-black py-3 rounded-xl flex items-center justify-center gap-2 transition-all text-sm"
+                      >
+                        <UserX className="w-4 h-4" /> Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Quick Actions */}
         <Card className="p-8">
           <h2 className="text-xl font-black text-slate-800 mb-8 uppercase tracking-tight">Quick Actions</h2>
@@ -154,8 +259,8 @@ const ResidentDashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 relative z-10">
           {[
             { label: 'Maintenance', value: statsData.totalDue === 0 ? 'Clear' : 'Pending', icon: TrendingUp, color: statsData.totalDue === 0 ? 'text-emerald-600' : 'text-rose-600', bg: statsData.totalDue === 0 ? 'bg-emerald-50' : 'bg-rose-50' },
-            { label: 'Open Issues', value: statsData.pendingComplaints, icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50' },
-            { label: 'Unread Notices', value: statsData.newNotices, icon: Bell, color: 'text-purple-600', bg: 'bg-purple-50' },
+            { label: 'Open Issues', value: (statsData.pendingComplaints || 0), icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50' },
+            { label: 'Unread Notices', value: (statsData.newNotices || 0), icon: Bell, color: 'text-purple-600', bg: 'bg-purple-50' },
           ].map((item, i) => (
             <div key={i} className="text-center p-8 bg-slate-50/30 border border-slate-100/50 rounded-[3rem]">
               <div className={`${item.bg} w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm`}>

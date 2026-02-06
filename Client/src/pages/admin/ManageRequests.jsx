@@ -13,9 +13,10 @@ import {
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
+import showToast from '../../utils/toast';
 
 import { apiConnector } from '../../services/apiConnector';
-import { FLAT_REQUEST_API } from '../../services/apis';
+import { FLAT_REQUEST_API, FLAT_API } from '../../services/apis';
 import { updateRequest, setRequests } from '../../store/store';
 
 // REUSABLE COMPONENTS FOR STRUCTURE
@@ -32,6 +33,7 @@ const ManageRequests = () => {
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [processingRequests, setProcessingRequests] = useState(new Set());
 
     useEffect(() => {
         const fetchRequests = async () => {
@@ -42,7 +44,7 @@ const ManageRequests = () => {
                 }
             } catch (err) {
                 console.error("Fetch Requests Error:", err);
-                toast.error("Failed to load flat requests");
+                showToast.error("Failed to load flat requests");
             }
         };
         fetchRequests();
@@ -70,25 +72,113 @@ const ManageRequests = () => {
     };
 
     const handleAction = async (id, name, status, reason = '') => {
+        if (processingRequests.has(id)) return;
+        
+        setProcessingRequests(prev => new Set([...prev, id]));
+        
         try {
+            console.log('Action attempt:', { id, status, reason });
+            
+            // If approving, check if flat is occupied and handle accordingly
+            if (status === 'Approved') {
+                const request = filteredRequests.find(r => (r._id || r.id) === id);
+                if (request && request.flat) {
+                    const flatRes = await apiConnector("GET", FLAT_API.GET_ALL);
+                    if (flatRes.success) {
+                        const targetFlat = flatRes.data.find(f => 
+                            f._id === request.flat._id || 
+                            f.flatNumber === request.flat.flatNumber
+                        );
+                        
+                        // Check if flat has actual resident data
+                        const hasActualResident = targetFlat && targetFlat.resident && 
+                            targetFlat.resident._id && targetFlat.resident.name;
+                        
+                        if (hasActualResident) {
+                            // Show info that this will be a transfer
+                            console.log(`Flat ${targetFlat.flatNumber} is occupied by ${targetFlat.resident.name} - proceeding with transfer approval`);
+                        }
+                    }
+                }
+            }
+            
             const decision = status === 'Approved' ? 'Approved' : 'Rejected';
             const res = await apiConnector("PUT", FLAT_REQUEST_API.ADMIN_DECISION(id), {
                 decision,
                 reason
             });
 
-            if (res.success) {
+            console.log('Admin decision response:', res);
+
+            // Check multiple response formats
+            const isSuccess = res?.success || res?.data?.success || (res && !res.error && res.status !== 'error');
+            
+            if (isSuccess) {
                 dispatch(updateRequest({ id, status, reason }));
+                
+                // Refresh requests list to get updated data
+                setTimeout(async () => {
+                    try {
+                        const refreshRes = await apiConnector("GET", FLAT_REQUEST_API.GET_ALL);
+                        if (refreshRes.success) {
+                            dispatch(setRequests(refreshRes.data));
+                        }
+                    } catch (refreshErr) {
+                        console.error('Failed to refresh requests:', refreshErr);
+                    }
+                }, 1000);
+                
+                // Refresh flat data after approval to show updated occupancy
                 if (status === 'Approved') {
-                    toast.success(`${name}'s request approved!`, { icon: '✅' });
+                    const request = filteredRequests.find(r => (r._id || r.id) === id);
+                    
+                    // If this was a transfer to an occupied flat, handle old resident removal
+                    if (request?.flat) {
+                        try {
+                            // First vacate the flat to remove old resident
+                            await apiConnector("PUT", FLAT_API.VACATE(request.flat._id));
+                            console.log(`Old resident removed from flat ${request.flat.flatNumber}`);
+                            
+                            // Then assign to new resident
+                            await apiConnector("PUT", FLAT_API.ASSIGN, {
+                                flatId: request.flat._id,
+                                userId: request.user._id || request.userId
+                            });
+                            console.log(`Flat ${request.flat.flatNumber} assigned to new resident ${name}`);
+                        } catch (assignErr) {
+                            console.error('Flat assignment error:', assignErr);
+                        }
+                    }
+                    
+                    // Optional: Trigger a refresh of flat data in other components
+                    window.dispatchEvent(new CustomEvent('flatAssigned', { 
+                        detail: { flatId: request?.flat?._id, residentName: name } 
+                    }));
+                    
+                    showToast.approved(`${name}'s transfer request approved successfully! Flat has been assigned.`);
                 } else {
-                    toast.error(`${name}'s request rejected.`, { icon: '❌' });
+                    showToast.rejected(`${name}'s request rejected.`);
                     setShowRejectionModal(false);
                     setRejectionReason('');
                 }
+            } else {
+                // Handle specific error messages
+                const errorMsg = res?.message || res?.data?.message || res?.error || 'Action failed';
+                if (errorMsg.includes('invalid') || errorMsg.includes('Invalid')) {
+                    throw new Error('Request status has changed. Please refresh and try again.');
+                } else {
+                    throw new Error(errorMsg);
+                }
             }
         } catch (err) {
-            toast.error(err.message || "Failed to update request");
+            console.error('Action error:', err);
+            showToast.error(err?.message || "Failed to update request");
+        } finally {
+            setProcessingRequests(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(id);
+                return newSet;
+            });
         }
     };
 
@@ -193,14 +283,31 @@ const ManageRequests = () => {
                                 {req.status === 'Pending' && (
                                     <div className="flex gap-4">
                                         <button
-                                            onClick={() => handleAction(req._id || req.id, req.user?.name || req.name, 'Approved')}
-                                            className="grow bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-xl shadow-emerald-100 uppercase tracking-widest text-[10px]"
+                                            onClick={() => {
+                                                console.log('Approve clicked for:', req._id || req.id);
+                                                handleAction(req._id || req.id, req.user?.name || req.name, 'Approved');
+                                            }}
+                                            disabled={processingRequests.has(req._id || req.id)}
+                                            className={`grow font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-xl shadow-emerald-100 uppercase tracking-widest text-[10px] ${
+                                                processingRequests.has(req._id || req.id) 
+                                                    ? 'bg-emerald-300 text-emerald-100 cursor-not-allowed' 
+                                                    : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                                            }`}
                                         >
-                                            <CheckCircle2 className="w-4 h-4" /> Approve
+                                            <CheckCircle2 className="w-4 h-4" /> 
+                                            {processingRequests.has(req._id || req.id) ? 'Processing...' : 'Approve'}
                                         </button>
                                         <button
-                                            onClick={() => handleRejectClick(req)}
-                                            className="grow bg-white border border-rose-200 text-rose-500 hover:bg-rose-50 font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all uppercase tracking-widest text-[10px]"
+                                            onClick={() => {
+                                                console.log('Reject clicked for:', req._id || req.id);
+                                                handleRejectClick(req);
+                                            }}
+                                            disabled={processingRequests.has(req._id || req.id)}
+                                            className={`grow font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all uppercase tracking-widest text-[10px] ${
+                                                processingRequests.has(req._id || req.id)
+                                                    ? 'bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed'
+                                                    : 'bg-white border border-rose-200 text-rose-500 hover:bg-rose-50'
+                                            }`}
                                         >
                                             <XSquare className="w-4 h-4" /> Reject
                                         </button>
@@ -261,9 +368,14 @@ const ManageRequests = () => {
                                 </button>
                                 <button
                                     onClick={() => handleAction(selectedRequest._id || selectedRequest.id, selectedRequest.user?.name || selectedRequest.name, 'Rejected', rejectionReason)}
-                                    className="flex-[1.5] bg-rose-500 hover:bg-rose-600 text-white font-black py-4.5 rounded-2xl shadow-xl shadow-rose-100 transition-all uppercase tracking-widest text-[10px]"
+                                    disabled={processingRequests.has(selectedRequest?._id || selectedRequest?.id)}
+                                    className={`flex-[1.5] font-black py-4.5 rounded-2xl shadow-xl shadow-rose-100 transition-all uppercase tracking-widest text-[10px] ${
+                                        processingRequests.has(selectedRequest?._id || selectedRequest?.id)
+                                            ? 'bg-rose-300 text-rose-100 cursor-not-allowed'
+                                            : 'bg-rose-500 hover:bg-rose-600 text-white'
+                                    }`}
                                 >
-                                    Confirm Reject
+                                    {processingRequests.has(selectedRequest?._id || selectedRequest?.id) ? 'Processing...' : 'Confirm Reject'}
                                 </button>
                             </div>
                         </div>

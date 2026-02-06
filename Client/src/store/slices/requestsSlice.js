@@ -13,8 +13,14 @@ const requestsSlice = createSlice({
             state.items.unshift(action.payload);
         },
         updateRequest: (state, action) => {
-            const index = state.items.findIndex(r => r.id === action.payload.id || r._id === action.payload._id);
-            if (index !== -1) state.items[index] = { ...state.items[index], ...action.payload };
+            const { id, ...updates } = action.payload;
+            const index = state.items.findIndex(r => (r._id === id || r.id === id));
+            if (index !== -1) {
+                state.items[index] = { ...state.items[index], ...updates };
+                console.log('Updated request:', state.items[index]);
+            } else {
+                console.log('Request not found for update:', id);
+            }
         }
     }
 });

@@ -7,16 +7,35 @@ const {
   getMyMaintenance,
   payMaintenance,
   createMaintenance,
+  generateCommonMaintenance,
+  deleteMaintenance,
 } = require("../controllers/Maintenance");
 
 const { protect, authorizeRoles } = require("../middelware/auth");
+router.get("/test", (req, res) => {
+  res.send("Maintenance route works!");
+});
 
 // ADMIN
 router.post(
-  "/all",
+  "/",
   protect,
   authorizeRoles("ADMIN"),
   createMaintenance
+);
+
+router.post(
+  "/generate",
+  protect,
+  authorizeRoles("ADMIN"),
+  generateCommonMaintenance
+);
+
+router.get(
+  "/all",
+  protect,
+  authorizeRoles("ADMIN"),
+  getAllMaintenance
 );
 
 router.get(
@@ -24,6 +43,14 @@ router.get(
   protect,
   authorizeRoles("ADMIN"),
   getAllMaintenance
+);
+
+// Delete maintenance record (ADMIN only)
+router.delete(
+  "/:id",
+  protect,
+  authorizeRoles("ADMIN"),
+  deleteMaintenance
 );
 
 // RESIDENT

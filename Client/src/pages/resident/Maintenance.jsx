@@ -16,7 +16,7 @@ import toast from 'react-hot-toast';
 import { apiConnector } from '../../services/apiConnector';
 import { MAINTENANCE_API } from '../../services/apis';
 
-import { setMaintenance, updateMaintenance } from '../../store/store';
+import { setMaintenance, updateMaintenance, clearMaintenance } from '../../store/store';
 
 //  COMMON UI COMPONENTS
 import PageHeader from '../../components/common/PageHeader';
@@ -39,14 +39,23 @@ const Maintenance = () => {
 
  
   useEffect(() => {
+    // Force clear maintenance data first
+    dispatch(clearMaintenance());
+    
     const fetchMyMaintenance = async () => {
       try {
-        const res = await apiConnector("GET", MAINTENANCE_API.GET_MY);
-        if (res.success) {
+        const res = await apiConnector("GET", MAINTENANCE_API.MY);
+        console.log("My Maintenance API Response:", res);
+        
+        if (res.success && res.data && res.data.length > 0) {
           dispatch(setMaintenance(res.data));
+        } else {
+          dispatch(clearMaintenance());
+          console.log("No maintenance data found for user");
         }
       } catch (err) {
         console.error("Fetch Maintenance Error:", err);
+        dispatch(clearMaintenance());
         toast.error("Failed to load maintenance records");
       }
     };
@@ -59,32 +68,61 @@ const Maintenance = () => {
   };
 
   const confirmPayment = async () => {
+    if (!selectedBill) {
+      toast.error('No bill selected');
+      return;
+    }
+
     try {
       const id = selectedBill._id || selectedBill.id;
-      const res = await apiConnector("PUT", MAINTENANCE_API.PAY(id));
+      console.log('Payment attempt:', {
+        billId: id,
+        amount: selectedBill.amount,
+        period: selectedBill.period
+      });
+      
+      const response = await apiConnector("PUT", MAINTENANCE_API.PAY(id), {});
+      console.log('Payment API response:', response);
 
-      if (res.success) {
-        // Update local state
-        dispatch(updateMaintenance({ id, status: 'PAID', paidAt: new Date().toISOString() }));
-        toast.success(`Payment of ₹${selectedBill.amount} successful!`, { icon: '💰' });
+      if (response && response.success) {
+        dispatch(updateMaintenance({ 
+          id, 
+          status: 'PAID', 
+          paidAt: new Date().toISOString() 
+        }));
+        
+        toast.success(
+          `🎉 Payment Successful!\n₹${selectedBill.amount} paid for ${selectedBill.period}\nAdmin has been notified!`, 
+          {
+            duration: 4000,
+            style: { 
+              background: '#10B981', 
+              color: 'white',
+              fontWeight: 'bold'
+            }
+          }
+        );
+        
         setShowPaymentModal(false);
         setSelectedBill(null);
+      } else {
+        throw new Error(response?.message || 'Payment failed');
       }
-    } catch (err) {
-      toast.error(err.message || "Payment failed");
+    } catch (error) {
+      console.error('Payment error details:', error);
+      toast.error('Payment failed. Please try again.');
     }
   };
 
   const filteredRecords = (records || []).filter(r => {
     const displayStatus = r.status === 'PAID' ? 'Paid' : 'Unpaid';
     const matchesStatus = filterStatus === 'All' || displayStatus === filterStatus;
-    const period = `${r.month} ${r.year}`;
-    const matchesSearch = (r.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      period.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (r.description || r.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (r.period || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
-  const pendingAmount = (records || []).filter(r => r.status === 'PENDING').reduce((sum, r) => sum + r.amount, 0);
+  const pendingAmount = (records || []).filter(r => r.status === 'UNPAID').reduce((sum, r) => sum + r.amount, 0);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
@@ -105,7 +143,7 @@ const Maintenance = () => {
         />
         <StatCard
           label="Pending Bills"
-          value={(records || []).filter(r => r.status === 'PENDING').length}
+          value={(records || []).filter(r => r.status === 'UNPAID').length}
           icon={Clock}
           colorClass="bg-amber-50 text-amber-600"
           delay={0.2}
@@ -164,7 +202,7 @@ const Maintenance = () => {
                 <div className="space-y-6">
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Billing Period</p>
-                    <h3 className="text-2xl font-black text-slate-800 tracking-tight uppercase">{bill.month} {bill.year}</h3>
+                    <h3 className="text-2xl font-black text-slate-800 tracking-tight uppercase">{bill.period || `${bill.month || ''} ${bill.year || ''}`}</h3>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -173,8 +211,8 @@ const Maintenance = () => {
                       <p className="text-xs font-bold text-slate-700">{bill.type || 'Common'}</p>
                     </div>
                     <div className="bg-white/60 p-3 rounded-xl border border-white/50">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Flat No</p>
-                      <p className="text-xs font-bold text-slate-700">{user?.flat?.flatNumber || bill.flat?.flatNumber || '-'}</p>
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Title</p>
+                      <p className="text-xs font-bold text-slate-700">{bill.title || 'Maintenance'}</p>
                     </div>
                   </div>
 
@@ -188,7 +226,7 @@ const Maintenance = () => {
               </div>
 
               <div className="p-4">
-                {bill.status === 'PENDING' ? (
+                {bill.status === 'UNPAID' ? (
                   <Button
                     fullWidth
                     className="py-4.5 shadow-xl shadow-indigo-100"
@@ -221,7 +259,7 @@ const Maintenance = () => {
           <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
             <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-200 border-dashed">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Bill Period</span>
-              <span className="font-black text-slate-800 uppercase">{selectedBill?.month} {selectedBill?.year}</span>
+              <span className="font-black text-slate-800 uppercase">{selectedBill?.period || `${selectedBill?.month || ''} ${selectedBill?.year || ''}`}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Amount</span>
@@ -231,7 +269,7 @@ const Maintenance = () => {
 
           <div className="bg-amber-50 p-4 rounded-xl flex gap-3 items-start border border-amber-100">
             <Clock className="text-amber-500 shrink-0 mt-0.5" size={16} />
-            <p className="text-[10px] text-amber-700 font-bold leading-relaxed uppercase">By clicking confirm, you will be redirected to the secure payment processing page.</p>
+            <p className="text-[10px] text-amber-700 font-bold leading-relaxed uppercase">By clicking confirm, your payment will be processed instantly and admin will be notified automatically.</p>
           </div>
 
           <div className="flex gap-4 pt-4">
@@ -241,7 +279,15 @@ const Maintenance = () => {
             >
               Cancel
             </button>
-            <Button fullWidth onClick={confirmPayment} className="flex-[2] py-4">Proceed to Pay</Button>
+            <Button 
+              fullWidth 
+              onClick={confirmPayment} 
+              className="flex-[2] py-4" 
+              disabled={!selectedBill}
+              type="button"
+            >
+              Proceed to Pay
+            </Button>
           </div>
         </div>
       </Modal>
