@@ -215,7 +215,6 @@ const ManageRequests = () => {
                         </div>
                     </div>
                 ))}
-
                 {filteredRequests.length === 0 && (
                     <div className="bg-white rounded-[3rem] border border-dashed border-slate-200 p-20 text-center text-slate-400">
                         <ClipboardList className="w-16 h-16 mx-auto mb-6 opacity-10" />
@@ -223,8 +222,6 @@ const ManageRequests = () => {
                     </div>
                 )}
             </div>
-
-            {/* YOUR PREMIUM REJECTION MODAL */}
             {showRejectionModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-sm overflow-hidden border border-white/20 scale-in-center">
@@ -272,5 +269,4 @@ const ManageRequests = () => {
         </div>
     );
 };
-
 export default ManageRequests;
