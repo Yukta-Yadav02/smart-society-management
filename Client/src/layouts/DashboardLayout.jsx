@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Sidebar from '../components/layout/Sidebar';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { UserCircle } from 'lucide-react';
+import { UserCircle, Menu, X } from 'lucide-react';
 import { roleBgClass } from '../utils/userHelpers';
 
 const DashboardLayout = () => {
     const { user } = useAuth();
     const location = useLocation();
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
     console.log('Current user:', user);
     console.log('Current path:', location.pathname);
@@ -38,14 +39,27 @@ const DashboardLayout = () => {
         }
     }
     return (
-        <div className="flex min-h-screen bg-slate-50/50">
-            <Sidebar />
+        <div className="flex min-h-screen bg-slate-50/50 relative">
+            {/* Sidebar with mobile props */}
+            <Sidebar
+                mobileOpen={mobileSidebarOpen}
+                setMobileOpen={setMobileSidebarOpen}
+            />
 
-            <main className="flex-1 transition-all duration-300">
+            <main className="flex-1 transition-all duration-300 w-full">
                 {/* Top Header */}
-                <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-end px-8 sticky top-0 z-10">
-                    <div className="flex items-center gap-4">
-                        <div className="text-right">
+                <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-10">
+                    {/* Mobile Menu Button - Visible on small screens */}
+                    <button
+                        onClick={() => setMobileSidebarOpen(true)}
+                        className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+                    >
+                        <Menu className="w-6 h-6" />
+                    </button>
+
+                    {/* Right Side Header Content */}
+                    <div className="flex items-center gap-4 ml-auto">
+                        <div className="text-right hidden sm:block">
                             <p className="text-sm font-semibold text-slate-800">
                                 {user?.name || 'User'}
                             </p>
@@ -64,7 +78,7 @@ const DashboardLayout = () => {
                 </header>
 
                 {/* Page Content */}
-                <div className="p-8">
+                <div className="p-4 lg:p-8">
                     <Outlet />
                 </div>
             </main>

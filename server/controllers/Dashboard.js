@@ -125,7 +125,7 @@ exports.getAdminStats = async (req, res) => {
 exports.getResidentStats = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate("flat");
-    
+
     if (!user.flat) {
       return res.status(400).json({
         success: false,
@@ -134,18 +134,18 @@ exports.getResidentStats = async (req, res) => {
     }
 
     const myComplaints = await Complaint.countDocuments({ user: req.user.id });
-    const pendingComplaints = await Complaint.countDocuments({ 
-      user: req.user.id, 
-      status: "OPEN" 
+    const pendingComplaints = await Complaint.countDocuments({
+      user: req.user.id,
+      status: "OPEN"
     });
-    
+
     const myMaintenance = await Maintenance.countDocuments({
       $or: [
         { flat: user.flat._id },
         { flat: null } // Society-wide maintenance
       ]
     });
-    
+
     const unpaidMaintenance = await Maintenance.countDocuments({
       $or: [
         { flat: user.flat._id },
@@ -180,9 +180,9 @@ exports.getResidentStats = async (req, res) => {
         { flat: user.flat._id }
       ]
     })
-    .populate("createdBy", "name")
-    .sort({ createdAt: -1 })
-    .limit(3);
+      .populate("createdBy", "name")
+      .sort({ createdAt: -1 })
+      .limit(3);
 
     res.status(200).json({
       success: true,

@@ -5,6 +5,8 @@ const router = express.Router();
 const {
   createVisitorEntry,
   markVisitorExit,
+  getAllVisitorsHistory,
+  getActiveVisitors,
   getMyFlatVisitors,
 } = require("../controllers/Visitor");
 
@@ -23,6 +25,22 @@ router.put(
   protect,
   authorizeRoles("SECURITY"),
   markVisitorExit
+);
+
+// Get all visitors history (both IN and OUT)
+router.get(
+  "/history",
+  protect,
+  authorizeRoles("SECURITY"),
+  getAllVisitorsHistory
+);
+
+// Get only active visitors (currently inside)
+router.get(
+  "/active",
+  protect,
+  authorizeRoles("SECURITY"),
+  getActiveVisitors
 );
 
 // // RESIDENT

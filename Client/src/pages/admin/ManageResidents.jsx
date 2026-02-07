@@ -48,6 +48,7 @@ const ManageResidents = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [selectedResidentId, setSelectedResidentId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [typeFilter, setTypeFilter] = useState('All'); // All, Owner, Tenant
 
     useEffect(() => {
         const fetchResidents = async () => {
@@ -78,7 +79,6 @@ const ManageResidents = () => {
     const onSubmit = async (data) => {
         try {
             if (isEditing) {
-                // For editing, also update residentType field to match the type
                 const updateData = {
                     ...data,
                     residentType: data.type === 'Owner' ? 'OWNER' : 'TENANT'
@@ -89,11 +89,10 @@ const ManageResidents = () => {
                     toast.success(`${data.name} updated successfully!`, { icon: '🔄' });
                 }
             } else {
-                // Add default password for new residents if not present in form
-                const payload = { 
-                    ...data, 
-                    password: "password123", 
-                    confirmPassword: "password123", 
+                const payload = {
+                    ...data,
+                    password: "password123",
+                    confirmPassword: "password123",
                     role: "Resident",
                     residentType: data.type === 'Owner' ? 'OWNER' : 'TENANT'
                 };
@@ -118,7 +117,10 @@ const ManageResidents = () => {
         setValue('phone', resident.phone || '');
         setValue('wing', resident.flat?.wing?.name || resident.wing || 'A');
         setValue('flat', resident.flat?.flatNumber || resident.flat || '');
-        setValue('type', resident.type || 'Owner');
+        // Get type from residentType or type field (Case-insensitive)
+        const currentType = (resident.residentType || resident.type || '').toUpperCase();
+        const residentTypeValue = currentType === 'TENANT' || currentType === 'RENTAL' ? 'Tenant' : 'Owner';
+        setValue('type', residentTypeValue);
 
         setShowModal(true);
     };
@@ -149,11 +151,11 @@ const ManageResidents = () => {
         .filter(r => {
             // Remove duplicates by keeping only unique names with flats
             const flatNumber = r.flat?.flatNumber || r.flat;
-            const isDuplicate = (residents || []).filter(resident => 
-                resident.name === r.name && 
+            const isDuplicate = (residents || []).filter(resident =>
+                resident.name === r.name &&
                 (resident.flat?.flatNumber || resident.flat)
             ).length > 1;
-            
+
             // If duplicate, keep only the one with valid flat assignment
             if (isDuplicate) {
                 return flatNumber && flatNumber !== '-' && flatNumber !== 'undefined';
@@ -164,13 +166,16 @@ const ManageResidents = () => {
             (r.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (r.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (r.flat?.flatNumber || r.flat || '').toString().includes(searchQuery)
-        );
+        )
+        .filter(r => {
+            // Type filter (Robust check)
+            const type = (r.residentType || r.type || '').toUpperCase();
+            if (typeFilter === 'All') return true;
+            if (typeFilter === 'Owner') return type === 'OWNER' || (type !== 'TENANT' && type !== 'RENTAL');
+            if (typeFilter === 'Tenant') return type === 'TENANT' || type === 'RENTAL';
+            return true;
+        });
 
-    console.log('Current residents:', residents);
-    console.log('Filtered residents:', filteredResidents);
-
-    console.log('Current residents:', residents);
-    console.log('Filtered residents:', filteredResidents);
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
@@ -191,17 +196,23 @@ const ManageResidents = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 {[
                     { label: 'Total Residents', value: (residents || []).length, color: 'bg-indigo-50 text-indigo-600', icon: Users },
-                    { 
-                        label: 'Owners', 
-                        value: (residents || []).length, // Show all as owners for now
-                        color: 'bg-emerald-50 text-emerald-600', 
-                        icon: ShieldCheck 
+                    {
+                        label: 'Owners',
+                        value: (residents || []).filter(r => {
+                            const t = (r.residentType || r.type || '').toUpperCase();
+                            return t === 'OWNER' || (t !== 'TENANT' && t !== 'RENTAL');
+                        }).length,
+                        color: 'bg-emerald-50 text-emerald-600',
+                        icon: ShieldCheck
                     },
-                    { 
-                        label: 'Tenants', 
-                        value: 0, // Show 0 tenants for now
-                        color: 'bg-amber-50 text-amber-600', 
-                        icon: Building2 
+                    {
+                        label: 'Tenants',
+                        value: (residents || []).filter(r => {
+                            const t = (r.residentType || r.type || '').toUpperCase();
+                            return t === 'TENANT' || t === 'RENTAL';
+                        }).length,
+                        color: 'bg-amber-50 text-amber-600',
+                        icon: Building2
                     },
                 ].map((stat, i) => (
                     <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:border-indigo-100 transition-all">
@@ -216,8 +227,8 @@ const ManageResidents = () => {
                 ))}
             </div>
 
-            <div className="bg-white p-2 rounded-[2rem] border border-slate-100 shadow-sm mb-10">
-                <div className="relative w-full">
+            <div className="bg-white p-2 rounded-[2rem] border border-slate-100 shadow-sm mb-10 flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
                     <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                     <input
                         type="text"
@@ -226,6 +237,20 @@ const ManageResidents = () => {
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-14 pr-4 py-4 rounded-[1.5rem] bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-100 focus:outline-none focus:ring-4 focus:ring-indigo-500/5 transition-all text-slate-700 font-bold"
                     />
+                </div>
+                <div className="flex bg-slate-50 p-1.5 rounded-[1.5rem] border border-slate-100">
+                    {['All', 'Owner', 'Tenant'].map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setTypeFilter(tab)}
+                            className={`px-8 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${typeFilter === tab
+                                ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/50'
+                                : 'text-slate-400 hover:text-slate-600'
+                                }`}
+                        >
+                            {tab}s
+                        </button>
+                    ))}
                 </div>
             </div>
 
@@ -240,59 +265,63 @@ const ManageResidents = () => {
                     </div>
                 ) : (
                     filteredResidents.map((res) => (
-                    <div key={res._id || res.id} className="bg-white rounded-[2.5rem] border border-slate-100 p-2 shadow-sm hover:shadow-xl hover:translate-y-[-4px] transition-all duration-300 group overflow-hidden">
-                        <div className="rounded-[2rem] bg-slate-50/50 p-6">
-                            <div className="flex justify-between items-start mb-6">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 rounded-[1.5rem] bg-white border border-slate-100 shadow-sm overflow-hidden p-1">
-                                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${res.name}`} alt={res.name} className="w-full h-full object-cover rounded-xl" />
+                        <div key={res._id || res.id} className="bg-white rounded-[2.5rem] border border-slate-100 p-2 shadow-sm hover:shadow-xl hover:translate-y-[-4px] transition-all duration-300 group overflow-hidden">
+                            <div className="rounded-[2rem] bg-slate-50/50 p-6">
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-16 h-16 rounded-[1.5rem] bg-white border border-slate-100 shadow-sm overflow-hidden p-1">
+                                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${res.name}`} alt={res.name} className="w-full h-full object-cover rounded-xl" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-black text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{res.name}</h3>
+                                            <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest mt-1 inline-block ${((res.residentType || '').toUpperCase() === 'TENANT' || (res.type || '').toLowerCase() === 'tenant' || (res.residentType || '').toUpperCase() === 'RENTAL')
+                                                ? 'bg-amber-100 text-amber-600'
+                                                : 'bg-indigo-100 text-indigo-600'
+                                                }`}>
+                                                {((res.residentType || '').toUpperCase() === 'TENANT' || (res.type || '').toLowerCase() === 'tenant' || (res.residentType || '').toUpperCase() === 'RENTAL') ? 'Tenant' : 'Owner'}
+                                            </span>
+
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="text-lg font-black text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{res.name}</h3>
-                                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest mt-1 inline-block ${(res.type === 'Owner' || res.residentType === 'OWNER' || res.ownershipType === 'OWNER' || (!res.type && !res.residentType && !res.ownershipType)) ? 'bg-indigo-100 text-indigo-600' : 'bg-amber-100 text-amber-600'}`}>
-                                            Owner
+                                    <button className="p-2 rounded-xl text-slate-300 hover:text-slate-600 hover:bg-white transition-all">
+                                        <MoreVertical className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3 text-slate-500 bg-white/60 p-3 rounded-2xl border border-white/40">
+                                        <Building2 className="w-4 h-4 text-indigo-400" />
+                                        <span className="text-sm font-bold">
+                                            Wing {res.wing || res.flat?.wing?.name || '-'} - Flat {res.flat?.flatNumber || res.flat || '-'}
                                         </span>
                                     </div>
+                                    <div className="flex items-center gap-3 text-slate-500 border border-transparent px-3">
+                                        <Mail className="w-4 h-4 text-slate-300" />
+                                        <span className="text-xs font-bold truncate">{res.email}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-slate-500 border border-transparent px-3">
+                                        <Phone className="w-4 h-4 text-slate-300" />
+                                        <span className="text-xs font-bold">{res.phone || 'N/A'}</span>
+                                    </div>
                                 </div>
-                                <button className="p-2 rounded-xl text-slate-300 hover:text-slate-600 hover:bg-white transition-all">
-                                    <MoreVertical className="w-5 h-5" />
+                            </div>
+
+                            <div className="p-4 flex gap-2">
+                                <button
+                                    onClick={() => handleEdit(res)}
+                                    className="flex-1 py-3.5 rounded-2xl bg-white border border-slate-100 text-slate-400 font-bold text-xs hover:text-indigo-600 hover:border-indigo-100 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Edit className="w-4 h-4" /> Edit
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(res._id || res.id, res.name)}
+                                    className="flex-1 py-3.5 rounded-2xl bg-white border border-slate-100 text-slate-400 font-bold text-xs hover:text-rose-500 hover:border-rose-100 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Trash2 className="w-4 h-4" /> Remove
                                 </button>
                             </div>
-
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-3 text-slate-500 bg-white/60 p-3 rounded-2xl border border-white/40">
-                                    <Building2 className="w-4 h-4 text-indigo-400" />
-                                    <span className="text-sm font-bold">
-                                        Wing {res.wing || res.flat?.wing?.name || '-'} - Flat {res.flat?.flatNumber || res.flat || '-'}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-3 text-slate-500 border border-transparent px-3">
-                                    <Mail className="w-4 h-4 text-slate-300" />
-                                    <span className="text-xs font-bold truncate">{res.email}</span>
-                                </div>
-                                <div className="flex items-center gap-3 text-slate-500 border border-transparent px-3">
-                                    <Phone className="w-4 h-4 text-slate-300" />
-                                    <span className="text-xs font-bold">{res.phone || 'N/A'}</span>
-                                </div>
-                            </div>
                         </div>
-
-                        <div className="p-4 flex gap-2">
-                            <button
-                                onClick={() => handleEdit(res)}
-                                className="flex-1 py-3.5 rounded-2xl bg-white border border-slate-100 text-slate-400 font-bold text-xs hover:text-indigo-600 hover:border-indigo-100 transition-all flex items-center justify-center gap-2"
-                            >
-                                <Edit className="w-4 h-4" /> Edit
-                            </button>
-                            <button
-                                onClick={() => handleDelete(res._id || res.id, res.name)}
-                                className="flex-1 py-3.5 rounded-2xl bg-white border border-slate-100 text-slate-400 font-bold text-xs hover:text-rose-500 hover:border-rose-100 transition-all flex items-center justify-center gap-2"
-                            >
-                                <Trash2 className="w-4 h-4" /> Remove
-                            </button>
-                        </div>
-                    </div>
-                ))
+                    ))
                 )}
             </div>
 

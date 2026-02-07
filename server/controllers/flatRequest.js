@@ -1,5 +1,6 @@
 // controllers/flatRequestController.js
-const FlatRequest = require("../models/FlatRequest");
+// [OWNERSHIP FLOW] - Correct model import
+const FlatRequest = require("../models/flatRequest");
 const Flat = require("../models/Flat");
 const User = require("../models/User");
 
@@ -7,23 +8,23 @@ const User = require("../models/User");
 exports.createFlatRequest = async (req, res) => {
   try {
 
-    
-    const { flatId, ownershipType, remark } = req.body;
+
+    const { flatId, ownershipType, remark, contactNumber, memberCount, aadhaarNumber } = req.body;
 
     console.log('Flat request data:', { flatId, ownershipType, remark, userId: req.user.id });
-    
-    const exists = await FlatRequest.findOne({
-          user: req.user.id,
-          flat: flatId,
-          status: "Pending",
-      });
 
-if (exists) {
-  return res.status(400).json({
-    success: false,
-    message: "You already have a pending request for this flat",
-  });
-}
+    const exists = await FlatRequest.findOne({
+      user: req.user.id,
+      flat: flatId,
+      status: "Pending",
+    });
+
+    if (exists) {
+      return res.status(400).json({
+        success: false,
+        message: "You already have a pending request for this flat",
+      });
+    }
 
     if (!flatId || !ownershipType) {
       return res.status(400).json({
@@ -45,6 +46,9 @@ if (exists) {
       flat: flatId,
       ownershipType,
       remark,
+      contactNumber,
+      memberCount,
+      aadhaarNumber
     });
 
     console.log('Created request:', request);
@@ -77,8 +81,8 @@ exports.getAllFlatRequests = async (req, res) => {
         }
       })
       .sort({ createdAt: -1 });
-      
-      console.log(requests);
+
+    console.log(requests);
 
     return res.status(200).json({
       success: true,
@@ -185,7 +189,7 @@ exports.adminDecision = async (req, res) => {
     if (flat.currentResident) {
       // Check if currentResident actually exists in database
       const actualResident = await User.findById(flat.currentResident);
-      
+
       if (!actualResident) {
         // If resident doesn't exist, clear the flat and allow approval
         await Flat.findByIdAndUpdate(flat._id, {
@@ -201,7 +205,7 @@ exports.adminDecision = async (req, res) => {
             message: "Resident response required before decision",
           });
         }
-        
+
         // If resident rejected, admin can only reject (unless override)
         if (!req.body.adminOverride && request.residentOpinion === "Rejected" && decision === "Approved") {
           return res.status(400).json({
@@ -217,43 +221,52 @@ exports.adminDecision = async (req, res) => {
 
     // assign flat only when approved
     if (decision === "Approved") {
-      // Remove current resident if exists
-      if (flat.currentResident) {
-        // Completely remove old user's flat assignment
-        await User.findByIdAndUpdate(flat.currentResident, {
-          flat: null,
-          status: "INACTIVE"
-        });
-        
-        // Also remove from flat's currentResident field
+      // [OWNERSHIP FLOW] - Check if this is an Ownership request or Rental request
+      if (request.ownershipType === "OWNER") {
+        // CASE: FLAT SOLD (Naya Malik)
         await Flat.findByIdAndUpdate(flat._id, {
-          currentResident: null,
-          isOccupied: false
+          owner: request.user._id,
+          // Agar malik khud rehne aa raha hai toh resident bhi wahi hoga
+          currentResident: request.user._id,
+          isOccupied: true,
+          resident: {
+            _id: request.user._id,
+            name: request.user.name,
+            email: request.user.email
+          }
         });
-        
-        console.log(`Removed previous resident from flat ${flat.flatNumber}`);
+        console.log(`🏠 OWNERSHIP TRANSFERRED: Flat ${flat.flatNumber} now owned by ${request.user.name}`);
+      }
+      else if (request.ownershipType === "TENANT") {
+        // CASE: FLAT ON RENT (Kirayedar aaya hai, Malik purana hi rahega)
+
+        // Remove old resident if exists
+        if (flat.currentResident) {
+          await User.findByIdAndUpdate(flat.currentResident, {
+            flat: null,
+            status: "INACTIVE"
+          });
+        }
+
+        // Update Flat occupancy but KEEP the existing owner
+        await Flat.findByIdAndUpdate(flat._id, {
+          currentResident: request.user._id,
+          isOccupied: true,
+          resident: {
+            _id: request.user._id,
+            name: request.user.name,
+            email: request.user.email
+          }
+        });
+        console.log(`🔑 RENTAL START: Flat ${flat.flatNumber} rented by ${request.user.name}. Owner remains same.`);
       }
 
-      // Assign new resident
-      await Flat.findByIdAndUpdate(flat._id, {
-        currentResident: request.user._id,
-        isOccupied: true,
-        resident: {
-          _id: request.user._id,
-          name: request.user.name,
-          email: request.user.email
-        }
-      });
-
+      // Update user status and sync role/type
       await User.findByIdAndUpdate(request.user._id, {
         flat: flat._id,
-        status: "ACTIVE"
+        status: "ACTIVE",
+        residentType: request.ownershipType
       });
-
-      console.log(`✅ FLAT TRANSFER COMPLETED:`);
-      console.log(`   Old Resident: REMOVED from flat ${flat.flatNumber}`);
-      console.log(`   New Resident: ${request.user.name} assigned to flat ${flat.flatNumber}`);
-      console.log(`   Transfer Time: ${new Date().toLocaleString()}`);
     }
 
     await request.save();
@@ -276,7 +289,7 @@ exports.adminDecision = async (req, res) => {
 
 exports.getMyFlatRequests = async (req, res) => {
   try {
-    const userId = req.user.id; 
+    const userId = req.user.id;
 
     const requests = await FlatRequest.find({ user: userId })
       .populate("user", "name email")
@@ -305,7 +318,7 @@ exports.getMyFlatRequests = async (req, res) => {
 exports.getMyFlatTransferRequests = async (req, res) => {
   try {
     const currentUser = await User.findById(req.user.id).populate('flat');
-    
+
     if (!currentUser.flat) {
       return res.status(200).json({
         success: true,
@@ -320,9 +333,9 @@ exports.getMyFlatTransferRequests = async (req, res) => {
       residentOpinion: "Pending",
       status: "Pending"
     })
-    .populate("user", "name email")
-    .populate("flat", "flatNumber")
-    .sort({ createdAt: -1 });
+      .populate("user", "name email")
+      .populate("flat", "flatNumber")
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -341,20 +354,20 @@ exports.getMyFlatTransferRequests = async (req, res) => {
 exports.updateOldRequestsToOwner = async (req, res) => {
   try {
     console.log('Starting update of old requests...');
-    
+
     const result = await FlatRequest.updateMany(
       { ownershipType: 'RESIDENT' },
       { $set: { ownershipType: 'OWNER' } }
     );
-    
+
     console.log('Update result:', result);
-    
+
     return res.status(200).json({
       success: true,
       message: `Updated ${result.modifiedCount} requests to OWNER`,
       modifiedCount: result.modifiedCount
     });
-    
+
   } catch (error) {
     console.error('Update error:', error);
     return res.status(500).json({

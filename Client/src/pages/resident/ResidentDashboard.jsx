@@ -66,17 +66,17 @@ const ResidentDashboard = () => {
   const handleTransferResponse = async (requestId, response) => {
     try {
       console.log('Transfer response attempt:', { requestId, response });
-      
+
       const res = await apiConnector("PUT", FLAT_REQUEST_API.RESIDENT_RESPONSE(requestId), {
         response: response // 'Accepted' or 'Rejected'
       });
-      
+
       console.log('Transfer response result:', res);
-      
+
       if (res && res.success) {
         // Show success message with details
         toast.success(
-          `🎉 Transfer Request ${response}!\nAdmin has been notified and will process your response.`, 
+          `🎉 Transfer Request ${response}!\nAdmin has been notified and will process your response.`,
           {
             duration: 4000,
             style: {
@@ -86,7 +86,7 @@ const ResidentDashboard = () => {
             }
           }
         );
-        
+
         // Remove request from UI
         setTransferRequests(prev => prev.filter(req => req._id !== requestId));
       } else {

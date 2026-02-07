@@ -9,6 +9,8 @@ const {
   createMaintenance,
   generateCommonMaintenance,
   deleteMaintenance,
+  // NEW: Manual status toggle for admin
+  updateMaintenanceStatus,
 } = require("../controllers/Maintenance");
 
 const { protect, authorizeRoles } = require("../middelware/auth");
@@ -38,11 +40,20 @@ router.get(
   getAllMaintenance
 );
 
+// ADMIN → Get all maintenance records
 router.get(
   "/",
   protect,
   authorizeRoles("ADMIN"),
   getAllMaintenance
+);
+
+// NEW ROUTE: ADMIN → Manually toggle payment status (Paid/Unpaid)
+router.put(
+  "/:id/status",
+  protect,
+  authorizeRoles("ADMIN"),
+  updateMaintenanceStatus
 );
 
 // Delete maintenance record (ADMIN only)

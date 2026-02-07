@@ -25,32 +25,40 @@ const AddVisitor = () => {
     updateVisitorStats();
   }, []);
 
-  const updateVisitorStats = () => {
-    const visitors = JSON.parse(localStorage.getItem('visitors') || '[]');
-    const today = new Date().toDateString();
-    
-    // Today's visitors
-    const todayVisitors = visitors.filter(v => 
-      new Date(v.entryTime).toDateString() === today
-    ).length;
-    
-    // Active visitors (all visitors in localStorage are active)
-    const activeVisitors = visitors.length;
-    
-    // Peak hours calculation
-    const hourCounts = {};
-    visitors.forEach(v => {
-      const hour = new Date(v.entryTime).getHours();
-      hourCounts[hour] = (hourCounts[hour] || 0) + 1;
-    });
-    
-    const peakHour = Object.keys(hourCounts).reduce((a, b) => 
-      hourCounts[a] > hourCounts[b] ? a : b, '0'
-    );
-    
-    const peakHours = visitors.length > 0 ? `${peakHour}:00-${parseInt(peakHour)+1}:00` : '-';
-    
-    setVisitorStats({ todayVisitors, activeVisitors, peakHours });
+  const updateVisitorStats = async () => {
+    try {
+      const res = await apiConnector("GET", VISITOR_API.GET_ACTIVE);
+
+      if (res.success) {
+        const visitors = res.data || [];
+        const today = new Date().toDateString();
+
+        // Today's visitors
+        const todayVisitors = visitors.filter(v =>
+          new Date(v.entryTime).toDateString() === today
+        ).length;
+
+        // Active visitors (all visitors in localStorage are active)
+        const activeVisitors = visitors.length;
+
+        // Peak hours calculation
+        const hourCounts = {};
+        visitors.forEach(v => {
+          const hour = new Date(v.entryTime).getHours();
+          hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+        });
+
+        const peakHour = Object.keys(hourCounts).reduce((a, b) =>
+          hourCounts[a] > hourCounts[b] ? a : b, '0'
+        );
+
+        const peakHours = visitors.length > 0 ? `${peakHour}:00-${parseInt(peakHour) + 1}:00` : '-';
+
+        setVisitorStats({ todayVisitors, activeVisitors, peakHours });
+      }
+    } catch (error) {
+      console.error('Failed to fetch visitor stats:', error);
+    }
   };
 
   const fetchFlats = async () => {
@@ -70,45 +78,35 @@ const AddVisitor = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.mobile || !formData.flat || !formData.purpose) {
       toast.error('Please fill all required fields');
       return;
     }
 
     try {
-      // Mock visitor entry since backend endpoint doesn't exist
-      console.log('Mock visitor entry - Backend endpoint not available');
-      
       const payload = {
         name: formData.name,
         mobile: formData.mobile,
-        flat: formData.flat,
+        flatId: formData.flat,
         purpose: formData.purpose,
-        type: formData.type || 'guest',
-        entryTime: new Date().toISOString(),
-        id: Date.now().toString()
       };
-      
-      console.log('Visitor entry payload:', payload);
-      
-      // Store in localStorage as mock database
-      const existingVisitors = JSON.parse(localStorage.getItem('visitors') || '[]');
-      existingVisitors.push(payload);
-      localStorage.setItem('visitors', JSON.stringify(existingVisitors));
-      
-      // Update stats after adding visitor
-      updateVisitorStats();
-      
-      // Mock success response
-      toast.success('Visitor checked-in successfully!');
-      setShowSuccessPopup(true);
-      setFormData({ name: '', mobile: '', flat: '', type: '', purpose: '' });
 
-      setTimeout(() => {
-        setShowSuccessPopup(false);
-      }, 3000);
-      
+      const res = await apiConnector("POST", VISITOR_API.ENTRY, payload);
+
+      if (res.success) {
+        toast.success('Visitor checked-in successfully!');
+        setShowSuccessPopup(true);
+        setFormData({ name: '', mobile: '', flat: '', type: '', purpose: '' });
+        updateVisitorStats();
+
+        setTimeout(() => {
+          setShowSuccessPopup(false);
+        }, 3000);
+      } else {
+        toast.error(res.message || 'Failed to add visitor');
+      }
+
     } catch (error) {
       console.error('Visitor entry error:', error);
       toast.error('Error adding visitor');

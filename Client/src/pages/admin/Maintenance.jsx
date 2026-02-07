@@ -34,7 +34,6 @@ const commonSchema = yup.object().shape({
 });
 
 const specialSchema = yup.object().shape({
-    flatId: yup.string().required('Flat is required'),
     amount: yup.number().typeError('Must be a number').required('Amount is required'),
     description: yup.string().required('Description is required'),
     period: yup.string().required('Month/Year is required'),
@@ -50,20 +49,24 @@ const Maintenance = () => {
     const [filterStatus, setFilterStatus] = useState('All');
     const [filterMonth, setFilterMonth] = useState('All');
     const [filterWing, setFilterWing] = useState('All');
+    const [filterType, setFilterType] = useState('Monthly');
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(false);
+    const [selectedFlats, setSelectedFlats] = useState([]);
+    const [isAllFlats, setIsAllFlats] = useState(false);
+    const [wingSearch, setWingSearch] = useState('All');
 
     useEffect(() => {
         // Force clear maintenance data first
         dispatch(clearMaintenance());
-        
+
         const fetchData = async () => {
             try {
                 // Try fetching flats directly first
                 console.log('Fetching flats directly...');
                 const directFlatsRes = await apiConnector("GET", FLAT_API.GET_ALL);
                 console.log('Direct flats response:', directFlatsRes);
-                
+
                 if (directFlatsRes.success && directFlatsRes.data && directFlatsRes.data.length > 0) {
                     dispatch(setFlats(directFlatsRes.data));
                     console.log('Flats loaded directly:', directFlatsRes.data.length);
@@ -72,7 +75,7 @@ const Maintenance = () => {
                     console.log('Fetching flats from wings...');
                     const flatsRes = await apiConnector("GET", WING_API.GET_ALL);
                     console.log('Wings response:', flatsRes);
-                    
+
                     if (flatsRes.success && flatsRes.data) {
                         const allFlats = [];
                         flatsRes.data.forEach(wing => {
@@ -84,12 +87,12 @@ const Maintenance = () => {
                         console.log('Flats loaded from wings:', allFlats.length);
                     }
                 }
-                
+
                 // Then fetch maintenance data
                 console.log('Fetching maintenance data...');
                 const maintenanceRes = await apiConnector("GET", MAINTENANCE_API.GET_ALL);
                 console.log('Maintenance API Response:', maintenanceRes);
-                
+
                 if (maintenanceRes && maintenanceRes.success) {
                     const data = maintenanceRes.data || [];
                     console.log('Maintenance data received:', data.length, 'records');
@@ -113,17 +116,19 @@ const Maintenance = () => {
     const onGenerateCommon = async (data) => {
         try {
             console.log('Using bulk generate endpoint...');
-            
+
+            // NEW COMMENT: includeVacant flag determines if empty flats get the bill or not
             const payload = {
                 amount: Number(data.amount),
-                period: data.period
+                period: data.period,
+                includeVacant: data.includeVacant // Taken from the checkbox in modal
             };
-            
+
             console.log('Bulk generate payload:', payload);
             const res = await apiConnector("POST", MAINTENANCE_API.GENERATE, payload);
-            
+
             if (res.success) {
-                toast.success(`✅ Maintenance generated for all flats!`, {
+                toast.success(`✅ Maintenance generated!`, {
                     duration: 4000
                 });
                 // Refresh data
@@ -141,10 +146,15 @@ const Maintenance = () => {
     };
 
     const onAddSpecial = async (data) => {
+        if (!isAllFlats && selectedFlats.length === 0) {
+            toast.error("Please select at least one flat");
+            return;
+        }
+
         try {
             const res = await apiConnector("POST", MAINTENANCE_API.CREATE, {
                 title: data.description,
-                flat: data.flatId,
+                flat: isAllFlats ? "ALL" : (selectedFlats.length === 1 ? selectedFlats[0] : selectedFlats),
                 amount: data.amount,
                 description: data.description,
                 period: data.period,
@@ -152,14 +162,31 @@ const Maintenance = () => {
             });
             if (res.success) {
                 const maintenanceRes = await apiConnector("GET", MAINTENANCE_API.GET_ALL);
-                if (maintenanceRes.success) dispatch(setMaintenance(maintenanceRes.data));
-                toast.success(`Special charge added successfully`, { icon: '🛠️' });
+                if (maintenanceRes.success) {
+                    dispatch(setMaintenance(maintenanceRes.data));
+                    setFilterType('Special'); // Automatically switch filter to Special
+                }
+                toast.success(`Special charge added successfully`, { icon: '🎯' });
                 setShowSpecialModal(false);
+                setSelectedFlats([]);
+                setIsAllFlats(false);
                 specialForm.reset();
             }
         } catch (err) {
             toast.error(err.message || "Failed to generate special bill");
         }
+    };
+
+    const toggleFlatSelection = (id) => {
+        if (isAllFlats) setIsAllFlats(false);
+        setSelectedFlats(prev =>
+            prev.includes(id) ? prev.filter(fId => fId !== id) : [...prev, id]
+        );
+    };
+
+    const handleSelectAllChanged = (checked) => {
+        setIsAllFlats(checked);
+        if (checked) setSelectedFlats([]);
     };
 
     const toggleStatus = async (id, currentStatus) => {
@@ -173,24 +200,29 @@ const Maintenance = () => {
     };
 
     const filteredRecords = (records || []).filter(r => {
-        const matchesStatus = filterStatus === 'All' || 
+        const matchesStatus = filterStatus === 'All' ||
             (filterStatus === 'Paid' && r.status === 'PAID') ||
             (filterStatus === 'Unpaid' && r.status === 'UNPAID') ||
             (filterStatus === 'Vacant' && !r.flat?.resident?.name);
-        
-        const matchesMonth = filterMonth === 'All' || 
+
+        const matchesMonth = filterMonth === 'All' ||
             (r.period && r.period.toLowerCase().includes(filterMonth.toLowerCase())) ||
             (r.month && r.month.toLowerCase() === filterMonth.toLowerCase());
-            
-        const matchesWing = filterWing === 'All' || 
+
+        const matchesWing = filterWing === 'All' ||
             (r.flat?.wing?.name && r.flat.wing.name === filterWing) ||
             (r.flat?.flatNumber && r.flat.flatNumber.startsWith(filterWing));
-            
+
+        const rType = r.type || 'Common';
+        const matchesType = filterType === 'All' ||
+            (filterType === 'Monthly' && rType === 'Common') ||
+            (filterType === 'Special' && rType === 'Special');
+
         const flatNum = r.flat?.flatNumber || '';
         const matchesSearch = flatNum.toString().includes(searchQuery) ||
             (r.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (r.title || '').toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesStatus && matchesMonth && matchesWing && matchesSearch;
+        return matchesStatus && matchesMonth && matchesWing && matchesType && matchesSearch;
     });
 
     const totalCollected = filteredRecords.filter(r => r.status === 'PAID').reduce((sum, r) => sum + r.amount, 0);
@@ -202,7 +234,7 @@ const Maintenance = () => {
                 console.log('Deleting maintenance record:', id);
                 const res = await apiConnector("DELETE", MAINTENANCE_API.DELETE(id));
                 console.log('Delete response:', res);
-                
+
                 if (res.success) {
                     dispatch(deleteMaintenance(id));
                     toast.success('Maintenance record deleted successfully');
@@ -232,7 +264,7 @@ const Maintenance = () => {
                         console.error('Failed to delete record:', record._id);
                     }
                 }
-                
+
                 if (deletedCount > 0) {
                     dispatch(setMaintenance([]));
                     toast.success(`${deletedCount} maintenance records deleted successfully`);
@@ -253,14 +285,36 @@ const Maintenance = () => {
                     <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Maintenance Management</h1>
                     <p className="text-slate-500 mt-1">Generate bills and track payment status for society records.</p>
                 </div>
-                <div className="flex gap-3">
-                    <button onClick={() => setShowCommonModal(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3.5 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-xl shadow-indigo-100 border border-indigo-500 text-sm">
-                        <Users className="w-4 h-4" /> Generate Common Bill
+                <div className="flex flex-wrap gap-2">
+                    <button onClick={() => setShowCommonModal(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-100 border border-indigo-500 text-sm">
+                        <Users className="w-4 h-4" /> Common Bill
                     </button>
-                    <button onClick={() => setShowSpecialModal(true)} className="bg-white hover:bg-slate-50 text-indigo-600 px-6 py-3.5 rounded-2xl font-bold flex items-center gap-2 transition-all border border-indigo-100 text-sm">
+                    <button onClick={() => setShowSpecialModal(true)} className="bg-white hover:bg-slate-50 text-indigo-600 px-5 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all border border-indigo-100 text-sm shadow-sm">
                         <Plus className="w-4 h-4" /> Special Charge
                     </button>
                 </div>
+            </div>
+
+            {/* Type Selector Tabs */}
+            <div className="flex p-1.5 bg-slate-100/80 rounded-2xl w-fit mb-8 backdrop-blur-sm border border-slate-200/50">
+                <button
+                    onClick={() => setFilterType('Monthly')}
+                    className={`px-8 py-2.5 rounded-xl text-sm font-black transition-all duration-300 ${filterType === 'Monthly' ? 'bg-white text-indigo-600 shadow-md ring-1 ring-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    🏠 Monthly Maintenance
+                </button>
+                <button
+                    onClick={() => setFilterType('Special')}
+                    className={`px-8 py-2.5 rounded-xl text-sm font-black transition-all duration-300 ${filterType === 'Special' ? 'bg-white text-purple-600 shadow-md ring-1 ring-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    🎯 Special Charges
+                </button>
+                <button
+                    onClick={() => setFilterType('All')}
+                    className={`px-8 py-2.5 rounded-xl text-sm font-black transition-all duration-300 ${filterType === 'All' ? 'bg-white text-slate-800 shadow-md ring-1 ring-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    📋 All Records
+                </button>
             </div>
 
             {/* Stats */}
@@ -332,7 +386,7 @@ const Maintenance = () => {
                                             ))}
                                         </div>
                                     </div>
-                                    
+
                                     {/* Wing Filter */}
                                     <div>
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Wing</label>
@@ -348,7 +402,27 @@ const Maintenance = () => {
                                             ))}
                                         </div>
                                     </div>
-                                    
+
+                                    {/* Type Filter */}
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Bill Type</label>
+                                        <div className="flex gap-2">
+                                            {[
+                                                { label: 'All', value: 'All' },
+                                                { label: 'Monthly', value: 'Monthly' },
+                                                { label: 'Special', value: 'Special' }
+                                            ].map(type => (
+                                                <button
+                                                    key={type.value}
+                                                    onClick={() => setFilterType(type.value)}
+                                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filterType === type.value ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                                                >
+                                                    {type.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
                                     {/* Month Filter */}
                                     <div>
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Month</label>
@@ -367,13 +441,14 @@ const Maintenance = () => {
                                             })}
                                         </div>
                                     </div>
-                                    
+
                                     {/* Clear Filters */}
                                     <button
                                         onClick={() => {
                                             setFilterStatus('All');
                                             setFilterWing('All');
                                             setFilterMonth('All');
+                                            setFilterType('All');
                                             setSearchQuery('');
                                         }}
                                         className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-bold transition-all"
@@ -388,84 +463,85 @@ const Maintenance = () => {
             </div>
 
             {/* Maintenance Cards */}
+            {/* Maintenance Records Cards */}
             <div className="mb-8">
-                <h2 className="text-2xl font-black text-slate-800 mb-6 uppercase tracking-tight">Maintenance Records</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                        {filterType === 'Special' ? '🎯 Special Charges' : filterType === 'Monthly' ? '📅 Monthly Maintenance' : '📋 All Records'}
+                        <span className="bg-indigo-50 text-indigo-600 text-xs px-3 py-1 rounded-full font-bold shadow-sm border border-indigo-100/50">{filteredRecords.length}</span>
+                    </h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredRecords.map((r) => (
-                        <div key={r._id || r.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden">
-                            {/* Status Strip */}
-                            <div className={`h-1 ${r.status === 'PAID' ? 'bg-gradient-to-r from-emerald-400 to-green-500' : 'bg-gradient-to-r from-amber-400 to-orange-500'}`} />
-                            
+                        <div key={r._id || r.id} className="group relative bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-indigo-100/50 transition-all duration-500 overflow-hidden hover:-translate-y-1">
+                            {/* Top Accent Bar */}
+                            <div className={`h-1.5 w-full ${r.status === 'PAID' ? 'bg-gradient-to-r from-emerald-400 to-teal-500' : 'bg-gradient-to-r from-amber-400 to-orange-500'}`} />
+
                             <div className="p-6">
-                                {/* Header */}
-                                <div className="flex justify-between items-start mb-4">
+                                {/* Card Header */}
+                                <div className="flex justify-between items-start mb-5">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg shadow-sm ${r.status === 'PAID' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shadow-inner ${r.status === 'PAID' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                                             {r.flat?.flatNumber || '-'}
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-slate-800">{r.title || 'Maintenance'}</h3>
-                                            <p className="text-xs text-slate-500 font-medium">{r.period || '-'}</p>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Wing {r.flat?.wing?.name || '-'}</p>
+                                            <h3 className="font-bold text-slate-800 text-sm truncate max-w-[120px]">{r.title || 'Maintenance'}</h3>
+
+
                                         </div>
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${r.status === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                                        {r.status === 'PAID' ? '✓ Paid' : '⏳ Pending'}
-                                    </span>
+                                    <button
+                                        onClick={() => handleDelete(r._id || r.id)}
+                                        className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
                                 </div>
 
-                                {/* Flat Info */}
-                                <div className="bg-slate-50 rounded-xl p-4 mb-4">
-                                    <div className="flex justify-between items-center">
+                                {/* Amount & Period */}
+                                <div className="bg-slate-50/50 rounded-2xl p-4 mb-5 border border-slate-100/50">
+                                    <div className="flex justify-between items-end">
                                         <div>
-                                            <p className="text-xs text-slate-500 font-medium">Flat Details</p>
-                                            <p className="font-bold text-slate-700">Wing {r.flat?.wing?.name || '-'}, Flat {r.flat?.flatNumber || '-'}</p>
-    
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Amount</p>
+                                            <p className="text-2xl font-black text-slate-900 tracking-tight">₹{r.amount}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-xs text-slate-500 font-medium">Amount</p>
-                                            <p className="text-xl font-black text-slate-800">₹{r.amount}</p>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Period</p>
+                                            <p className="text-xs font-bold text-slate-600">{r.period || '-'}</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Type Badge */}
-                                <div className="mb-4">
-                                    <span className={`inline-block px-3 py-1 rounded-lg text-xs font-bold ${r.type === 'Special' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
-                                        {r.type === 'Special' ? '🎯 Special Charge' : '🏠 Monthly Maintenance'}
+                                {/* Metadata & Status */}
+                                <div className="flex items-center justify-between">
+                                    <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 ${r.type === 'Special' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'}`}>
+                                        {r.type === 'Special' ? '🎯 Special' : '🏠 Monthly'}
                                     </span>
+
+                                    {/* Status Badge - NEW COMMENT: Now clickable for Admin to manually pay/unpay */}
+                                    <button
+                                        onClick={() => toggleStatus(r._id || r.id, r.status === 'PAID' ? 'Paid' : 'Unpaid')}
+                                        title={r.status === 'PAID' ? "Mark as UNPAID" : "Mark as PAID"}
+                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 ${r.status === 'PAID' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600 border border-amber-200/50'}`}
+                                    >
+                                        {r.status === 'PAID' ? (
+                                            <><CheckCircle2 className="w-3 h-3" /> Paid</>
+                                        ) : (
+                                            <><Clock className="w-3 h-3" /> Pending</>
+                                        )}
+                                    </button>
                                 </div>
 
-                                {/* Description */}
+                                {/* Description Preview */}
                                 {r.description && (
-                                    <div className="mb-4">
-                                        <p className="text-sm text-slate-600 bg-slate-50 rounded-lg p-3">
-                                            {r.description}
+                                    <div className="mt-4 pt-4 border-t border-slate-50">
+                                        <p className="text-[11px] text-slate-400 font-medium italic truncate">
+                                            "{r.description}"
                                         </p>
                                     </div>
                                 )}
-
-                                {/* Actions */}
-                                <div className="flex gap-2">
-                                    {r.status === 'PAID' ? (
-                                        <div className="flex-1 bg-emerald-50 text-emerald-700 py-3 px-4 rounded-xl text-center font-bold text-sm">
-                                            🎉 Payment Completed
-                                        </div>
-                                    ) : (
-                                        <div className="flex-1 bg-amber-50 text-amber-700 py-3 px-4 rounded-xl text-center font-bold text-sm">
-                                            💰 Payment Due
-                                        </div>
-                                    )}
-                                    <button
-                                        onClick={() => {
-                                            console.log('Delete clicked for record:', r._id || r.id);
-                                            handleDelete(r._id || r.id);
-                                        }}
-                                        className="px-4 py-3 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-colors font-bold text-sm"
-                                        title="Delete Record"
-                                    >
-                                        🗑️
-                                    </button>
-                                </div>
                             </div>
                         </div>
                     ))}
@@ -498,17 +574,20 @@ const Maintenance = () => {
                                 <p className="text-slate-500 font-medium mt-1">Generate maintenance for ALL flats in your society.</p>
                             </div>
 
-                            <div className="p-10 pt-4 space-y-6">
+                            <div className="p-8 pt-4 space-y-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Monthly Amount (₹)</label>
-                                    <input {...commonForm.register('amount')} placeholder="e.g. 2500" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-transparent font-bold text-slate-700" />
+                                    <input {...commonForm.register('amount')} placeholder="e.g. 2500" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-transparent font-bold text-slate-700 focus:bg-white focus:border-indigo-100 outline-none" />
                                     {commonForm.formState.errors.amount && <p className="text-rose-500 text-[10px] font-bold">{commonForm.formState.errors.amount.message}</p>}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Period (Month / Year)</label>
-                                    <input {...commonForm.register('period')} placeholder="e.g. March 2024" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-transparent font-bold text-slate-700" />
+                                    <input {...commonForm.register('period')} placeholder="e.g. March 2024" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-transparent font-bold text-slate-700 focus:bg-white focus:border-indigo-100 outline-none" />
                                     {commonForm.formState.errors.period && <p className="text-rose-500 text-[10px] font-bold">{commonForm.formState.errors.period.message}</p>}
                                 </div>
+
+
+
                                 <button type="submit" className="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all uppercase tracking-widest text-xs">
                                     Generate Bills
                                 </button>
@@ -522,42 +601,81 @@ const Maintenance = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
                         <form onSubmit={specialForm.handleSubmit(onAddSpecial)}>
-                            <div className="p-10 pb-6 relative text-center">
-                                <button type="button" onClick={() => setShowSpecialModal(false)} className="absolute right-8 top-8 w-10 h-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-400">
-                                    <X className="w-6 h-6" />
+                            <div className="p-8 pb-4 relative text-center border-b border-slate-50">
+                                <button type="button" onClick={() => setShowSpecialModal(false)} className="absolute right-6 top-6 w-8 h-8 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-400">
+                                    <X className="w-5 h-5" />
                                 </button>
-                                <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 mx-auto mb-6">
-                                    <Plus className="w-8 h-8" />
-                                </div>
-                                <h2 className="text-3xl font-black text-slate-800">Special Charge</h2>
-                                <p className="text-slate-500 font-medium mt-1">Add a charge for a specific flat.</p>
+                                <h2 className="text-2xl font-black text-slate-800">Special Charge</h2>
+                                <p className="text-slate-500 text-xs font-medium mt-1">Add charges for specific flats.</p>
                             </div>
 
-                            <div className="p-10 pt-4 space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Flat</label>
-                                    <select {...specialForm.register('flatId')} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-transparent font-bold text-slate-700">
-                                        <option value="">Select flat</option>
-                                        {flats.map(f => <option key={f._id || f.id} value={f._id || f.id}>{f.flatNumber}</option>)}
-                                    </select>
-                                    {specialForm.formState.errors.flatId && <p className="text-rose-500 text-[10px] font-bold">{specialForm.formState.errors.flatId.message}</p>}
+                            <div className="p-8 pt-6 space-y-4">
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl">
+                                        <span className="text-sm font-bold text-slate-700">Send to All Flats</span>
+                                        <input
+                                            type="checkbox"
+                                            checked={isAllFlats}
+                                            onChange={(e) => handleSelectAllChanged(e.target.checked)}
+                                            className="w-5 h-5 accent-indigo-600 rounded-lg"
+                                        />
+                                    </div>
+
+                                    {!isAllFlats && (
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Select Flats ({selectedFlats.length} selected)</label>
+                                                <div className="flex gap-2">
+                                                    {['All', 'A', 'B', 'C', 'D'].map(w => (
+                                                        <button
+                                                            key={w}
+                                                            type="button"
+                                                            onClick={() => setWingSearch(w)}
+                                                            className={`px-2 py-1 rounded-lg text-[9px] font-black transition-all ${wingSearch === w ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}
+                                                        >
+                                                            {w}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-2 bg-slate-50 rounded-2xl border border-slate-100">
+                                                {flats
+                                                    .filter(f => wingSearch === 'All' || f.wing?.name === wingSearch)
+                                                    .map(f => (
+                                                        <button
+                                                            key={f._id || f.id}
+                                                            type="button"
+                                                            onClick={() => toggleFlatSelection(f._id || f.id)}
+                                                            className={`py-2 rounded-xl text-xs font-bold transition-all border ${selectedFlats.includes(f._id || f.id)
+                                                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md scale-95'
+                                                                : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'
+                                                                }`}
+                                                        >
+                                                            {f.flatNumber}
+                                                        </button>
+                                                    ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Amount (₹)</label>
-                                    <input {...specialForm.register('amount')} placeholder="e.g. 500" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-transparent font-bold text-slate-700" />
-                                    {specialForm.formState.errors.amount && <p className="text-rose-500 text-[10px] font-bold">{specialForm.formState.errors.amount.message}</p>}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Amount (₹)</label>
+                                        <input {...specialForm.register('amount')} placeholder="e.g. 500" className="w-full px-5 py-3 rounded-xl bg-slate-50 border border-transparent font-bold text-slate-700 text-sm focus:bg-white focus:border-indigo-100 outline-none" />
+                                        {specialForm.formState.errors.amount && <p className="text-rose-500 text-[9px] font-bold">{specialForm.formState.errors.amount.message}</p>}
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Period</label>
+                                        <input {...specialForm.register('period')} placeholder="e.g. March 2024" className="w-full px-5 py-3 rounded-xl bg-slate-50 border border-transparent font-bold text-slate-700 text-sm focus:bg-white focus:border-indigo-100 outline-none" />
+                                        {specialForm.formState.errors.period && <p className="text-rose-500 text-[9px] font-bold">{specialForm.formState.errors.period.message}</p>}
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-1.5">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
-                                    <input {...specialForm.register('description')} placeholder="Maintenance fine, etc." className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-transparent font-bold text-slate-700" />
-                                    {specialForm.formState.errors.description && <p className="text-rose-500 text-[10px] font-bold">{specialForm.formState.errors.description.message}</p>}
+                                    <input {...specialForm.register('description')} placeholder="Maintenance fine, etc." className="w-full px-5 py-3 rounded-xl bg-slate-50 border border-transparent font-bold text-slate-700 text-sm focus:bg-white focus:border-indigo-100 outline-none" />
+                                    {specialForm.formState.errors.description && <p className="text-rose-500 text-[9px] font-bold">{specialForm.formState.errors.description.message}</p>}
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Period</label>
-                                    <input {...specialForm.register('period')} placeholder="e.g. March 2024" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-transparent font-bold text-slate-700" />
-                                    {specialForm.formState.errors.period && <p className="text-rose-500 text-[10px] font-bold">{specialForm.formState.errors.period.message}</p>}
-                                </div>
-                                <button type="submit" className="w-full bg-amber-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-amber-100 hover:bg-amber-700 transition-all uppercase tracking-widest text-xs">
+                                <button type="submit" className="w-full bg-amber-600 text-white font-black py-4 rounded-xl shadow-xl shadow-amber-100 hover:bg-amber-700 transition-all uppercase tracking-widest text-[10px] mt-2">
                                     Add Special Charge
                                 </button>
                             </div>

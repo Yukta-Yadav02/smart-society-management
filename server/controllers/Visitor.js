@@ -77,7 +77,49 @@ exports.markVisitorExit = async (req, res) => {
     });
   }
 };
-// optional 
+// Get all visitors history (both IN and OUT)
+exports.getAllVisitorsHistory = async (req, res) => {
+  try {
+    const visitors = await Visitor.find()
+      .populate("flat", "flatNumber wing")
+      .populate("enteredBy", "name")
+      .sort({ entryTime: -1 });
+
+    res.status(200).json({
+      success: true,
+      message: "Visitor history fetched successfully",
+      data: visitors,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch visitor history",
+    });
+  }
+};
+
+// Get only active visitors (status = "IN")
+exports.getActiveVisitors = async (req, res) => {
+  try {
+    const visitors = await Visitor.find({ status: "IN" })
+      .populate("flat", "flatNumber wing")
+      .populate("enteredBy", "name")
+      .sort({ entryTime: -1 });
+
+    res.status(200).json({
+      success: true,
+      message: "Active visitors fetched successfully",
+      data: visitors,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch active visitors",
+    });
+  }
+};
+
+// optional
 // exports.getMyFlatVisitors = async (req, res) => {
 //   try {
 //     if (!req.user.flat) {

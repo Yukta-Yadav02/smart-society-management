@@ -17,33 +17,42 @@ const ExitVisitor = () => {
 
   const fetchActiveVisitors = async () => {
     try {
-      // Mock fetch from localStorage since backend doesn't exist
-      const storedVisitors = JSON.parse(localStorage.getItem('visitors') || '[]');
-      setVisitors(storedVisitors);
+      const res = await apiConnector("GET", VISITOR_API.GET_ACTIVE);
+
+      if (res.success) {
+        setVisitors(res.data || []);
+      } else {
+        toast.error('Failed to fetch active visitors');
+      }
     } catch (error) {
       console.error('Failed to load visitors:', error);
+      toast.error('Error loading visitors');
     } finally {
       setLoading(false);
     }
   };
 
   const filteredVisitors = visitors.filter(visitor => {
+    const flatNumber = visitor.flat?.flatNumber || '';
     const matchesSearch = visitor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      visitor.flat.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterType === 'all' || visitor.type.toLowerCase() === filterType;
+      flatNumber.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterType === 'all' || visitor.purpose.toLowerCase().includes(filterType);
     return matchesSearch && matchesFilter;
   });
 
   const handleExit = async (visitorId, visitorName) => {
     try {
-      // Mock exit - remove from localStorage
-      const storedVisitors = JSON.parse(localStorage.getItem('visitors') || '[]');
-      const updatedVisitors = storedVisitors.filter(v => v.id !== visitorId);
-      localStorage.setItem('visitors', JSON.stringify(updatedVisitors));
-      
-      setVisitors(updatedVisitors);
-      toast.success(`${visitorName} has been marked as exited!`);
+      const res = await apiConnector("PUT", VISITOR_API.EXIT(visitorId));
+
+      if (res.success) {
+        // Remove from local state
+        setVisitors(visitors.filter(v => v._id !== visitorId));
+        toast.success(`${visitorName} has been marked as exited!`);
+      } else {
+        toast.error(res.message || 'Failed to mark exit');
+      }
     } catch (error) {
+      console.error('Error marking exit:', error);
       toast.error('Error marking exit');
     }
   };
@@ -107,7 +116,7 @@ const ExitVisitor = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredVisitors.map((visitor) => (
           <div
-            key={visitor.id}
+            key={visitor._id}
             className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 hover:shadow-xl transition-all duration-300"
           >
             {/* Visitor Info */}
@@ -120,12 +129,12 @@ const ExitVisitor = () => {
                   <h3 className="font-semibold text-slate-800 text-lg">{visitor.name}</h3>
                   <div className="flex items-center gap-1 text-slate-500 text-sm">
                     <MapPin className="w-3 h-3" />
-                    <span>Flat {visitor.flat}</span>
+                    <span>Flat {visitor.flat?.flatNumber || 'N/A'}</span>
                   </div>
                 </div>
               </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getTypeColor(visitor.type)}`}>
-                {visitor.type}
+              <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-blue-100 text-blue-700 border-blue-200">
+                {visitor.purpose}
               </span>
             </div>
 
@@ -149,7 +158,7 @@ const ExitVisitor = () => {
 
             {/* Action Button */}
             <button
-              onClick={() => handleExit(visitor.id, visitor.name)}
+              onClick={() => handleExit(visitor._id, visitor.name)}
               className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
             >
               <UserMinus className="w-4 h-4" />

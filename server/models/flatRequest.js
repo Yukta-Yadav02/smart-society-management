@@ -24,6 +24,18 @@ const flatRequestSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    contactNumber: {
+      type: String,
+      trim: true,
+    },
+    memberCount: {
+      type: Number,
+      default: 1
+    },
+    aadhaarNumber: {
+      type: String,
+      trim: true,
+    },
 
     // resident (current occupant) opinion
     // residentOpinion: {

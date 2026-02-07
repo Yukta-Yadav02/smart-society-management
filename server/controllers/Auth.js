@@ -70,8 +70,8 @@ exports.registerResident = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Map frontend type to backend residentType
-    const residentType = type === 'Owner' ? 'OWNER' : 'TENANT';
+    // Map frontend type to backend residentType (Default to OWNER)
+    const residentType = (type && type.toLowerCase() === 'tenant') ? 'TENANT' : 'OWNER';
 
     const user = await User.create({
       name,
@@ -253,30 +253,107 @@ exports.getAllResidents = async (req, res) => {
   }
 };
 
-// Update old RENTAL to TENANT
+// Update old RENTAL or other values to TENANT
 exports.updateResidentTypes = async (req, res) => {
   try {
     console.log('Starting update of resident types...');
-    
+
+    // Update both RENTAL and any other potential old values to TENANT
     const result = await User.updateMany(
-      { residentType: 'RENTAL' },
+      { residentType: { $in: ['RENTAL', 'Tenant', 'tenant', 'TENENT'] } },
       { $set: { residentType: 'TENANT' } }
     );
-    
+
     console.log('Update result:', result);
-    
+
     return res.status(200).json({
       success: true,
       message: `Updated ${result.modifiedCount} residents to TENANT`,
       modifiedCount: result.modifiedCount
     });
-    
+
   } catch (error) {
     console.error('Update error:', error);
     return res.status(500).json({
       success: false,
       message: "Failed to update resident types",
       error: error.message
+    });
+  }
+};
+
+// Update resident details
+exports.updateResident = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone, wing, flat, residentType } = req.body;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Resident not found",
+      });
+    }
+
+    // Update fields
+    if (name) user.name = name;
+    if (email) user.email = email;
+    // We don't update password here for security
+
+    // residentType should be OWNER or TENANT
+    if (residentType) user.residentType = residentType.toUpperCase();
+
+    await user.save();
+
+    // Populate flat info after save
+    const updatedUser = await User.findById(id)
+      .populate('flat', 'flatNumber wing')
+      .populate({
+        path: 'flat',
+        populate: {
+          path: 'wing',
+          select: 'name'
+        }
+      })
+      .select("-password");
+
+    return res.status(200).json({
+      success: true,
+      message: "Resident updated successfully",
+      data: updatedUser,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update resident",
+      error: error.message,
+    });
+  }
+};
+
+// Delete user
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findByIdAndDelete(id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete user",
+      error: error.message,
     });
   }
 };

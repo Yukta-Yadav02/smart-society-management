@@ -19,6 +19,14 @@ const flatSchema = new mongoose.Schema(
       default: false,
     },
 
+    // [OWNERSHIP FLOW] - Flat ka malik kaun hai (Owner/Admin)
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    // [OWNERSHIP FLOW] - Flat me rehne wala kaun hai (Tenant/Owner khud)
     currentResident: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -32,6 +40,16 @@ const flatSchema = new mongoose.Schema(
       },
       name: String,
       email: String
+    },
+    kitchen: {
+      type: String,
+      default: "1"
+    },
+
+
+    capacity: {
+      type: Number,
+      default: 4
     },
   },
   { timestamps: true }

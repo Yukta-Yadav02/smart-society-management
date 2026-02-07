@@ -16,7 +16,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
 
 import { apiConnector } from '../../services/apiConnector';
-import { DASHBOARD_API } from '../../services/apis';
+import { DASHBOARD_API, FLAT_REQUEST_API } from '../../services/apis';
 
 import { updateStats, setRecentRequests, setLoading, setError } from '../../store/slices/dashboardSlice';
 
@@ -36,18 +36,28 @@ const Dashboard = () => {
             try {
                 dispatch(setLoading(true));
                 console.log('Fetching dashboard data...');
-                
+
                 const res = await apiConnector("GET", DASHBOARD_API.GET_STATS);
                 console.log('Dashboard API Response:', res);
-                
+
                 if (res && res.success) {
                     console.log('Stats data:', res.data?.stats);
                     dispatch(updateStats(res.data.stats || {}));
-                    
+
                     if (res.data.recentActivities) {
                         console.log('Recent activities:', res.data.recentActivities);
-                        dispatch(setRecentRequests(res.data.recentActivities.complaints || []));
                         setRecentNotices(res.data.recentActivities.notices || []);
+                    }
+
+                    // Fetch Recent Requests (Flat Requests)
+                    try {
+                        const requestsRes = await apiConnector("GET", FLAT_REQUEST_API.GET_ALL);
+                        if (requestsRes.success) {
+                            const sortedRequests = (requestsRes.data || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                            dispatch(setRecentRequests(sortedRequests));
+                        }
+                    } catch (reqErr) {
+                        console.error("Failed to fetch recent requests:", reqErr);
                     }
                 } else {
                     console.warn('API response not successful:', res);
@@ -133,19 +143,19 @@ const Dashboard = () => {
                     <p className="text-blue-600 font-medium">Loading dashboard data...</p>
                 </div>
             )}
-            
+
             {error && (
                 <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-red-600 font-medium">Error: {error}</p>
-                    <button 
-                        onClick={() => window.location.reload()} 
+                    <button
+                        onClick={() => window.location.reload()}
                         className="mt-2 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
                     >
                         Retry
                     </button>
                 </div>
             )}
-            
+
             <div className="mb-8">
                 <h1 className="text-3xl font-black text-slate-800 tracking-tight">Welcome, Secretary</h1>
                 <p className="text-slate-500 mt-1 flex items-center gap-2 font-medium">
@@ -169,17 +179,17 @@ const Dashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-10">
-                {/* Recent Complaints */}
+                {/* Recent Requests */}
                 <Card className="lg:col-span-2 p-8 relative transition-all hover:shadow-indigo-100/50">
                     <div className="flex items-center justify-between mb-8">
                         <h2 className="text-xl font-black text-slate-800 flex items-center gap-2 uppercase tracking-tight">
-                            Recent Complaints
+                            Recent Requests
                             {stats.pendingComplaints > 0 && (
                                 <span className="text-[10px] bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full border border-amber-100 font-black">Review Required</span>
                             )}
                         </h2>
                         <button
-                            onClick={() => navigate('/admin/complaints')}
+                            onClick={() => navigate('/admin/requests')}
                             className="text-indigo-600 font-bold text-xs hover:underline flex items-center gap-1 group"
                         >
                             View All <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -190,18 +200,19 @@ const Dashboard = () => {
                         {(recentRequests || []).slice(0, 3).map((req) => (
                             <div key={req._id || req.id} className="group flex items-center gap-5 p-4 rounded-[2rem] hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100">
                                 <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-black text-xl shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                    {(req.resident?.name || req.name || 'U')[0]}
+                                    {(req.user?.name || req.resident?.name || req.name || 'U')[0]}
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3">
-                                        <h4 className="font-black text-slate-800 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{req.resident?.name || req.name || 'Unknown'}</h4>
-                                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${req.status === 'PENDING' ? 'bg-amber-100 text-amber-500' : 'bg-emerald-100 text-emerald-500'}`}>
+                                        <h4 className="font-black text-slate-800 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{req.user?.name || req.resident?.name || req.name || 'Unknown'}</h4>
+                                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${req.status === 'Pending' ? 'bg-amber-100 text-amber-500' : (req.status === 'Approved' ? 'bg-emerald-100 text-emerald-500' : 'bg-slate-100 text-slate-500')}`}>
                                             {req.status || 'Pending'}
                                         </span>
                                     </div>
                                     <div className="flex gap-4 mt-1">
                                         <p className="text-xs text-slate-400 font-black flex items-center gap-1.5 uppercase tracking-tighter">
-                                            <Home className="w-3.5 h-3.5" /> {req.title || req.subject || 'Complaint'}
+                                            <Home className="w-3.5 h-3.5" />
+                                            {req.flat ? `Flat ${req.flat.wing?.name || ''}-${req.flat.flatNumber}` : (req.title || req.subject || 'Request')}
                                         </p>
                                         <p className="text-xs text-slate-300 font-black flex items-center gap-1.5 uppercase tracking-tighter">
                                             <AlertCircle className="w-3.5 h-3.5" /> {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : '-'}
@@ -210,7 +221,7 @@ const Dashboard = () => {
                                 </div>
                                 <div className="flex gap-2">
                                     <button
-                                        onClick={() => navigate('/admin/complaints')}
+                                        onClick={() => navigate('/admin/requests')}
                                         className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:border-emerald-100 hover:bg-emerald-50 transition-all shadow-sm"
                                     >
                                         <ExternalLink className="w-4 h-4" />
@@ -223,7 +234,7 @@ const Dashboard = () => {
                     {(recentRequests || []).length === 0 && (
                         <div className="py-20 text-center">
                             <ClipboardList className="w-12 h-12 text-slate-100 mx-auto mb-4" />
-                            <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">No recent complaints to review.</p>
+                            <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">No recent requests to review.</p>
                         </div>
                     )}
                 </Card>
@@ -232,10 +243,10 @@ const Dashboard = () => {
                     <div className="relative z-10 h-full flex flex-col justify-between">
                         <div>
                             <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-md">
-                                <Video className="w-6 h-6 text-white" />
+                                <Bell className="w-6 h-6 text-white" />
                             </div>
                             <h2 className="text-xl font-black mb-2 uppercase tracking-tight">Society Broadcast</h2>
-                            <p className="text-indigo-100 text-sm mb-6 font-medium leading-relaxed">Instantly reach every resident's mobile app with important news.</p>
+                            <p className="text-indigo-100 text-sm mb-6 font-medium leading-relaxed">Send important announcements and updates to all residents instantly.</p>
                             <textarea
                                 placeholder="Type your notice description here..."
                                 className="w-full bg-white/10 border border-white/20 rounded-2xl p-5 text-white placeholder:text-indigo-200/50 focus:outline-none focus:ring-2 focus:ring-white/40 h-32 resize-none transition-all text-sm font-medium shadow-inner"
@@ -252,44 +263,6 @@ const Dashboard = () => {
                     </div>
                     <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
                 </div>
-            </div>
-
-            {/* Recent Notices Section */}
-            <div className="mt-10">
-                <Card className="p-8">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-black text-slate-800 flex items-center gap-2 uppercase tracking-tight">
-                            <Bell className="w-5 h-5 text-purple-600" />
-                            Recent Notices
-                        </h2>
-                        <button
-                            onClick={() => navigate('/admin/notices')}
-                            className="text-indigo-600 font-bold text-xs hover:underline flex items-center gap-1 group"
-                        >
-                            Manage All <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {recentNotices.slice(0, 3).map((notice) => (
-                            <div key={notice._id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:shadow-md transition-all">
-                                <h3 className="font-bold text-slate-800 mb-2">{notice.title}</h3>
-                                <p className="text-sm text-slate-600 mb-3 line-clamp-2">{notice.message}</p>
-                                <div className="flex items-center justify-between text-xs text-slate-400">
-                                    <span>By {notice.createdBy?.name || 'Admin'}</span>
-                                    <span>{new Date(notice.createdAt).toLocaleDateString()}</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {recentNotices.length === 0 && (
-                        <div className="py-12 text-center">
-                            <Bell className="w-12 h-12 text-slate-100 mx-auto mb-4" />
-                            <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">No notices published yet.</p>
-                        </div>
-                    )}
-                </Card>
             </div>
         </div>
     );

@@ -8,7 +8,13 @@ import {
   User,
   Mail,
   ArrowLeft,
-  AlertTriangle
+  AlertTriangle,
+  Calendar,
+  Smartphone,
+  Users,
+  ClipboardCheck,
+  ChevronRight,
+  Building2
 } from 'lucide-react';
 import { apiConnector } from '../../services/apiConnector';
 import { FLAT_REQUEST_API, FLAT_API } from '../../services/apis';
@@ -31,26 +37,25 @@ const RequestAccess = () => {
   const flat = searchParams.get("flat");
 
   // STATES
+  const [step, setStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [residentType, setResidentType] = useState('OWNER');
   const [message, setMessage] = useState('');
+  const [contactNumber, setContactNumber] = useState('');
+  const [memberCount, setMemberCount] = useState(1);
+  const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [flatStatus, setFlatStatus] = useState(null);
   const [checkingStatus, setCheckingStatus] = useState(true);
 
-  // CHECK FLAT STATUS - Allow requests for occupied flats too
+  // CHECK FLAT STATUS
   useEffect(() => {
     const checkFlatStatus = async () => {
       if (!flatId) return;
-      
       try {
         const response = await apiConnector("GET", `${FLAT_API.CREATE}/${flatId}`);
         if (response.success) {
-          const flat = response.data;
-          setFlatStatus({
-            isOccupied: flat.resident?.name && flat.resident.name.trim() !== '',
-            residentName: flat.resident?.name
-          });
+          setFlatStatus(response.data);
         }
       } catch (err) {
         console.error("Failed to check flat status:", err);
@@ -58,73 +63,20 @@ const RequestAccess = () => {
         setCheckingStatus(false);
       }
     };
-
     checkFlatStatus();
   }, [flatId]);
 
-  // SAFETY CHECK
-  if (!flatId) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Card className="p-10 text-center max-w-sm">
-          <p className="text-rose-600 font-black uppercase tracking-widest text-sm mb-4">
-            Flat information missing
-          </p>
-          <Button onClick={() => navigate('/')} variant="secondary">
-            Back to Selection
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
-  // OCCUPIED FLAT CHECK
-  if (checkingStatus) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
-
-  if (flatStatus?.isOccupied) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-        <Card className="p-10 text-center max-w-md">
-          <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <AlertTriangle className="text-amber-500" size={40} />
-          </div>
-          <h2 className="text-3xl font-black text-slate-800 mb-4">
-            Flat Currently Occupied
-          </h2>
-          <p className="text-slate-500 leading-relaxed mb-2 font-medium">
-            Wing {wing}, Flat {flat} is currently occupied by {flatStatus.residentName}
-          </p>
-          <p className="text-amber-600 font-bold mb-6 text-sm">
-            You can still request this flat. If approved, the current resident will be notified for transfer approval.
-          </p>
-          <div className="flex gap-3">
-            <Button onClick={() => navigate('/')} variant="secondary" className="py-4 flex-1">
-              Back to Selection
-            </Button>
-            <Button 
-              onClick={() => window.location.reload()} 
-              className="py-4 flex-1"
-            >
-              Request Anyway
-            </Button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
   // SUBMIT HANDLER
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (loading) return;
 
-    // 🔐 LOGIN CHECK
+    if (!contactNumber) {
+      toast.error("Please provide a contact number");
+      setStep(2);
+      return;
+    }
+
     const token = localStorage.getItem("token");
     if (!token) {
       toast.error("Session expired. Please login again.");
@@ -136,31 +88,39 @@ const RequestAccess = () => {
       flatId,
       ownershipType: residentType,
       remark: message,
+      contactNumber,
+      memberCount,
+      aadhaarNumber,
     };
 
     try {
       setLoading(true);
-
-      await apiConnector(
-        "POST",
-        FLAT_REQUEST_API.CREATE,
-        payload
-      );
-
+      await apiConnector("POST", FLAT_REQUEST_API.CREATE, payload);
       setIsSubmitted(true);
       toast.success("Request submitted successfully!");
     } catch (err) {
-      console.error("REQUEST FAILED →", err);
-
-      toast.error(
-        err?.response?.data?.message ||
-        err?.message ||
-        "Request failed"
-      );
+      toast.error(err?.response?.data?.message || "Request failed");
     } finally {
       setLoading(false);
     }
   };
+
+  const nextStep = () => {
+    if (step === 1 && !residentType) return;
+    if (step === 2) {
+      if (!contactNumber || !memberCount || !aadhaarNumber) {
+        toast.error("Please fill all details");
+        return;
+      }
+      if (!/^\d{12}$/.test(aadhaarNumber)) {
+        toast.error("Aadhaar Number must be 12 digits");
+        return;
+      }
+    }
+    setStep(prev => prev + 1);
+  };
+
+  const prevStep = () => setStep(prev => prev - 1);
 
   /* ================= SUCCESS SCREEN ================= */
   if (isSubmitted) {
@@ -170,27 +130,12 @@ const RequestAccess = () => {
           <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="text-emerald-500" size={40} />
           </div>
-
-          <h2 className="text-3xl font-black text-slate-800 mb-4">
-            Request Sent!
-          </h2>
-
+          <h2 className="text-3xl font-black text-slate-800 mb-4">Request Sent!</h2>
           <p className="text-slate-500 leading-relaxed mb-8 font-medium">
-            Your request for{' '}
-            <span className="font-black text-indigo-600">
-              Wing {wing}, Flat {flat}
-            </span>{' '}
-            has been sent to the society secretary.
+            Your request for <span className="font-black text-indigo-600">Wing {wing}, Flat {flat}</span> has been sent to the society management.
             You will be notified once it is approved.
           </p>
-
-          <Button
-            onClick={() => navigate('/')}
-            fullWidth
-            className="py-4"
-          >
-            Back to Home
-          </Button>
+          <Button onClick={() => navigate('/')} fullWidth className="py-4">Back to Home</Button>
         </Card>
       </div>
     );
@@ -199,126 +144,229 @@ const RequestAccess = () => {
   /* ================= FORM SCREEN ================= */
   return (
     <div className="min-h-screen pt-32 pb-12 bg-slate-50 px-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 font-black text-xs uppercase tracking-[0.2em] mb-8 transition-all group"
         >
-          <ArrowLeft
-            size={18}
-            className="group-hover:-translate-x-1 transition-transform"
-          />
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
           Back to Selection
         </button>
 
-        <div className="mb-8">
-          <h2 className="text-4xl font-black text-slate-800 tracking-tight">
-            Request Flat Access
-          </h2>
-          <p className="text-slate-500 mt-2 font-medium">
-            Submit your details for verification by the society management.
-          </p>
+        <div className="flex flex-col lg:flex-row items-start justify-between gap-4 mb-12">
+          <div>
+            <h2 className="text-4xl font-black text-slate-800 tracking-tight">Request Flat Access</h2>
+            <p className="text-slate-500 mt-1 font-medium italic">Complete the 3-step verification process</p>
+          </div>
+          <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+            {[1, 2, 3].map((num) => (
+              <div key={num} className="flex items-center gap-2">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black transition-all ${step === num ? 'bg-indigo-600 text-white scale-110 shadow-lg shadow-indigo-200' : step > num ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                  {step > num ? <CheckCircle size={18} /> : num}
+                </div>
+                {num < 3 && <div className={`w-8 h-1 rounded-full ${step > num ? 'bg-emerald-500' : 'bg-slate-100'}`} />}
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* FORM */}
-          <div className="lg:col-span-2">
-            <Card className="p-8 shadow-xl shadow-slate-200/50">
-              <form onSubmit={handleSubmit} className="space-y-8">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex flex-col items-center">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                      Wing
-                    </span>
-                    <p className="text-2xl font-black text-slate-800">
-                      {wing}
-                    </p>
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="p-8 shadow-xl shadow-slate-200/50 relative overflow-hidden">
+              {/* STEP 1: Basic & Ownership */}
+              {step === 1 && (
+                <div className="space-y-8 animate-in slide-in-from-right duration-300">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                      <Building2 size={24} />
+                    </div>
+                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Flat Information</h3>
                   </div>
 
-                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex flex-col items-center">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                      Flat Number
-                    </span>
-                    <p className="text-2xl font-black text-slate-800">
-                      {flat}
-                    </p>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-center">Wing</span>
+                      <p className="text-xl font-black text-slate-800 text-center">{wing}</p>
+                    </div>
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-center">Flat No.</span>
+                      <p className="text-xl font-black text-slate-800 text-center">{flat}</p>
+                    </div>
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-center">Status</span>
+                      <p className={`text-xs font-black text-center mt-1 uppercase ${flatStatus?.isOccupied ? 'text-amber-500' : 'text-emerald-500'}`}>
+                        {flatStatus?.isOccupied ? 'Occupied' : 'Vacant'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-6 rounded-2xl bg-indigo-50/50 border border-indigo-100">
+                    <ToggleGroup
+                      label="What is your occupancy status?"
+                      options={[
+                        { label: 'Owner', value: 'OWNER' },
+                        { label: 'Tenant', value: 'TENANT' },
+                      ]}
+                      value={residentType}
+                      onChange={setResidentType}
+                    />
+                  </div>
+
+                  <Button onClick={nextStep} fullWidth size="lg" className="py-5 text-lg font-black" icon={ChevronRight}>Next Step</Button>
+                </div>
+              )}
+
+              {/* STEP 2: Occupancy Details */}
+              {step === 2 && (
+                <div className="space-y-8 animate-in slide-in-from-right duration-300">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                      <Users size={24} />
+                    </div>
+                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Stay Details</h3>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Contact Number</label>
+                      <div className="relative">
+                        <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <input
+                          type="tel"
+                          value={contactNumber}
+                          onChange={(e) => setContactNumber(e.target.value)}
+                          placeholder="Enter your active mobile number"
+                          className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-indigo-200 focus:outline-none focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-slate-700"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest">No. of Members</label>
+                        <div className="relative">
+                          <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                          <input
+                            type="number"
+                            min="1"
+                            value={memberCount}
+                            onChange={(e) => setMemberCount(e.target.value)}
+                            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:outline-none transition-all font-bold text-slate-700"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Aadhaar Number (12 Digits)</label>
+                        <div className="relative">
+                          <ClipboardCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                          <input
+                            type="text"
+                            maxLength="12"
+                            value={aadhaarNumber}
+                            onChange={(e) => setAadhaarNumber(e.target.value.replace(/\D/g, ''))}
+                            placeholder="0000 0000 0000"
+                            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:outline-none transition-all font-bold text-slate-700 tracking-[0.2em]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <Button onClick={prevStep} variant="secondary" fullWidth size="lg">Previous</Button>
+                    <Button onClick={nextStep} fullWidth size="lg" icon={ChevronRight}>Next Step</Button>
                   </div>
                 </div>
+              )}
 
-                <ToggleGroup
-                  label="Ownership Type"
-                  options={[
-                    { label: 'Owner', value: 'OWNER' },
-                    { label: 'Tenant', value: 'TENANT' },
-                  ]}
-                  value={residentType}
-                  onChange={setResidentType}
-                />
+              {/* STEP 3: Review & Summary */}
+              {step === 3 && (
+                <div className="space-y-8 animate-in slide-in-from-right duration-300">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                      <ClipboardCheck size={24} />
+                    </div>
+                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Review & Remarks</h3>
+                  </div>
 
-                <TextArea
-                  label="Remark (Optional)"
-                  rows="4"
-                  placeholder="Tell us a bit about yourself..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                />
+                  <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 space-y-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Flat</p>
+                        <p className="font-bold text-slate-700">{wing} - {flat}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ownership</p>
+                        <p className="font-bold text-slate-700 lowercase capitalize">{residentType}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phone</p>
+                        <p className="font-bold text-slate-700">{contactNumber}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aadhaar No.</p>
+                        <p className="font-bold text-slate-700">{aadhaarNumber.replace(/(\d{4})/g, '$1 ').trim()}</p>
+                      </div>
+                    </div>
+                  </div>
 
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  fullWidth
-                  className="py-4 flex items-center justify-center gap-2"
-                >
-                  <Send size={18} />
-                  {loading ? "Submitting..." : "Submit Request"}
-                </Button>
-              </form>
+                  <TextArea
+                    label="Additional Remarks"
+                    rows="4"
+                    placeholder="Tell management about your requirements or family..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                  />
+
+                  <div className="flex gap-4">
+                    <Button onClick={prevStep} variant="secondary" fullWidth size="lg">Back</Button>
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={loading}
+                      fullWidth
+                      size="lg"
+                      className="bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-200"
+                      icon={Send}
+                    >
+                      {loading ? "Processing..." : "Submit Application"}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </Card>
           </div>
 
-          {/* USER INFO */}
           <div className="space-y-6">
-            <Card className="p-6">
+            <Card className="p-6 bg-white/50 backdrop-blur-sm">
               <h3 className="font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-tight text-sm">
                 <Info size={18} className="text-indigo-600" />
-                My Details
+                Applicant Details
               </h3>
-
               <div className="space-y-5">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-500 shadow-sm font-black">
+                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 font-black">
                     <User size={20} />
                   </div>
-                  <div>
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">
-                      Name
-                    </p>
-                    <p className="text-sm font-bold text-slate-700">
-                      {user?.name || 'Guest User'}
-                    </p>
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Full Name</p>
+                    <p className="text-sm font-bold text-slate-700 truncate">{user?.name || 'Guest User'}</p>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-500 shadow-sm font-black">
+                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 font-black">
                     <Mail size={20} />
                   </div>
-                  <div>
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">
-                      Email
-                    </p>
-                    <p className="text-sm font-bold text-slate-700">
-                      {user?.email || 'guest@example.com'}
-                    </p>
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Email ID</p>
+                    <p className="text-sm font-bold text-slate-700 truncate">{user?.email || 'guest@example.com'}</p>
                   </div>
                 </div>
               </div>
             </Card>
 
             <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100">
-              <p className="text-xs font-black uppercase tracking-widest mb-2 opacity-80">
-                Security Note
-              </p>
+              <p className="text-xs font-black uppercase tracking-widest mb-2 opacity-80">Security Note</p>
               <p className="text-sm font-medium leading-relaxed">
                 Your data is stored securely and only accessible to verified society management.
               </p>

@@ -9,7 +9,11 @@ import {
     ChevronRight,
     ExternalLink,
     Search,
-    XCircle
+    XCircle,
+    Calendar,
+    Smartphone,
+    Users,
+    ClipboardCheck
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
@@ -73,27 +77,27 @@ const ManageRequests = () => {
 
     const handleAction = async (id, name, status, reason = '') => {
         if (processingRequests.has(id)) return;
-        
+
         setProcessingRequests(prev => new Set([...prev, id]));
-        
+
         try {
             console.log('Action attempt:', { id, status, reason });
-            
+
             // If approving, check if flat is occupied and handle accordingly
             if (status === 'Approved') {
                 const request = filteredRequests.find(r => (r._id || r.id) === id);
                 if (request && request.flat) {
                     const flatRes = await apiConnector("GET", FLAT_API.GET_ALL);
                     if (flatRes.success) {
-                        const targetFlat = flatRes.data.find(f => 
-                            f._id === request.flat._id || 
+                        const targetFlat = flatRes.data.find(f =>
+                            f._id === request.flat._id ||
                             f.flatNumber === request.flat.flatNumber
                         );
-                        
+
                         // Check if flat has actual resident data
-                        const hasActualResident = targetFlat && targetFlat.resident && 
+                        const hasActualResident = targetFlat && targetFlat.resident &&
                             targetFlat.resident._id && targetFlat.resident.name;
-                        
+
                         if (hasActualResident) {
                             // Show info that this will be a transfer
                             console.log(`Flat ${targetFlat.flatNumber} is occupied by ${targetFlat.resident.name} - proceeding with transfer approval`);
@@ -101,7 +105,7 @@ const ManageRequests = () => {
                     }
                 }
             }
-            
+
             const decision = status === 'Approved' ? 'Approved' : 'Rejected';
             const res = await apiConnector("PUT", FLAT_REQUEST_API.ADMIN_DECISION(id), {
                 decision,
@@ -112,10 +116,10 @@ const ManageRequests = () => {
 
             // Check multiple response formats
             const isSuccess = res?.success || res?.data?.success || (res && !res.error && res.status !== 'error');
-            
+
             if (isSuccess) {
                 dispatch(updateRequest({ id, status, reason }));
-                
+
                 // Refresh requests list to get updated data
                 setTimeout(async () => {
                     try {
@@ -127,18 +131,18 @@ const ManageRequests = () => {
                         console.error('Failed to refresh requests:', refreshErr);
                     }
                 }, 1000);
-                
+
                 // Refresh flat data after approval to show updated occupancy
                 if (status === 'Approved') {
                     const request = filteredRequests.find(r => (r._id || r.id) === id);
-                    
+
                     // If this was a transfer to an occupied flat, handle old resident removal
                     if (request?.flat) {
                         try {
                             // First vacate the flat to remove old resident
                             await apiConnector("PUT", FLAT_API.VACATE(request.flat._id));
                             console.log(`Old resident removed from flat ${request.flat.flatNumber}`);
-                            
+
                             // Then assign to new resident
                             await apiConnector("PUT", FLAT_API.ASSIGN, {
                                 flatId: request.flat._id,
@@ -149,12 +153,12 @@ const ManageRequests = () => {
                             console.error('Flat assignment error:', assignErr);
                         }
                     }
-                    
+
                     // Optional: Trigger a refresh of flat data in other components
-                    window.dispatchEvent(new CustomEvent('flatAssigned', { 
-                        detail: { flatId: request?.flat?._id, residentName: name } 
+                    window.dispatchEvent(new CustomEvent('flatAssigned', {
+                        detail: { flatId: request?.flat?._id, residentName: name }
                     }));
-                    
+
                     showToast.approved(`${name}'s transfer request approved successfully! Flat has been assigned.`);
                 } else {
                     showToast.rejected(`${name}'s request rejected.`);
@@ -243,8 +247,8 @@ const ManageRequests = () => {
                                     </div>
                                 </div>
 
-                                {/* 3-Column Info Grid */}
-                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-inner group-hover:border-indigo-100 transition-colors">
+                                {/* 4-Column Info Grid */}
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-inner group-hover:border-indigo-100 transition-colors">
                                     <div>
                                         <p className="text-[9px] uppercase font-black text-slate-300 tracking-widest mb-1">Wing / Flat</p>
                                         <p className="font-black text-slate-700 text-sm">
@@ -252,13 +256,25 @@ const ManageRequests = () => {
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-[9px] uppercase font-black text-slate-300 tracking-widest mb-1">Resident Type</p>
-                                        <p className="font-black text-indigo-600 text-sm uppercase tracking-tighter text-[11px]">{req.userRole || req.type || 'Resident'}</p>
+                                        <p className="text-[9px] uppercase font-black text-slate-300 tracking-widest mb-1">Stay Type</p>
+                                        <p className="font-black text-indigo-600 text-sm uppercase tracking-tighter text-[11px]">{req.ownershipType || 'Resident'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] uppercase font-black text-slate-300 tracking-widest mb-1">Stay Details</p>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="flex items-center gap-1.5 text-[10px] font-bold text-slate-600">
+                                                <Smartphone className="w-3 h-3 text-slate-400" /> {req.contactNumber || 'N/A'}
+                                            </span>
+                                            <span className="flex items-center gap-1.5 text-[10px] font-bold text-slate-600">
+                                                <Users className="w-3 h-3 text-slate-400" /> {req.memberCount || '1'} Members
+                                            </span>
+                                        </div>
                                     </div>
                                     <div className="hidden lg:block">
-                                        <p className="text-[9px] uppercase font-black text-slate-300 tracking-widest mb-1">Date</p>
-                                        <p className="font-black text-slate-700 text-sm">
-                                            {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : (req.date || '-')}
+                                        <p className="text-[9px] uppercase font-black text-slate-300 tracking-widest mb-1">Aadhaar Verification</p>
+                                        <p className="font-black text-slate-700 text-[11px] flex items-center gap-1.5 mt-1">
+                                            <ClipboardCheck className="w-3.5 h-3.5 text-emerald-500" />
+                                            {req.aadhaarNumber ? req.aadhaarNumber.replace(/(\d{4})/g, '$1 ').trim() : 'NOT PROVIDED'}
                                         </p>
                                     </div>
                                 </div>
@@ -288,13 +304,12 @@ const ManageRequests = () => {
                                                 handleAction(req._id || req.id, req.user?.name || req.name, 'Approved');
                                             }}
                                             disabled={processingRequests.has(req._id || req.id)}
-                                            className={`grow font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-xl shadow-emerald-100 uppercase tracking-widest text-[10px] ${
-                                                processingRequests.has(req._id || req.id) 
-                                                    ? 'bg-emerald-300 text-emerald-100 cursor-not-allowed' 
-                                                    : 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                                            }`}
+                                            className={`grow font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-xl shadow-emerald-100 uppercase tracking-widest text-[10px] ${processingRequests.has(req._id || req.id)
+                                                ? 'bg-emerald-300 text-emerald-100 cursor-not-allowed'
+                                                : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                                                }`}
                                         >
-                                            <CheckCircle2 className="w-4 h-4" /> 
+                                            <CheckCircle2 className="w-4 h-4" />
                                             {processingRequests.has(req._id || req.id) ? 'Processing...' : 'Approve'}
                                         </button>
                                         <button
@@ -303,11 +318,10 @@ const ManageRequests = () => {
                                                 handleRejectClick(req);
                                             }}
                                             disabled={processingRequests.has(req._id || req.id)}
-                                            className={`grow font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all uppercase tracking-widest text-[10px] ${
-                                                processingRequests.has(req._id || req.id)
-                                                    ? 'bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed'
-                                                    : 'bg-white border border-rose-200 text-rose-500 hover:bg-rose-50'
-                                            }`}
+                                            className={`grow font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all uppercase tracking-widest text-[10px] ${processingRequests.has(req._id || req.id)
+                                                ? 'bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed'
+                                                : 'bg-white border border-rose-200 text-rose-500 hover:bg-rose-50'
+                                                }`}
                                         >
                                             <XSquare className="w-4 h-4" /> Reject
                                         </button>
@@ -369,11 +383,10 @@ const ManageRequests = () => {
                                 <button
                                     onClick={() => handleAction(selectedRequest._id || selectedRequest.id, selectedRequest.user?.name || selectedRequest.name, 'Rejected', rejectionReason)}
                                     disabled={processingRequests.has(selectedRequest?._id || selectedRequest?.id)}
-                                    className={`flex-[1.5] font-black py-4.5 rounded-2xl shadow-xl shadow-rose-100 transition-all uppercase tracking-widest text-[10px] ${
-                                        processingRequests.has(selectedRequest?._id || selectedRequest?.id)
-                                            ? 'bg-rose-300 text-rose-100 cursor-not-allowed'
-                                            : 'bg-rose-500 hover:bg-rose-600 text-white'
-                                    }`}
+                                    className={`flex-[1.5] font-black py-4.5 rounded-2xl shadow-xl shadow-rose-100 transition-all uppercase tracking-widest text-[10px] ${processingRequests.has(selectedRequest?._id || selectedRequest?.id)
+                                        ? 'bg-rose-300 text-rose-100 cursor-not-allowed'
+                                        : 'bg-rose-500 hover:bg-rose-600 text-white'
+                                        }`}
                                 >
                                     {processingRequests.has(selectedRequest?._id || selectedRequest?.id) ? 'Processing...' : 'Confirm Reject'}
                                 </button>

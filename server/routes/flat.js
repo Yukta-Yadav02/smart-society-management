@@ -1,6 +1,6 @@
 const express = require("express");
 const { protect, authorizeRoles } = require("../middelware/auth");
-const { createFlat, getFlatsByBlock, assignFlat, vacateFlat, getAllFlats, updateOldRequests } = require("../controllers/flat");
+const { createFlat, getFlatsByBlock, assignFlat, vacateFlat, getAllFlats, updateOldRequests, initializeOwnership, deleteFlat } = require("../controllers/flat");
 
 const router = express.Router();
 
@@ -20,6 +20,12 @@ router.post("/update-requests",
     authorizeRoles("ADMIN"),
     updateOldRequests);
 
+// [OWNERSHIP FLOW] - Initialize ownership for all flats
+router.post("/initialize-ownership",
+    protect,
+    authorizeRoles("ADMIN"),
+    initializeOwnership);
+
 // Assign flat to resident (ADMIN only)
 router.put("/assign",
     protect,
@@ -31,5 +37,11 @@ router.put("/vacate/:flatId",
     protect,
     authorizeRoles("ADMIN"),
     vacateFlat);
+
+// Delete flat (ADMIN only)
+router.delete("/:flatId",
+    protect,
+    authorizeRoles("ADMIN"),
+    deleteFlat);
 
 module.exports = router;

@@ -12,6 +12,7 @@ import Login from '../pages/common/Login';
 import SignUp from '../pages/common/SignUp';
 import RequestAccess from '../pages/common/RequestAccess';
 import Dashboard from '../pages/common/Dashboard';
+import ProfilePage from '../pages/common/ProfilePage'; // New Common Profile (Security)
 
 // Admin Pages
 import AdminDashboard from '../pages/admin/Dashboard';
@@ -21,18 +22,19 @@ import ManageRequests from '../pages/admin/ManageRequests';
 import AdminComplaints from '../pages/admin/Complaints';
 import AdminMaintenance from '../pages/admin/Maintenance';
 import AdminNotices from '../pages/admin/Notices';
-import AdminProfile from '../pages/admin/Profile';
+import AdminProfile from '../pages/admin/Profile'; // Original Rich Admin Profile
 
 // Security Pages
 import AddVisitor from '../pages/security/AddVisitor';
 import ExitVisitor from '../pages/security/ExitVisitor';
+import VisitorHistory from '../pages/security/VisitorHistory';
 
 // Resident Pages
 import ResidentDashboard from '../pages/resident/ResidentDashboard';
 import ResidentComplaints from '../pages/resident/Complaints';
 import ResidentMaintenance from '../pages/resident/Maintenance';
 import ResidentNotices from '../pages/resident/Notices';
-import ResidentProfile from '../pages/resident/Profile';
+import ResidentProfile from '../pages/resident/Profile'; // Original Rich Resident Profile
 
 const router = createBrowserRouter([
     {
@@ -58,7 +60,7 @@ const router = createBrowserRouter([
             { path: 'complaints', element: <AdminComplaints /> },
             { path: 'maintenance', element: <AdminMaintenance /> },
             { path: 'notices', element: <AdminNotices /> },
-            { path: 'profile', element: <AdminProfile /> },
+            { path: 'profile', element: <AdminProfile /> }, // Restored Original Admin UI
         ],
     },
     {
@@ -69,6 +71,8 @@ const router = createBrowserRouter([
             { path: 'dashboard', element: <Navigate to="/security/add-visitor" replace /> },
             { path: 'add-visitor', element: <AddVisitor /> },
             { path: 'exit-visitor', element: <ExitVisitor /> },
+            { path: 'visitor-history', element: <VisitorHistory /> },
+            { path: 'profile', element: <ProfilePage /> }, // Unified Profile for Security
         ],
     },
     {
@@ -79,7 +83,7 @@ const router = createBrowserRouter([
             { path: 'complaints', element: <ResidentComplaints /> },
             { path: 'maintenance', element: <ResidentMaintenance /> },
             { path: 'notices', element: <ResidentNotices /> },
-            { path: 'profile', element: <ResidentProfile /> },
+            { path: 'profile', element: <ResidentProfile /> }, // Restored Original Resident UI
         ],
     },
 ]);

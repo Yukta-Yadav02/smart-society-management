@@ -1,94 +1,122 @@
 const Flat = require("../models/Flat");
 
 const Wing = require("../models/Wing");
+const User = require("../models/User"); // [OWNERSHIP FLOW] - Need User model for ownership assignment
 
 // Admin create flat
 
-exports.createFlat = async(req,res)=>{
+exports.createFlat = async (req, res) => {
 
 
     try {
+        const { wingId, flatNumber, kitchen, capacity } = req.body;
+        if (!wingId || !flatNumber) {
+            return res.status(400).json({
+                success: false,
+                message: 'wing ID and flat Number are required'
+            })
+        }
 
-    const {wingId , flatNumber} = req.body;
-    if(!wingId || !flatNumber){
-        return res.status(400).json({
-            success:false,
-            message:'wing ID and flat Number are required'
+        const block = await Wing.findById(wingId);
+
+        if (!block) {
+            return res.status(404).json({
+                success: false,
+                message: "wing not found",
+            });
+        }
+
+        // [OWNERSHIP FLOW] - Naya flat banate waqt automatic wing-wise owner assign karna
+        let finalOwnerId = req.body.ownerId || null;
+
+        if (!finalOwnerId) {
+            const wingName = block.name.toUpperCase();
+            let targetName = "";
+
+            if (wingName.includes('A')) targetName = "Ram";
+            else if (wingName.includes('B')) targetName = "Riya";
+            else if (wingName.includes('C')) targetName = "Priya";
+            else if (wingName.includes('D')) targetName = "Himanshu";
+
+            if (targetName) {
+                const ownerUser = await User.findOne({
+                    name: { $regex: targetName, $options: 'i' },
+                    role: "ADMIN"
+                });
+                if (ownerUser) finalOwnerId = ownerUser._id;
+            }
+
+            // Still null? Default to the admin creating the flat
+            if (!finalOwnerId) {
+                finalOwnerId = req.user.id;
+            }
+        }
+
+        const flat = await Flat.create({
+            wing: wingId,
+            flatNumber,
+            kitchen: kitchen || "1",
+            capacity: capacity || 4,
+            owner: finalOwnerId
         })
+
+        return res.status(201).json({
+            success: true,
+            message: "flat created successfully",
+            data: flat,
+        })
+
     }
-
-     
-    const block = await Wing.findById(wingId);
-     
-    if (!block) {
-     return res.status(404).json({
-      success: false,
-      message: "wing not found",
-     });
-}
-
-    const flat  = await Flat.create({
-        wing:wingId,
-        flatNumber,
- 
-    })
-   
-    return res.status(201).json({
-        success:true,
-        message:"flat created successfully",
-        data:flat,
-    })
-        
-    } 
     catch (error) {
         if (error.code === 11000) {
-         return res.status(400).json({
-          success: false,
-         message: "Flat already exists in this block",
+            return res.status(400).json({
+                success: false,
+                message: "Flat already exists in this block",
+            });
+        }
+        return res.status(500).json({
+            success: false,
+            message: "Failed to create flat",
         });
-}
-          return res.status(500).json({
-           success: false,
-           message: "Failed to create flat",
-  });
     }
 
-  
+
 }
 
 //get flats by block 
 
-exports.getFlatsByBlock = async(req,res)=>{
+exports.getFlatsByBlock = async (req, res) => {
     console.log(req.params)
 
     try {
-        const {wingId} = req.params;
-        
-        if(!wingId ){
+        const { wingId } = req.params;
+
+        if (!wingId) {
             return res.status(400).json({
-                success:false,
-                message:"wingID required"
+                success: false,
+                message: "wingID required"
             })
         }
-        
-        const flats = await Flat.find({wing:wingId})
-        .populate("currentResident","name email")
-        .sort({flatNumber:1});
 
-       
+        const flats = await Flat.find({ wing: wingId })
+            .populate("currentResident", "name email residentType") // [OWNERSHIP FLOW] - Added residentType
+            .populate("owner", "name email")
+            .sort({ flatNumber: 1 });
+
+
 
         return res.status(200).json({
-            success:true,
-            data:flats
+            success: true,
+            data: flats
         })
 
 
-        
+
     } catch (error) {
         return res.status(500).json({
-           success: false,
-           message: "Failed to fetch flats",
-           error:error.message,
+            success: false,
+            message: "Failed to fetch flats",
+            error: error.message,
         });
 
     }
@@ -98,7 +126,7 @@ exports.getFlatsByBlock = async(req,res)=>{
 exports.assignFlat = async (req, res) => {
     try {
         const { flatId, residentId } = req.body;
-        
+
         if (!flatId || !residentId) {
             return res.status(400).json({
                 success: false,
@@ -121,14 +149,36 @@ exports.assignFlat = async (req, res) => {
             });
         }
 
+        // [OWNERSHIP FLOW] - Find resident to check their type
+        const resident = await User.findById(residentId);
+        if (!resident) {
+            return res.status(404).json({
+                success: false,
+                message: "Resident not found"
+            });
+        }
+
+        const updateData = {
+            isOccupied: true,
+            currentResident: residentId,
+            resident: {
+                _id: resident._id,
+                name: resident.name,
+                email: resident.email
+            }
+        };
+
+        // Agar Resident khud Owner hai, toh Flat ka owner wahi ban jayega
+        if (resident.residentType === "OWNER") {
+            updateData.owner = resident._id;
+        }
+        // Agar Resident Tenant hai, toh Flat ka owner purana hi rahega (e.g., Ram)
+
         const updatedFlat = await Flat.findByIdAndUpdate(
             flatId,
-            {
-                isOccupied: true,
-                currentResident: residentId
-            },
+            updateData,
             { new: true }
-        ).populate("currentResident", "name email");
+        ).populate("currentResident", "name email").populate("owner", "name email");
 
         return res.status(200).json({
             success: true,
@@ -149,7 +199,7 @@ exports.assignFlat = async (req, res) => {
 exports.vacateFlat = async (req, res) => {
     try {
         const { flatId } = req.params;
-        
+
         const flat = await Flat.findById(flatId);
         if (!flat) {
             return res.status(404).json({
@@ -188,13 +238,14 @@ exports.getAllFlats = async (req, res) => {
     try {
         const flats = await Flat.find()
             .populate("wing", "name")
-            .populate("currentResident", "name email")
+            .populate("currentResident", "name email residentType") // [OWNERSHIP FLOW] - Added residentType
+            .populate("owner", "name email")
             .sort({ createdAt: -1 });
 
         // Add resident data to each flat for proper display
         const flatsWithResidentData = flats.map(flat => {
             const flatObj = flat.toObject();
-            
+
             if (flatObj.currentResident) {
                 flatObj.resident = {
                     _id: flatObj.currentResident._id,
@@ -218,31 +269,127 @@ exports.getAllFlats = async (req, res) => {
     }
 };
 
+// [OWNERSHIP FLOW] - Database ke hisaab se sahi Malik (Owner) assign karna
+exports.initializeOwnership = async (req, res) => {
+    try {
+        const admin = await User.findOne({ role: "ADMIN" });
+        const wings = await Wing.find({});
+
+        let residentsUpdated = 0;
+        let fallbackUpdated = 0;
+        const assignmentSummary = [];
+
+        // 1. Sabse pehle un logo ko Owner banao jo 'OWNER' type ke residents hain (Real Owners like Saloni)
+        const ownerResidents = await User.find({ residentType: "OWNER", flat: { $ne: null } });
+        for (const resident of ownerResidents) {
+            const result = await Flat.findByIdAndUpdate(resident.flat, { owner: resident._id });
+            if (result) residentsUpdated++;
+        }
+
+        // 2. Ab baki bache flats ke liye Wing-wise default malik set karo
+        for (const wing of wings) {
+            const wingName = wing.name.toUpperCase();
+            let targetName = "";
+
+            if (wingName.includes('A')) targetName = "Ram";
+            else if (wingName.includes('B')) targetName = "Riya";
+            else if (wingName.includes('C')) targetName = "Priya";
+            else if (wingName.includes('D')) targetName = "Himanshu";
+
+            if (targetName) {
+                // Check if this owner already exists
+                let targetUser = await User.findOne({
+                    name: { $regex: targetName, $options: 'i' }
+                });
+
+                // Agar nahi hai, toh Admin role ke saath create karo (System Default)
+                if (!targetUser) {
+                    targetUser = await User.create({
+                        name: targetName,
+                        email: `${targetName.toLowerCase()}@society.com`,
+                        password: "password123", // Dummy password
+                        role: "ADMIN",
+                        status: "ACTIVE"
+                    });
+                    console.log(`👤 System User Created: ${targetName}`);
+                }
+
+                // Ab un flats ko assign karo jinka malik null hai
+                const result = await Flat.updateMany(
+                    { wing: wing._id, owner: null },
+                    { $set: { owner: targetUser._id } }
+                );
+
+                fallbackUpdated += result.modifiedCount;
+                assignmentSummary.push({ wing: wing.name, owner: targetUser.name, count: result.modifiedCount });
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Ownership Initialization Complete!",
+            summary: assignmentSummary,
+            residentsUpdated,
+            fallbackUpdated
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Failed to initialize ownership",
+            error: error.message
+        });
+    }
+};
+
 // Update old requests to OWNER
 exports.updateOldRequests = async (req, res) => {
     try {
-        const FlatRequest = require('../models/FlatRequest');
-        
-        console.log('Starting update of old requests...');
-        
+        const FlatRequest = require('../models/flatRequest');
+
         const result = await FlatRequest.updateMany(
             { ownershipType: 'RESIDENT' },
             { $set: { ownershipType: 'OWNER' } }
         );
-        
-        console.log('Update result:', result);
-        
+
         return res.status(200).json({
             success: true,
             message: `Updated ${result.modifiedCount} requests to OWNER`,
             modifiedCount: result.modifiedCount
         });
-        
+
     } catch (error) {
-        console.error('Update error:', error);
         return res.status(500).json({
             success: false,
             message: "Failed to update requests",
+            error: error.message
+        });
+    }
+};
+
+// Delete flat
+exports.deleteFlat = async (req, res) => {
+    try {
+        const { flatId } = req.params;
+
+        const flat = await Flat.findById(flatId);
+        if (!flat) {
+            return res.status(404).json({
+                success: false,
+                message: "Flat not found"
+            });
+        }
+
+        await Flat.findByIdAndDelete(flatId);
+
+        return res.status(200).json({
+            success: true,
+            message: "Flat deleted successfully"
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Failed to delete flat",
             error: error.message
         });
     }

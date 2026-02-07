@@ -21,18 +21,21 @@ export const WING_API = {
 export const FLAT_API = {
   CREATE: BASE_URL + "/flat",
   GET_BY_WING: (wingId) => BASE_URL + `/flat/wing/${wingId}`,
-  GET_ALL: BASE_URL + "/flat",
+  GET_ALL: BASE_URL + `/flat`,
   ASSIGN: BASE_URL + "/flat/assign",
   VACATE: (flatId) => BASE_URL + `/flat/vacate/${flatId}`,
+  DELETE: (flatId) => BASE_URL + `/flat/${flatId}`,
+  // [OWNERSHIP FLOW] - Initialize ownership for all unassigned flats
+  INITIALIZE_OWNERSHIP: BASE_URL + "/flat/initialize-ownership",
 };
 
 /* ================= FLAT REQUEST ================= */
 export const FLAT_REQUEST_API = {
-  CREATE: BASE_URL + "/flat-requests",             
-  GET_MY_REQUESTS: BASE_URL + "/flat-requests",     
+  CREATE: BASE_URL + "/flat-requests",
+  GET_MY_REQUESTS: BASE_URL + "/flat-requests",
   GET_TRANSFER_REQUESTS: BASE_URL + "/flat-requests/transfer-requests",
 
-  GET_ALL: BASE_URL + "/flat-requests/all",         
+  GET_ALL: BASE_URL + "/flat-requests/all",
 
   RESIDENT_RESPONSE: (id) =>
     BASE_URL + `/flat-requests/${id}/resident-response`,
@@ -61,6 +64,9 @@ export const MAINTENANCE_API = {
   MY: BASE_URL + "/maintenance/my",
   PAY: (id) =>
     BASE_URL + `/maintenance/pay/${id}`,
+  // NEW: Admin route to toggle status
+  UPDATE_STATUS: (id) =>
+    BASE_URL + `/maintenance/${id}/status`,
   DELETE: (id) =>
     BASE_URL + `/maintenance/${id}`,
   DELETE_ALL: BASE_URL + "/maintenance/delete-all",
@@ -87,6 +93,7 @@ export const DASHBOARD_API = {
 export const VISITOR_API = {
   ENTRY: BASE_URL + "/visitor/entry",
   GET_ACTIVE: BASE_URL + "/visitor/active",
+  GET_HISTORY: BASE_URL + "/visitor/history",
   EXIT: (id) =>
     BASE_URL + `/visitor/exit/${id}`,
 };
