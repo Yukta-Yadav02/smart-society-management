@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { Mail, Lock, Loader2, Building2, AlertCircle } from 'lucide-react';
 
+import toast from 'react-hot-toast';
+
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -19,6 +21,7 @@ const Login = () => {
         const result = await login(email, password);
 
         if (result.success) {
+            toast.success(`Welcome back, ${result.user?.name || 'User'}!`);
             // Redirect based on user role
             const userRole = result.user?.role;
             if (userRole === 'ADMIN') {
@@ -36,6 +39,7 @@ const Login = () => {
             }
         } else {
             setError(result.message);
+            toast.error(result.message || "Login failed");
         }
         setIsLoading(false);
     };

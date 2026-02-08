@@ -47,6 +47,7 @@ const Maintenance = () => {
     const [showCommonModal, setShowCommonModal] = useState(false);
     const [showSpecialModal, setShowSpecialModal] = useState(false);
     const [filterStatus, setFilterStatus] = useState('All');
+    const [filterYear, setFilterYear] = useState('All');
     const [filterMonth, setFilterMonth] = useState('All');
     const [filterWing, setFilterWing] = useState('All');
     const [filterType, setFilterType] = useState('Monthly');
@@ -158,13 +159,14 @@ const Maintenance = () => {
                 amount: data.amount,
                 description: data.description,
                 period: data.period,
-                type: 'Special'
+                type: 'Special',
+                status: data.isPaid ? 'PAID' : 'UNPAID'
             });
             if (res.success) {
                 const maintenanceRes = await apiConnector("GET", MAINTENANCE_API.GET_ALL);
                 if (maintenanceRes.success) {
                     dispatch(setMaintenance(maintenanceRes.data));
-                    setFilterType('Special'); // Automatically switch filter to Special
+                    setFilterType('Special');
                 }
                 toast.success(`Special charge added successfully`, { icon: '🎯' });
                 setShowSpecialModal(false);
@@ -191,9 +193,12 @@ const Maintenance = () => {
 
     const toggleStatus = async (id, currentStatus) => {
         try {
-            const newStatus = currentStatus === 'Paid' ? 'Unpaid' : 'Paid';
+            const newStatus = currentStatus.toUpperCase() === 'PAID' ? 'UNPAID' : 'PAID';
             const res = await apiConnector("PUT", MAINTENANCE_API.UPDATE_STATUS(id), { status: newStatus });
-            if (res.success) dispatch(updateMaintenance({ id, status: newStatus }));
+            if (res.success) {
+                dispatch(updateMaintenance({ id, ...res.data }));
+                toast.success(`Marked as ${newStatus}`, { icon: newStatus === 'PAID' ? '✅' : '⏳' });
+            }
         } catch (err) {
             toast.error(err.message || "Failed to update payment status");
         }
@@ -209,6 +214,10 @@ const Maintenance = () => {
             (r.period && r.period.toLowerCase().includes(filterMonth.toLowerCase())) ||
             (r.month && r.month.toLowerCase() === filterMonth.toLowerCase());
 
+        const matchesYear = filterYear === 'All' ||
+            (r.period && r.period.toLowerCase().includes(filterYear.toString().toLowerCase())) ||
+            (r.year && r.year.toString() === filterYear.toString());
+
         const matchesWing = filterWing === 'All' ||
             (r.flat?.wing?.name && r.flat.wing.name === filterWing) ||
             (r.flat?.flatNumber && r.flat.flatNumber.startsWith(filterWing));
@@ -222,7 +231,7 @@ const Maintenance = () => {
         const matchesSearch = flatNum.toString().includes(searchQuery) ||
             (r.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (r.title || '').toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesStatus && matchesMonth && matchesWing && matchesType && matchesSearch;
+        return matchesStatus && matchesMonth && matchesYear && matchesWing && matchesType && matchesSearch;
     });
 
     const totalCollected = filteredRecords.filter(r => r.status === 'PAID').reduce((sum, r) => sum + r.amount, 0);
@@ -423,28 +432,50 @@ const Maintenance = () => {
                                         </div>
                                     </div>
 
-                                    {/* Month Filter */}
+                                    {/* Year Filter */}
                                     <div>
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Month</label>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            {['All', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
-                                                const fullMonth = index === 0 ? 'All' : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][index - 1];
-                                                return (
-                                                    <button
-                                                        key={month}
-                                                        onClick={() => setFilterMonth(fullMonth)}
-                                                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${filterMonth === fullMonth ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                                                    >
-                                                        {month}
-                                                    </button>
-                                                );
-                                            })}
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Year</label>
+                                        <div className="flex gap-2 flex-wrap">
+                                            {['All', '2024', '2025', '2026', '2027', '2028'].map(year => (
+                                                <button
+                                                    key={year}
+                                                    onClick={() => {
+                                                        setFilterYear(year);
+                                                        if (year === 'All') setFilterMonth('All');
+                                                    }}
+                                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filterYear === year ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-100'}`}
+                                                >
+                                                    {year}
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
+
+                                    {/* Month Filter */}
+                                    {filterYear !== 'All' && (
+                                        <div className="animate-in slide-in-from-top-2 duration-300">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">{filterYear} Months</label>
+                                            <div className="grid grid-cols-4 gap-2">
+                                                {['All', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
+                                                    const fullMonth = index === 0 ? 'All' : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][index - 1];
+                                                    return (
+                                                        <button
+                                                            key={month}
+                                                            onClick={() => setFilterMonth(fullMonth)}
+                                                            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${filterMonth === fullMonth ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-100'}`}
+                                                        >
+                                                            {month}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Clear Filters */}
                                     <button
                                         onClick={() => {
+                                            setFilterYear('All');
                                             setFilterStatus('All');
                                             setFilterWing('All');
                                             setFilterMonth('All');
@@ -520,14 +551,14 @@ const Maintenance = () => {
                                         {r.type === 'Special' ? '🎯 Special' : '🏠 Monthly'}
                                     </span>
 
-                                    {/* Status Badge - NEW COMMENT: Now clickable for Admin to manually pay/unpay */}
+                                    {/* Status Badge - CLICKABLE FOR ADMIN */}
                                     <button
                                         onClick={() => toggleStatus(r._id || r.id, r.status === 'PAID' ? 'Paid' : 'Unpaid')}
                                         title={r.status === 'PAID' ? "Mark as UNPAID" : "Mark as PAID"}
                                         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 ${r.status === 'PAID' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600 border border-amber-200/50'}`}
                                     >
                                         {r.status === 'PAID' ? (
-                                            <><CheckCircle2 className="w-3 h-3" /> Paid</>
+                                            <><CheckCircle2 className="w-3 h-3" /> PAID ({r.paymentMode || 'ONLINE'})</>
                                         ) : (
                                             <><Clock className="w-3 h-3" /> Pending</>
                                         )}
@@ -540,6 +571,21 @@ const Maintenance = () => {
                                         <p className="text-[11px] text-slate-400 font-medium italic truncate">
                                             "{r.description}"
                                         </p>
+                                    </div>
+                                )}
+
+                                {/* Quick Action Section */}
+                                {r.status === 'UNPAID' ? (
+                                    <button
+                                        onClick={() => toggleStatus(r._id || r.id, 'Unpaid')}
+                                        className="w-full mt-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-100 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <IndianRupee className="w-3 h-3" /> Collect Cash
+                                    </button>
+                                ) : (
+                                    <div className="w-full mt-4 py-3 bg-emerald-50 border border-emerald-100 text-emerald-600 font-black text-[10px] uppercase tracking-widest rounded-xl flex items-center justify-center gap-2">
+                                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                        Payment Received via {r.paymentMode || 'ONLINE'}
                                     </div>
                                 )}
                             </div>
@@ -585,10 +631,17 @@ const Maintenance = () => {
                                     <input {...commonForm.register('period')} placeholder="e.g. March 2024" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-transparent font-bold text-slate-700 focus:bg-white focus:border-indigo-100 outline-none" />
                                     {commonForm.formState.errors.period && <p className="text-rose-500 text-[10px] font-bold">{commonForm.formState.errors.period.message}</p>}
                                 </div>
-
-
-
-                                <button type="submit" className="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all uppercase tracking-widest text-xs">
+                                <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                    <input
+                                        type="checkbox"
+                                        id="includeVacant"
+                                        {...commonForm.register('includeVacant')}
+                                        className="w-4 h-4 accent-indigo-600 rounded"
+                                    />
+                                    <label htmlFor="includeVacant" className="text-xs font-bold text-slate-600 cursor-pointer">
+                                        Include Vacant Flats
+                                    </label>
+                                </div>                                <button type="submit" className="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all uppercase tracking-widest text-xs">
                                     Generate Bills
                                 </button>
                             </div>
@@ -674,6 +727,17 @@ const Maintenance = () => {
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
                                     <input {...specialForm.register('description')} placeholder="Maintenance fine, etc." className="w-full px-5 py-3 rounded-xl bg-slate-50 border border-transparent font-bold text-slate-700 text-sm focus:bg-white focus:border-indigo-100 outline-none" />
                                     {specialForm.formState.errors.description && <p className="text-rose-500 text-[9px] font-bold">{specialForm.formState.errors.description.message}</p>}
+                                </div>
+                                <div className="flex items-center gap-3 bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                                    <input
+                                        type="checkbox"
+                                        id="isPaid"
+                                        {...specialForm.register('isPaid')}
+                                        className="w-4 h-4 accent-emerald-600 rounded"
+                                    />
+                                    <label htmlFor="isPaid" className="text-xs font-bold text-emerald-800 cursor-pointer">
+                                        Received Cash (Mark as Paid Immediately)
+                                    </label>
                                 </div>
                                 <button type="submit" className="w-full bg-amber-600 text-white font-black py-4 rounded-xl shadow-xl shadow-amber-100 hover:bg-amber-700 transition-all uppercase tracking-widest text-[10px] mt-2">
                                     Add Special Charge

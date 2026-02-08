@@ -37,16 +37,16 @@ const Maintenance = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedBill, setSelectedBill] = useState(null);
 
- 
+
   useEffect(() => {
     // Force clear maintenance data first
     dispatch(clearMaintenance());
-    
+
     const fetchMyMaintenance = async () => {
       try {
         const res = await apiConnector("GET", MAINTENANCE_API.MY);
         console.log("My Maintenance API Response:", res);
-        
+
         if (res.success && res.data && res.data.length > 0) {
           dispatch(setMaintenance(res.data));
         } else {
@@ -80,29 +80,29 @@ const Maintenance = () => {
         amount: selectedBill.amount,
         period: selectedBill.period
       });
-      
+
       const response = await apiConnector("PUT", MAINTENANCE_API.PAY(id), {});
       console.log('Payment API response:', response);
 
       if (response && response.success) {
-        dispatch(updateMaintenance({ 
-          id, 
-          status: 'PAID', 
-          paidAt: new Date().toISOString() 
+        dispatch(updateMaintenance({
+          id,
+          status: 'PAID',
+          paidAt: new Date().toISOString()
         }));
-        
+
         toast.success(
-          `🎉 Payment Successful!\n₹${selectedBill.amount} paid for ${selectedBill.period}\nAdmin has been notified!`, 
+          `🎉 Payment Successful!\n₹${selectedBill.amount} paid for ${selectedBill.period}\nAdmin has been notified!`,
           {
             duration: 4000,
-            style: { 
-              background: '#10B981', 
+            style: {
+              background: '#10B981',
               color: 'white',
               fontWeight: 'bold'
             }
           }
         );
-        
+
         setShowPaymentModal(false);
         setSelectedBill(null);
       } else {
@@ -195,7 +195,7 @@ const Maintenance = () => {
                     <Receipt size={24} />
                   </div>
                   <Badge variant={bill.status === 'PAID' ? 'success' : 'warning'}>
-                    {bill.status === 'PAID' ? 'Paid' : 'Unpaid'}
+                    {bill.status === 'PAID' ? `PAID (${bill.paymentMode || 'ONLINE'})` : 'Unpaid'}
                   </Badge>
                 </div>
 
@@ -236,8 +236,8 @@ const Maintenance = () => {
                     Pay & Clear Due
                   </Button>
                 ) : (
-                  <button className="w-full py-4.5 rounded-2xl border border-dashed border-emerald-200 text-emerald-600 font-bold text-[10px] uppercase tracking-widest cursor-default flex items-center justify-center gap-2">
-                    <CheckCircle2 size={16} /> Paid on {bill.paidAt ? new Date(bill.paidAt).toLocaleDateString() : 'Record'}
+                  <button className="w-full py-4.5 rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600 font-bold text-[10px] uppercase tracking-widest cursor-default flex items-center justify-center gap-2">
+                    <CheckCircle2 size={16} /> Payment Received via {bill.paymentMode || 'ONLINE'}
                   </button>
                 )}
               </div>
@@ -279,10 +279,10 @@ const Maintenance = () => {
             >
               Cancel
             </button>
-            <Button 
-              fullWidth 
-              onClick={confirmPayment} 
-              className="flex-[2] py-4" 
+            <Button
+              fullWidth
+              onClick={confirmPayment}
+              className="flex-[2] py-4"
               disabled={!selectedBill}
               type="button"
             >

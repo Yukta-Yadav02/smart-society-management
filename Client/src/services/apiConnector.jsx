@@ -27,12 +27,12 @@ axiosInstance.interceptors.request.use(
     if (csrfToken) {
       config.headers['X-CSRF-Token'] = csrfToken;
     }
-    
+
     // Sanitize URL
     if (config.url && typeof config.url === 'string') {
       config.url = config.url.replace(/[<>"']/g, '');
     }
-    
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -55,7 +55,7 @@ const rateLimit = () => {
   return new Promise((resolve) => {
     const now = Date.now();
     const timeSinceLastRequest = now - lastRequestTime;
-    
+
     if (timeSinceLastRequest < RATE_LIMIT_DELAY) {
       setTimeout(() => {
         lastRequestTime = Date.now();
@@ -71,11 +71,11 @@ const rateLimit = () => {
 // Input validation
 const validateInput = (data) => {
   if (!data) return data;
-  
+
   if (typeof data === 'string') {
     return data.replace(/<script[^>]*>.*?<\/script>/gi, '').trim();
   }
-  
+
   if (typeof data === 'object') {
     const sanitized = {};
     for (const [key, value] of Object.entries(data)) {
@@ -87,7 +87,7 @@ const validateInput = (data) => {
     }
     return sanitized;
   }
-  
+
   return data;
 };
 
@@ -102,11 +102,11 @@ export const apiConnector = async (
   try {
     // Rate limiting
     await rateLimit();
-    
+
     // Input validation
     const sanitizedData = validateInput(bodyData);
     const sanitizedParams = validateInput(params);
-    
+
     // Token validation
     const token = localStorage.getItem("token");
     if (token) {
@@ -117,16 +117,16 @@ export const apiConnector = async (
       }
       headers.Authorization = `Bearer ${token}`;
     }
-    
+
     // URL validation
     if (!url || typeof url !== 'string') {
       throw new Error('Invalid URL');
     }
-    
+
     const response = await axiosInstance({
       method: method.toUpperCase(),
       url,
-      data: method.toUpperCase() === 'DELETE' ? undefined : sanitizedData,
+      data: ["GET", "DELETE"].includes(method.toUpperCase()) ? undefined : (sanitizedData || undefined),
       headers: {
         ...headers,
         'X-Request-ID': crypto.randomUUID?.() || Date.now().toString()
@@ -142,13 +142,13 @@ export const apiConnector = async (
       status: error.response?.status,
       message: error.response?.data?.message || error.message
     });
-    
+
     // Retry logic for network errors
     if (retries < MAX_RETRIES && (!error.response || error.response.status >= 500)) {
       await new Promise(resolve => setTimeout(resolve, 1000 * (retries + 1)));
       return apiConnector(method, url, bodyData, headers, params, retries + 1);
     }
-    
+
     throw error?.response?.data || error;
   }
 };

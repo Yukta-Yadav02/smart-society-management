@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { Mail, Lock, User, Loader2, Building2, AlertCircle } from 'lucide-react';
 
+import toast from 'react-hot-toast';
+
 const SignUp = () => {
     const [formData, setFormData] = useState({
         name: '',
@@ -22,7 +24,7 @@ const SignUp = () => {
         const result = await signup(formData);
 
         if (result.success) {
-            alert("Account created successfully! Please login.");
+            toast.success("Account created successfully! Please login.");
             navigate('/login');
         } else {
             setError(result.message);

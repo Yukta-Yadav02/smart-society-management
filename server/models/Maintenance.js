@@ -45,6 +45,10 @@ const maintenanceSchema = new mongoose.Schema(
     },
 
     paidAt: Date,
+    paymentMode: {
+      type: String,
+      enum: ["CASH", "ONLINE"],
+    },
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

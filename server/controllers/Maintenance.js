@@ -2,19 +2,38 @@ const Maintenance = require("../models/Maintenance");
 const Flat = require("../models/Flat");
 const User = require("../models/User");
 
+// Helper to extract month/year from a period string (e.g., "July 2026")
+const parsePeriod = (period) => {
+  if (!period) return { month: null, year: null };
+  const parts = period.split(/\s+/);
+  let month = null;
+  let year = null;
+
+  parts.forEach(part => {
+    if (/^\d{4}$/.test(part)) {
+      year = parseInt(part);
+    } else if (/^[a-zA-Z]+$/.test(part)) {
+      month = part;
+    }
+  });
+
+  return { month, year };
+};
+
 /* ================= ADMIN ================= */
 
 // ADMIN → create maintenance for one or more flats (special/custom)
 exports.createMaintenance = async (req, res) => {
   try {
     console.log("Creating maintenance - Request body:", req.body);
-    const { title, amount, month, year, flat, description, type, period } = req.body;
+    const { title, amount, month, year, flat, description, type, period, status } = req.body;
 
     if (!amount) {
       return res.status(400).json({ success: false, message: "Amount required" });
     }
 
     const cleanPeriod = period || `${month || ""} ${year || ""}`.trim();
+    const { month: parsedMonth, year: parsedYear } = parsePeriod(cleanPeriod);
 
     // 1. Determine targets (which flats)
     let targetFlats = [];
@@ -35,13 +54,16 @@ exports.createMaintenance = async (req, res) => {
     const recordsToCreate = targetFlats.map(f => ({
       title: title || (type === "Special" ? "Special Charge" : "Maintenance"),
       amount: Number(amount),
-      month,
-      year,
+      month: month || parsedMonth,
+      year: year || parsedYear,
       period: cleanPeriod,
       flat: f._id,
       description: description || "",
       type: type || "Common",
-      status: "UNPAID",
+      status: (status || "UNPAID").toUpperCase(),
+      paidBy: (status || "").toUpperCase() === "PAID" ? req.user.id : undefined,
+      paidAt: (status || "").toUpperCase() === "PAID" ? new Date() : undefined,
+      paymentMode: (status || "").toUpperCase() === "PAID" ? "CASH" : undefined,
       createdBy: req.user.id,
     }));
 
@@ -84,7 +106,7 @@ exports.generateCommonMaintenance = async (req, res) => {
   try {
     console.log("Generating common maintenance - Request body:", req.body);
 
-    const { amount, period } = req.body;
+    const { amount, period, includeVacant } = req.body;
     const cleanPeriod = period ? period.trim() : null;
 
     if (!amount || !cleanPeriod) {
@@ -94,10 +116,10 @@ exports.generateCommonMaintenance = async (req, res) => {
       });
     }
 
+    // 1. Fetch flats with occupancy info
     const flats = await Flat.find();
-    console.log(`Found ${flats.length} flats for maintenance generation`);
+    console.log(`Found ${flats.length} total flats`);
 
-    // 1. Identify which flats already have maintenance for this period/type
     const existingRecords = await Maintenance.find({
       period: cleanPeriod,
       type: "Common",
@@ -106,42 +128,62 @@ exports.generateCommonMaintenance = async (req, res) => {
 
     const existingFlatIds = new Set(existingRecords.map(r => r.flat ? r.flat.toString() : null));
 
-    // 2. Filter out flats that already have maintenance
+    // 3. Filter flats based on existing records AND occupancy (if requested)
     const recordsToCreate = flats
-      .filter(flat => !existingFlatIds.has(flat._id.toString()))
-      .map((flat) => ({
-        title: "Monthly Maintenance",
-        flat: flat._id,
-        amount: Number(amount),
-        period: cleanPeriod,
-        type: "Common",
-        status: "UNPAID",
-        createdBy: req.user.id,
-      }));
+      .filter(flat => {
+        // Skip if already has record
+        if (existingFlatIds.has(flat._id.toString())) return false;
+
+        // Skip vacant if includeVacant is not explicitly true
+        if (includeVacant !== true && !flat.isOccupied) return false;
+
+        return true;
+      })
+      .map((flat) => {
+        const { month: m, year: y } = parsePeriod(cleanPeriod);
+        return {
+          title: "Monthly Maintenance",
+          flat: flat._id,
+          amount: Number(amount),
+          month: m,
+          year: y,
+          period: cleanPeriod,
+          type: "Common",
+          status: "UNPAID",
+          createdBy: req.user.id,
+        };
+      });
 
     if (recordsToCreate.length === 0) {
       return res.status(200).json({
         success: true,
-        message: `Maintenance for ${cleanPeriod} already generated for selected flats.`,
+        message: `Maintenance for ${cleanPeriod} already generated or no target flats found.`,
         data: [],
       });
     }
 
-    // 3. Insert new records
-    const saved = await Maintenance.insertMany(recordsToCreate);
-    console.log(`Generated ${saved.length} new records. Skipped ${existingFlatIds.size} existing.`);
+    // 4. Insert new records
+    try {
+      const saved = await Maintenance.insertMany(recordsToCreate);
+      console.log(`Generated ${saved.length} new records.`);
 
-    res.status(201).json({
-      success: true,
-      message: `Generated: ${saved.length}. Skipped: ${existingFlatIds.size}.`,
-      data: saved,
-    });
+      res.status(201).json({
+        success: true,
+        message: `Generated: ${saved.length}. Skipped: ${flats.length - saved.length}.`,
+        data: saved,
+      });
+    } catch (dbError) {
+      console.error("Database Insert Error:", dbError);
+      return res.status(400).json({
+        success: false,
+        message: dbError.message || "Failed to save maintenance records",
+      });
+    }
   } catch (error) {
     console.error("Generate common maintenance error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to generate common maintenance",
-      error: error.message
+      message: error.message || "Failed to generate common maintenance",
     });
   }
 };
@@ -205,17 +247,28 @@ exports.updateMaintenanceStatus = async (req, res) => {
     if (maintenance.status === 'PAID') {
       maintenance.paidBy = req.user.id;
       maintenance.paidAt = new Date();
+      maintenance.paymentMode = "CASH";
     } else {
       maintenance.paidBy = undefined;
       maintenance.paidAt = undefined;
+      maintenance.paymentMode = undefined;
     }
 
     await maintenance.save();
 
+    // Populate before sending back to avoid losing data in frontend state
+    const updatedMaintenance = await Maintenance.findById(maintenanceId)
+      .populate({
+        path: "flat",
+        select: "flatNumber wing isOccupied ownerName",
+        populate: { path: "wing", select: "name" }
+      })
+      .populate("paidBy", "name email");
+
     res.status(200).json({
       success: true,
       message: `Maintenance marked as ${maintenance.status}`,
-      data: maintenance
+      data: updatedMaintenance
     });
   } catch (error) {
     res.status(500).json({ success: false, message: "Status update failed", error: error.message });
@@ -286,6 +339,7 @@ exports.payMaintenance = async (req, res) => {
     maintenance.status = "PAID";
     maintenance.paidBy = req.user.id;
     maintenance.paidAt = new Date();
+    maintenance.paymentMode = "ONLINE";
 
     await maintenance.save();
 
@@ -303,10 +357,18 @@ exports.payMaintenance = async (req, res) => {
     console.log(`   Time: ${new Date().toLocaleString()}`);
     console.log(`   Status: PAYMENT SUCCESSFUL ✅`);
 
+    const updatedMaintenance = await Maintenance.findById(req.params.id)
+      .populate({
+        path: "flat",
+        select: "flatNumber wing isOccupied ownerName",
+        populate: { path: "wing", select: "name" }
+      })
+      .populate("paidBy", "name email");
+
     res.status(200).json({
       success: true,
       message: `Payment of ₹${amount} successful! Admin has been notified.`,
-      data: maintenance,
+      data: updatedMaintenance,
       notification: {
         flat: flatNumber,
         resident: residentName,
