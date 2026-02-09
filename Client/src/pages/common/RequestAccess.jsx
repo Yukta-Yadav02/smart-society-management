@@ -71,8 +71,8 @@ const RequestAccess = () => {
     if (e) e.preventDefault();
     if (loading) return;
 
-    if (!contactNumber) {
-      toast.error("Please provide a contact number");
+    if (!contactNumber || contactNumber.length !== 10) {
+      toast.error("Please provide a valid 10-digit contact number");
       setStep(2);
       return;
     }
@@ -110,6 +110,10 @@ const RequestAccess = () => {
     if (step === 2) {
       if (!contactNumber || !memberCount || !aadhaarNumber) {
         toast.error("Please fill all details");
+        return;
+      }
+      if (contactNumber.length !== 10) {
+        toast.error("Contact number must be exactly 10 digits");
         return;
       }
       if (!/^\d{12}$/.test(aadhaarNumber)) {
@@ -234,11 +238,20 @@ const RequestAccess = () => {
                         <input
                           type="tel"
                           value={contactNumber}
-                          onChange={(e) => setContactNumber(e.target.value)}
-                          placeholder="Enter your active mobile number"
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '');
+                            if (value.length <= 10) {
+                              setContactNumber(value);
+                            }
+                          }}
+                          maxLength="10"
+                          placeholder="Enter 10 digit mobile number"
                           className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-indigo-200 focus:outline-none focus:ring-4 focus:ring-indigo-50 transition-all font-bold text-slate-700"
                         />
                       </div>
+                      {contactNumber && contactNumber.length !== 10 && (
+                        <p className="text-xs text-rose-500 font-bold mt-1">Contact number must be exactly 10 digits</p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -14,6 +14,35 @@ router.get("/wing/:wingId", getFlatsByBlock);
 // Get all flats
 router.get("/", getAllFlats);
 
+// Get single flat by ID
+router.get("/:flatId", async (req, res) => {
+  try {
+    const Flat = require("../models/Flat");
+    const flat = await Flat.findById(req.params.flatId)
+      .populate("wing", "name")
+      .populate("currentResident", "name email")
+      .populate("owner", "name email");
+    
+    if (!flat) {
+      return res.status(404).json({
+        success: false,
+        message: "Flat not found"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: flat
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch flat",
+      error: error.message
+    });
+  }
+});
+
 // Update old requests (ADMIN only)
 router.post("/update-requests",
     protect,

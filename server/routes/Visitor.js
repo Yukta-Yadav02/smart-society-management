@@ -7,7 +7,6 @@ const {
   markVisitorExit,
   getAllVisitorsHistory,
   getActiveVisitors,
-  getMyFlatVisitors,
 } = require("../controllers/Visitor");
 
 const { protect, authorizeRoles } = require("../middelware/auth");

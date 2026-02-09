@@ -16,7 +16,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
 
 import { apiConnector } from '../../services/apiConnector';
-import { DASHBOARD_API, FLAT_REQUEST_API } from '../../services/apis';
+import { DASHBOARD_API, FLAT_REQUEST_API, NOTICE_API } from '../../services/apis';
 
 import { updateStats, setRecentRequests, setLoading, setError } from '../../store/slices/dashboardSlice';
 
@@ -58,6 +58,16 @@ const Dashboard = () => {
                         }
                     } catch (reqErr) {
                         console.error("Failed to fetch recent requests:", reqErr);
+                    }
+
+                    // Fetch Recent Notices
+                    try {
+                        const noticesRes = await apiConnector("GET", NOTICE_API.GET_ALL);
+                        if (noticesRes.success) {
+                            setRecentNotices(noticesRes.data || []);
+                        }
+                    } catch (noticeErr) {
+                        console.error("Failed to fetch notices:", noticeErr);
                     }
                 } else {
                     console.warn('API response not successful:', res);
@@ -117,9 +127,9 @@ const Dashboard = () => {
             path: '/admin/notices',
             colorClass: 'bg-purple-50 text-purple-600',
             subStats: [
-                { label: 'Active', value: stats.totalNotices || 0, color: 'text-purple-500' },
-                { label: 'This Month', value: stats.totalNotices || 0, color: 'text-indigo-400' },
-                { label: 'Broadcasts', value: stats.totalNotices || 0, color: 'text-slate-400' }
+                { label: 'Total', value: stats.totalNotices || 0, color: 'text-purple-500' },
+                { label: 'Recent', value: recentNotices.length || 0, color: 'text-indigo-400' },
+                { label: 'Active', value: stats.totalNotices || 0, color: 'text-slate-400' }
             ]
         },
         {
@@ -237,25 +247,48 @@ const Dashboard = () => {
                     )}
                 </Card>
                 <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-8 rounded-[2.5rem] shadow-xl shadow-indigo-100 text-white relative overflow-hidden">
-                    <div className="relative z-10 h-full flex flex-col justify-between">
-                        <div>
-                            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-md">
-                                <Bell className="w-6 h-6 text-white" />
+                    <div className="relative z-10 h-full flex flex-col">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                                    <Bell className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black uppercase tracking-tight">Latest Notice</h2>
+                                    <p className="text-indigo-200 text-xs font-medium">Recent announcements</p>
+                                </div>
                             </div>
-                            <h2 className="text-xl font-black mb-2 uppercase tracking-tight">Society Broadcast</h2>
-                            <p className="text-indigo-100 text-sm mb-6 font-medium leading-relaxed">Send important announcements and updates to all residents instantly.</p>
-                            <textarea
-                                placeholder="Type your notice description here..."
-                                className="w-full bg-white/10 border border-white/20 rounded-2xl p-5 text-white placeholder:text-indigo-200/50 focus:outline-none focus:ring-2 focus:ring-white/40 h-32 resize-none transition-all text-sm font-medium shadow-inner"
-                            />
                         </div>
+                        
+                        {recentNotices.length > 0 ? (
+                            <div className="flex-1 space-y-3 mb-6">
+                                {recentNotices.slice(0, 2).map((notice) => (
+                                    <div key={notice._id} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 hover:bg-white/15 transition-all">
+                                        <h3 className="font-black text-white text-sm mb-1 uppercase tracking-tight">{notice.title}</h3>
+                                        <p className="text-indigo-100 text-xs font-medium line-clamp-2 leading-relaxed">{notice.message}</p>
+                                        <p className="text-indigo-300 text-[10px] font-bold mt-2 uppercase tracking-widest">
+                                            {notice.createdAt ? new Date(notice.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'Today'}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center py-8">
+                                <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-4">
+                                    <Bell className="w-8 h-8 text-white/50" />
+                                </div>
+                                <p className="text-white/70 text-sm font-bold text-center mb-2">No notices yet</p>
+                                <p className="text-indigo-200 text-xs font-medium text-center">Create your first announcement for the society</p>
+                            </div>
+                        )}
+                        
                         <Button
                             variant="secondary"
                             fullWidth
-                            className="mt-8 py-4"
+                            className="py-4"
                             onClick={() => navigate('/admin/notices')}
                         >
-                            Send Alert Now
+                            {recentNotices.length > 0 ? 'View All Notices' : 'Create Notice'}
                         </Button>
                     </div>
                     <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />

@@ -78,6 +78,30 @@ const ManageRequests = () => {
     const handleAction = async (id, name, status, reason = '') => {
         if (processingRequests.has(id)) return;
 
+        const request = filteredRequests.find(r => (r._id || r.id) === id);
+
+        // Check if trying to approve an occupied flat without resident approval
+        if (status === 'Approved' && request?.residentOpinion === 'Pending') {
+            try {
+                const flatRes = await apiConnector("GET", FLAT_API.GET_ALL);
+                if (flatRes.success) {
+                    const targetFlat = flatRes.data.find(f =>
+                        f._id === request.flat._id || f.flatNumber === request.flat.flatNumber
+                    );
+
+                    if (targetFlat?.isOccupied && targetFlat?.resident?.name) {
+                        showToast.error(
+                            `Cannot approve! Flat ${targetFlat.flatNumber} is occupied by ${targetFlat.resident.name}. ` +
+                            `Wait for their approval first.`
+                        );
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.error('Flat check error:', err);
+            }
+        }
+
         setProcessingRequests(prev => new Set([...prev, id]));
 
         try {
@@ -109,7 +133,7 @@ const ManageRequests = () => {
             const decision = status === 'Approved' ? 'Approved' : 'Rejected';
             const res = await apiConnector("PUT", FLAT_REQUEST_API.ADMIN_DECISION(id), {
                 decision,
-                reason
+                adminMessage: reason
             });
 
             console.log('Admin decision response:', res);
@@ -132,34 +156,8 @@ const ManageRequests = () => {
                     }
                 }, 1000);
 
-                // Refresh flat data after approval to show updated occupancy
                 if (status === 'Approved') {
-                    const request = filteredRequests.find(r => (r._id || r.id) === id);
-
-                    // If this was a transfer to an occupied flat, handle old resident removal
-                    if (request?.flat) {
-                        try {
-                            // First vacate the flat to remove old resident
-                            await apiConnector("PUT", FLAT_API.VACATE(request.flat._id));
-                            console.log(`Old resident removed from flat ${request.flat.flatNumber}`);
-
-                            // Then assign to new resident
-                            await apiConnector("PUT", FLAT_API.ASSIGN, {
-                                flatId: request.flat._id,
-                                userId: request.user._id || request.userId
-                            });
-                            console.log(`Flat ${request.flat.flatNumber} assigned to new resident ${name}`);
-                        } catch (assignErr) {
-                            console.error('Flat assignment error:', assignErr);
-                        }
-                    }
-
-                    // Optional: Trigger a refresh of flat data in other components
-                    window.dispatchEvent(new CustomEvent('flatAssigned', {
-                        detail: { flatId: request?.flat?._id, residentName: name }
-                    }));
-
-                    showToast.approved(`${name}'s transfer request approved successfully! Flat has been assigned.`);
+                    showToast.approved(`${name}'s request approved successfully!`);
                 } else {
                     showToast.rejected(`${name}'s request rejected.`);
                     setShowRejectionModal(false);
@@ -176,7 +174,18 @@ const ManageRequests = () => {
             }
         } catch (err) {
             console.error('Action error:', err);
-            showToast.error(err?.message || "Failed to update request");
+            const errorMessage = err?.response?.data?.message || err?.message || "Failed to update request";
+            
+            // Show specific error for resident approval pending
+            if (errorMessage.includes('Resident response required') || errorMessage.includes('resident')) {
+                showToast.error(
+                    `⏳ Cannot approve yet!\n\nThe current resident must accept this transfer request first. ` +
+                    `Please wait for their approval before proceeding.`,
+                    { duration: 5000 }
+                );
+            } else {
+                showToast.error(errorMessage);
+            }
         } finally {
             setProcessingRequests(prev => {
                 const newSet = new Set(prev);
@@ -253,6 +262,11 @@ const ManageRequests = () => {
                                         <p className="font-black text-slate-700 text-sm">
                                             {req.flat?.wing?.name || req.wing || '-'} - {req.flat?.flatNumber || req.flat || '-'}
                                         </p>
+                                        {req.residentOpinion === 'Pending' && (
+                                            <span className="inline-flex items-center gap-1 mt-2 px-2 py-1 bg-amber-50 text-amber-600 rounded-lg text-[9px] font-black uppercase">
+                                                <Users className="w-3 h-3" /> Occupied - Approval Pending
+                                            </span>
+                                        )}
                                     </div>
                                     <div>
                                         <p className="text-[9px] uppercase font-black text-slate-300 tracking-widest mb-1">Stay Type</p>

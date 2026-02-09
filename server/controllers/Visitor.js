@@ -35,9 +35,11 @@ exports.createVisitorEntry = async (req, res) => {
       data: visitor,
     });
   } catch (error) {
+    console.error('Visitor entry error:', error);
     res.status(500).json({
       success: false,
       message: "Failed to create visitor entry",
+      error: error.message,
     });
   }
 };

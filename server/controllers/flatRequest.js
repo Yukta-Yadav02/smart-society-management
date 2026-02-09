@@ -96,65 +96,65 @@ exports.getAllFlatRequests = async (req, res) => {
   }
 };
 
-// exports.residentOpinion = async (req, res) => {
-//   try {
-//     const { response } = req.body;
-//     const { requestId } = req.params;
+exports.residentOpinion = async (req, res) => {
+  try {
+    const { response } = req.body;
+    const { requestId } = req.params;
 
-//     if (!["Accepted", "Rejected"].includes(response)) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid response",
-//       });
-//     }
+    if (!["Accepted", "Rejected"].includes(response)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid response",
+      });
+    }
 
-//     const request = await FlatRequest.findById(requestId).populate("flat");
+    const request = await FlatRequest.findById(requestId).populate("flat");
 
-//     if (!request) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Request not found",
-//       });
-//     }
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found",
+      });
+    }
 
-//     // only current resident can respond
-//     if (
-//       request.flat.currentResident?.toString() !== req.user.id
-//     ) {
-//       return res.status(403).json({
-//         success: false,
-//         message: "Not allowed",
-//       });
-//     }
+    // only current resident can respond
+    if (
+      request.flat.currentResident?.toString() !== req.user.id
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Not allowed",
+      });
+    }
 
-//     // opinion only once
-//     if (request.residentOpinion !== "Pending") {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Already responded",
-//       });
-//     }
+    // opinion only once
+    if (request.residentOpinion !== "Pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Already responded",
+      });
+    }
 
-//     request.residentOpinion = response;
-//     await request.save();
+    request.residentOpinion = response;
+    await request.save();
 
-//     res.status(200).json({
-//       success: true,
-//       message: `Resident ${response} the request`,
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       message: "Failed to save resident opinion",
-//     });
-//   }
-// };
+    res.status(200).json({
+      success: true,
+      message: `Resident ${response} the request`,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to save resident opinion",
+    });
+  }
+};
 
 
 /* 4. Admin final decision */
 exports.adminDecision = async (req, res) => {
   try {
-    const { decision } = req.body;
+    const { decision, adminMessage } = req.body;
     const { requestId } = req.params;
 
     if (!["Approved", "Rejected"].includes(decision)) {
@@ -184,7 +184,7 @@ exports.adminDecision = async (req, res) => {
 
     /**
      * CASE 1: FLAT OCCUPIED
-     * If resident accepted, auto-approve. If rejected, reject the request.
+     * If resident rejected, admin MUST reject. If resident accepted, admin can approve.
      */
     if (flat.currentResident) {
       // Check if currentResident actually exists in database
@@ -206,11 +206,25 @@ exports.adminDecision = async (req, res) => {
           });
         }
 
-        // If resident rejected, admin can only reject (unless override)
-        if (!req.body.adminOverride && request.residentOpinion === "Rejected" && decision === "Approved") {
-          return res.status(400).json({
-            success: false,
-            message: "Cannot approve when current resident has rejected",
+        // If resident rejected, admin MUST reject (no override allowed)
+        if (request.residentOpinion === "Rejected") {
+          if (decision === "Approved") {
+            return res.status(400).json({
+              success: false,
+              message: "Cannot approve when current resident has rejected",
+            });
+          }
+          // Force admin to reject
+          request.status = "Rejected";
+          request.decidedByAdmin = req.user.id;
+          if (adminMessage) {
+            request.adminMessage = adminMessage;
+          }
+          await request.save();
+          return res.status(200).json({
+            success: true,
+            message: "Request rejected as per resident's decision",
+            data: request
           });
         }
       }
@@ -218,9 +232,35 @@ exports.adminDecision = async (req, res) => {
 
     request.status = decision;
     request.decidedByAdmin = req.user.id;
+    if (adminMessage) {
+      request.adminMessage = adminMessage;
+    }
 
     // assign flat only when approved
     if (decision === "Approved") {
+      // Check if flat is already occupied by someone else
+      const existingResident = await User.findOne({ 
+        flat: flat._id, 
+        _id: { $ne: request.user._id },
+        status: "ACTIVE"
+      });
+
+      if (existingResident) {
+        // Vacate old resident first
+        await User.findByIdAndUpdate(existingResident._id, {
+          flat: null,
+          status: "PENDING"
+        });
+        
+        await Flat.findByIdAndUpdate(flat._id, {
+          isOccupied: false,
+          currentResident: null,
+          resident: null
+        });
+        
+        console.log(`Vacated ${existingResident.name} from flat ${flat.flatNumber}`);
+      }
+
       // [OWNERSHIP FLOW] - Check if this is an Ownership request or Rental request
       if (request.ownershipType === "OWNER") {
         // CASE: FLAT SOLD (Naya Malik)

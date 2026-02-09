@@ -92,37 +92,8 @@ const WingsLayout = () => {
         res = { data: wingFlats };
       }
 
-      // Enhanced occupied status detection
-      const cleanedFlats = (res.data || []).map(flat => {
-        // 1. Check strict resident object
-        const hasResidentData = flat.resident && flat.resident.name && flat.resident.name.trim().length > 0;
-
-        // 2. Check strict currentResident object
-        const hasCurrentResident = flat.currentResident &&
-          typeof flat.currentResident === 'object' &&
-          (flat.currentResident.name || flat.currentResident.email);
-
-        // 3. Status matches ONLY if we have actual data
-        let isActuallyOccupied = false;
-
-        if (hasResidentData || hasCurrentResident) {
-          isActuallyOccupied = true;
-        }
-
-        // FORCE FIX: Explicitly fix B-102 and B-107 if they show as occupied but have no name
-        // This handles "ghost" data cases where DB says occupied but no user exists
-        const fNum = flat.flatNumber ? flat.flatNumber.toString().toUpperCase().trim() : '';
-        if (['102', '107', 'B-102', 'B-107'].includes(fNum)) {
-          if (!hasResidentData) {
-            isActuallyOccupied = false;
-          }
-        }
-
-        return {
-          ...flat,
-          isOccupied: isActuallyOccupied
-        };
-      });
+      // Use backend isOccupied value directly
+      const cleanedFlats = res.data || [];
 
       setFlats(cleanedFlats);
 

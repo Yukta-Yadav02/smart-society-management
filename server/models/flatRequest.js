@@ -38,17 +38,22 @@ const flatRequestSchema = new mongoose.Schema(
     },
 
     // resident (current occupant) opinion
-    // residentOpinion: {
-    //   type: String,
-    //   enum: ["Pending", "Accepted", "Rejected"],
-    //   default: "Pending",
-    // },
+    residentOpinion: {
+      type: String,
+      enum: ["Pending", "Accepted", "Rejected"],
+      default: "Pending",
+    },
 
     // admin final decision
     status: {
       type: String,
       enum: ["Pending", "Approved", "Rejected"],
       default: "Pending",
+    },
+
+    adminMessage: {
+      type: String,
+      trim: true,
     },
 
     decidedByAdmin: {

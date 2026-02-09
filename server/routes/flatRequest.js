@@ -7,6 +7,8 @@ const {
   getAllFlatRequests,
   adminDecision,
   updateOldRequestsToOwner,
+  residentOpinion,
+  getMyFlatTransferRequests,
 } = require("../controllers/flatRequest");
 
 
@@ -22,6 +24,14 @@ router.post(
   createFlatRequest
 );
 
+// Resident → view transfer requests for their flat (MUST BE BEFORE /flat-requests)
+router.get(
+  "/flat-requests/transfer-requests",
+  protect,
+  authorizeRoles("RESIDENT"),
+  getMyFlatTransferRequests
+);
+
 // Resident → view own requests
 router.get(
   "/flat-requests",
@@ -31,12 +41,12 @@ router.get(
 );
 
 // Resident (only opinion)
-// router.put(
-//   "/flat-requests/:requestId/resident-response",
-//   protect,
-//   authorizeRoles("RESIDENT"),
-//   residentOpinion
-// );
+router.put(
+  "/flat-requests/:requestId/resident-response",
+  protect,
+  authorizeRoles("RESIDENT"),
+  residentOpinion
+);
 
 // ================= ADMIN =================
 

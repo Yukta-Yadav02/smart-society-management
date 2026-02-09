@@ -7,7 +7,9 @@ import {
   Calendar,
   Clock,
   CheckCircle,
-  Layout
+  Layout,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { apiConnector } from '../../services/apiConnector';
@@ -50,25 +52,39 @@ const Dashboard = () => {
         console.log("Raw item:", item);
         console.log("Current user ID:", user?.id);
         console.log("Request user ID:", item.user?._id || item.user);
+        
+        let statusInfo = {
+          status: 'Pending',
+          statusColor: 'bg-amber-100 text-amber-600 border border-amber-200',
+          icon: <Clock size={16} />
+        };
+
+        if (item.status === 'Approved') {
+          statusInfo = {
+            status: 'Approved',
+            statusColor: 'bg-emerald-100 text-emerald-600 border border-emerald-200',
+            icon: <CheckCircle size={16} />
+          };
+        } else if (item.status === 'Rejected') {
+          statusInfo = {
+            status: 'Rejected',
+            statusColor: 'bg-rose-100 text-rose-600 border border-rose-200',
+            icon: <XCircle size={16} />
+          };
+        }
+
         return {
           id: item._id,
           wing: item.flat?.wing?.name || '-',
-          flat: item.flat?.number || '-',
+          flat: item.flat?.flatNumber || '-',
           block: item.flat?.block || 'Block',
           date: new Date(item.createdAt).toLocaleDateString('en-IN', {
             day: '2-digit',
             month: 'short',
             year: 'numeric',
           }),
-          status: item.status === 'APPROVED' ? 'Approved' : 'Pending',
-          statusColor:
-            item.status === 'APPROVED'
-              ? 'bg-green-100 text-green-600 border border-green-200'
-              : 'bg-amber-100 text-amber-600',
-          icon:
-            item.status === 'APPROVED'
-              ? <CheckCircle size={16} />
-              : <Clock size={16} />,
+          adminMessage: item.adminMessage || null,
+          ...statusInfo
         };
       });
 
@@ -193,7 +209,7 @@ const Dashboard = () => {
                               {req.wing}
                             </span>
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <h4 className="text-xl font-bold text-gray-900">
                               {req.block} - Flat {req.flat}
                             </h4>
@@ -201,10 +217,27 @@ const Dashboard = () => {
                               <Calendar size={12} />
                               <span>Requested on {req.date}</span>
                             </div>
+                            {req.adminMessage && (
+                              <div className={`mt-3 p-3 rounded-xl ${
+                                req.status === 'Rejected' ? 'bg-rose-50 border border-rose-200' : 'bg-emerald-50 border border-emerald-200'
+                              }`}>
+                                <div className="flex items-start gap-2">
+                                  <AlertCircle className={`w-4 h-4 mt-0.5 ${
+                                    req.status === 'Rejected' ? 'text-rose-500' : 'text-emerald-500'
+                                  }`} />
+                                  <div>
+                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Admin Response:</p>
+                                    <p className={`text-sm font-bold ${
+                                      req.status === 'Rejected' ? 'text-rose-700' : 'text-emerald-700'
+                                    }`}>"{req.adminMessage}"</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        <div className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase flex items-center gap-2 ${req.statusColor}`}>
+                        <div className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase flex items-center gap-2 shrink-0 ${req.statusColor}`}>
                           {req.icon}
                           {req.status}
                         </div>

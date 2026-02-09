@@ -153,3 +153,42 @@ exports.deleteNotice = async (req, res) => {
     });
   }
 };
+
+// ADMIN → update notice
+exports.updateNotice = async (req, res) => {
+  try {
+    const { title, message } = req.body;
+    
+    if (!title || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "Title and message are required"
+      });
+    }
+
+    const notice = await Notice.findById(req.params.id);
+    
+    if (!notice) {
+      return res.status(404).json({
+        success: false,
+        message: "Notice not found"
+      });
+    }
+
+    notice.title = title;
+    notice.message = message;
+    await notice.save();
+
+    res.status(200).json({
+      success: true,
+      data: notice,
+      message: "Notice updated successfully"
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to update notice",
+      error: error.message
+    });
+  }
+};

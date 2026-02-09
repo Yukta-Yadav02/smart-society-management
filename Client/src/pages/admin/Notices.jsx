@@ -31,6 +31,11 @@ const Notices = () => {
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [selectedNotice, setSelectedNotice] = useState(null);
+    const [editTitle, setEditTitle] = useState('');
+    const [editMessage, setEditMessage] = useState('');
 
     useEffect(() => {
         const fetchNotices = async () => {
@@ -76,24 +81,51 @@ const Notices = () => {
         }
     };
 
-    const handleDelete = async (id, title) => {
-        if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
-            try {
-                console.log('Deleting notice with ID:', id);
-                const res = await apiConnector("DELETE", NOTICE_API.DELETE(id));
-                console.log('Delete response:', res);
-                
-                if (res && (res.success || res.status === 200)) {
-                    dispatch(deleteNotice(id));
-                    toast.success('Notice deleted successfully', { icon: '🗑️' });
-                } else {
-                    console.error('Delete failed:', res);
-                    toast.error('Failed to delete notice');
-                }
-            } catch (err) {
-                console.error('Delete error:', err);
-                toast.error('Failed to delete notice');
+    const handleEditClick = (notice) => {
+        setSelectedNotice(notice);
+        setEditTitle(notice.title);
+        setEditMessage(notice.message);
+        setShowEditModal(true);
+    };
+
+    const handleEditSubmit = async () => {
+        if (!editTitle || !editMessage) {
+            toast.error('Please fill both fields');
+            return;
+        }
+        try {
+            const res = await apiConnector("PUT", NOTICE_API.UPDATE(selectedNotice._id), {
+                title: editTitle,
+                message: editMessage
+            });
+            if (res && res.success) {
+                const updatedNotices = notices.map(n => 
+                    n._id === selectedNotice._id ? { ...n, title: editTitle, message: editMessage } : n
+                );
+                dispatch(setNotices(updatedNotices));
+                toast.success('Notice edited successfully!');
+                setShowEditModal(false);
             }
+        } catch (err) {
+            toast.error('Failed to edit notice');
+        }
+    };
+
+    const handleDeleteClick = (notice) => {
+        setSelectedNotice(notice);
+        setShowDeleteModal(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        try {
+            const res = await apiConnector("DELETE", NOTICE_API.DELETE(selectedNotice._id));
+            if (res && (res.success || res.status === 200)) {
+                dispatch(deleteNotice(selectedNotice._id));
+                toast.success('Notice deleted successfully!');
+                setShowDeleteModal(false);
+            }
+        } catch (err) {
+            toast.error('Failed to delete notice');
         }
     };
 
@@ -106,7 +138,7 @@ const Notices = () => {
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-800 tracking-tight text-shadow-sm uppercase">Society Broadcasts</h1>
+                    <h1 className="text-3xl font-black text-slate-800 tracking-tight text-shadow-sm uppercase">Society Notices</h1>
                     <p className="text-slate-500 mt-1 font-bold">Manage and view all official society announcements.</p>
                 </div>
                 <div className="flex gap-2">
@@ -133,7 +165,7 @@ const Notices = () => {
                         className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-xl shadow-indigo-100 border border-indigo-500 uppercase tracking-widest text-[10px]"
                     >
                         <Plus className="w-5 h-5" />
-                        New Broadcast
+                        New Notice
                     </button>
                 </div>
             </div>
@@ -180,12 +212,13 @@ const Notices = () => {
 
                         <div className="p-4 flex gap-3">
                             <button
+                                onClick={() => handleEditClick(notice)}
                                 className="flex-1 py-4.5 rounded-2xl bg-white border border-slate-100 text-slate-400 font-black text-xs hover:text-indigo-600 hover:border-indigo-100 transition-all flex items-center justify-center gap-2 uppercase tracking-widest"
                             >
                                 <Edit className="w-4 h-4" /> Edit Notice
                             </button>
                             <button
-                                onClick={() => handleDelete(notice._id || notice.id, notice.title)}
+                                onClick={() => handleDeleteClick(notice)}
                                 className="flex-1 py-4.5 rounded-2xl bg-white border border-slate-100 text-slate-400 font-black text-xs hover:text-rose-500 hover:border-rose-100 transition-all flex items-center justify-center gap-2 uppercase tracking-widest"
                             >
                                 <Trash2 className="w-4 h-4" /> Remove
@@ -198,10 +231,88 @@ const Notices = () => {
                     <div className="col-span-full py-40 bg-white border border-dashed border-slate-200 rounded-[4rem] text-center flex flex-col items-center group">
                         <Megaphone size={64} className="text-slate-100 mb-6 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-500" />
                         <h3 className="text-2xl font-black text-slate-200 uppercase tracking-tighter">No notices found</h3>
-                        <p className="text-slate-400 text-xs font-bold mt-1 uppercase tracking-widest">Broadcast something important to the community.</p>
+                        <p className="text-slate-400 text-xs font-bold mt-1 uppercase tracking-widest">Notice something important to the community.</p>
                     </div>
                 )}
             </div>
+
+            {/* Edit Notice Modal */}
+            {showEditModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-6 border-b border-slate-100">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-800">Edit Notice</h2>
+                                    <p className="text-sm text-slate-500">Update notice details</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Notice Title</label>
+                                <input
+                                    value={editTitle}
+                                    onChange={(e) => setEditTitle(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                                <textarea
+                                    value={editMessage}
+                                    onChange={(e) => setEditMessage(e.target.value)}
+                                    rows={6}
+                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                                />
+                            </div>
+                        </div>
+                        <div className="p-6 border-t border-slate-100 flex gap-3">
+                            <button
+                                onClick={() => setShowEditModal(false)}
+                                className="flex-1 py-4.5 font-black text-slate-400 hover:bg-slate-50 transition-all rounded-2xl uppercase tracking-widest text-[10px]"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleEditSubmit}
+                                className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4.5 rounded-2xl transition-all shadow-xl shadow-indigo-100 uppercase tracking-widest text-[10px]"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-8 text-center">
+                            <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Trash2 className="w-8 h-8 text-rose-500" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-slate-800 mb-2">Delete Notice?</h2>
+                            <p className="text-slate-500 mb-6">Are you sure you want to delete <span className="font-bold">"{selectedNotice?.title}"</span>? This action cannot be undone.</p>
+                        </div>
+                        <div className="p-6 border-t border-slate-100 flex gap-3">
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                className="flex-1 py-4.5 font-black text-slate-400 hover:bg-slate-50 transition-all rounded-2xl uppercase tracking-widest text-[10px]"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteConfirm}
+                                className="flex-[2] bg-rose-600 hover:bg-rose-700 text-white font-black py-4.5 rounded-2xl transition-all shadow-xl shadow-rose-100 uppercase tracking-widest text-[10px]"
+                            >
+                                Delete Notice
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Create Notice Modal */}
             <Modal

@@ -204,15 +204,20 @@ const AddVisitor = () => {
                 Flat Number *
               </label>
               <div className="relative">
-                <input
-                  type="text"
+                <select
                   name="flat"
                   value={formData.flat}
                   onChange={handleChange}
-                  placeholder="e.g. A-104"
-                  className="w-full px-4 py-3 pl-10 sm:pl-12 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all text-sm sm:text-base"
+                  className="w-full px-4 py-3 pl-10 sm:pl-12 rounded-xl border border-slate-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all appearance-none bg-white text-sm sm:text-base"
                   required
-                />
+                >
+                  <option value="">Select flat</option>
+                  {flats.map((flat) => (
+                    <option key={flat._id} value={flat._id}>
+                      {flat.wing?.name || 'Wing'}-{flat.flatNumber}
+                    </option>
+                  ))}
+                </select>
                 <Building className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               </div>
             </div>

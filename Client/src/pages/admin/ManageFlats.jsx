@@ -80,50 +80,12 @@ const ManageFlats = () => {
                 // Fetch Flats
                 const flatRes = await apiConnector("GET", FLAT_API.CREATE);
                 if (flatRes.success) {
-                    const cleanedFlats = flatRes.data.map(flat => {
-                        //
-                        const hasResidentName = flat.resident && flat.resident.name && flat.resident.name.trim().length > 0;
+                    const cleanedFlats = flatRes.data.map(flat => ({
+                        ...flat,
+                        residentName: flat.resident?.name || flat.currentResident?.name || null
+                    }));
 
-                        // 2. Check currentResident (referenced)
-                        const hasCurrentResident = flat.currentResident &&
-                            typeof flat.currentResident === 'object' &&
-                            (flat.currentResident.name || flat.currentResident.email);
-
-                        // 3. Mark as occupied strictly
-                        const isActuallyOccupied = hasResidentName || !!hasCurrentResident;
-
-                        return {
-                            ...flat,
-                            isOccupied: isActuallyOccupied,
-                            residentName: flat.resident?.name || (hasCurrentResident ? flat.currentResident.name : null)
-                        };
-                    });
-
-                    // Auto-vacate B-107 and B-102 if they exist
-                    const flatsToVacate = cleanedFlats.filter(f =>
-                        (f.flatNumber === 'B-107' || f.flatNumber === 'B-102' || f.flatNumber === '107' || f.flatNumber === '102') &&
-                        f.isOccupied
-                    );
-
-                    for (const flat of flatsToVacate) {
-                        try {
-                            await apiConnector("PUT", FLAT_API.VACATE(flat._id));
-                            console.log(`Auto-vacated flat ${flat.flatNumber}`);
-                        } catch (err) {
-                            console.error(`Failed to auto-vacate ${flat.flatNumber}:`, err);
-                        }
-                    }
-
-                    // Update flats with vacated status
-                    const updatedFlats = cleanedFlats.map(flat => {
-                        if ((flat.flatNumber === 'B-107' || flat.flatNumber === 'B-102' || flat.flatNumber === '107' || flat.flatNumber === '102') &&
-                            flat.wing?.name === 'B') {
-                            return { ...flat, isOccupied: false, resident: null, residentName: null };
-                        }
-                        return flat;
-                    });
-
-                    dispatch(setFlats(updatedFlats));
+                    dispatch(setFlats(cleanedFlats));
                 }
             } catch (err) {
                 console.error("Fetch Error:", err);
@@ -475,40 +437,17 @@ const ManageFlats = () => {
                             <option value="occupied">Occupied</option>
                             <option value="vacant">Vacant</option>
                         </select>
-                        <div className="relative">
-                            <button
-                                onClick={() => setShowWingDropdown(!showWingDropdown)}
-                                className="flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-50 border border-transparent hover:bg-slate-100 transition-all font-medium text-slate-700"
-                            >
-                                {selectedWing}
-                                <ChevronDown className={`w-4 h-4 transition-transform ${showWingDropdown ? 'rotate-180' : 'rotate-0'}`} />
-                            </button>
-                            {showWingDropdown && (
-                                <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-20 animate-in fade-in zoom-in-95 duration-200">
-                                    <button
-                                        onClick={() => {
-                                            setSelectedWing('All Wings');
-                                            setShowWingDropdown(false);
-                                        }}
-                                        className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${selectedWing === 'All Wings' ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}
-                                    >
-                                        All Wings
-                                    </button>
-                                    {wings.map((wing) => (
-                                        <button
-                                            key={wing._id}
-                                            onClick={() => {
-                                                setSelectedWing(wing.name);
-                                                setShowWingDropdown(false);
-                                            }}
-                                            className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${selectedWing === wing.name ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}
-                                        >
-                                            Wing {wing.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                        <select
+                            value={selectedWing}
+                            onChange={(e) => setSelectedWing(e.target.value)}
+                            className="px-4 py-3 rounded-xl bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-200 focus:outline-none font-medium text-slate-700"
+                        >
+                            <option value="All Wings">All Wings</option>
+                            {wings.map((wing) => (
+                                <option key={wing._id} value={wing.name}>Wing {wing.name}</option>
+                            ))}
+                        </select>
+
                     </div>
                 </div>
             </Card>

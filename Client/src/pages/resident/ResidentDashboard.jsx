@@ -65,18 +65,13 @@ const ResidentDashboard = () => {
 
   const handleTransferResponse = async (requestId, response) => {
     try {
-      console.log('Transfer response attempt:', { requestId, response });
-
       const res = await apiConnector("PUT", FLAT_REQUEST_API.RESIDENT_RESPONSE(requestId), {
-        response: response // 'Accepted' or 'Rejected'
+        response: response
       });
 
-      console.log('Transfer response result:', res);
-
       if (res && res.success) {
-        // Show success message with details
         toast.success(
-          `🎉 Transfer Request ${response}!\nAdmin has been notified and will process your response.`,
+          `Transfer Request ${response}!`,
           {
             duration: 4000,
             style: {
@@ -86,8 +81,6 @@ const ResidentDashboard = () => {
             }
           }
         );
-
-        // Remove request from UI
         setTransferRequests(prev => prev.filter(req => req._id !== requestId));
       } else {
         throw new Error(res?.message || 'Failed to respond');
@@ -135,14 +128,12 @@ const ResidentDashboard = () => {
 
   return (
     <div className="animate-in fade-in duration-700 pb-10">
-      {/* Header */}
       <PageHeader
         title={`Welcome, ${user?.name || 'Resident'}`}
         subtitle="Here's what's happening in Gokuldham Society today."
         icon={LayoutDashboard}
       />
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
         {stats.map((stat, index) => (
           <div key={index} onClick={() => navigate(stat.path)} className="cursor-pointer group">
@@ -158,9 +149,7 @@ const ResidentDashboard = () => {
         ))}
       </div>
 
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-10">
-        {/* Flat Transfer Requests */}
         {transferRequests.length > 0 && (
           <div className="lg:col-span-2">
             <div className="bg-amber-50 border border-amber-200 rounded-[2.5rem] p-8 mb-8">
@@ -181,19 +170,13 @@ const ResidentDashboard = () => {
                     <p className="text-slate-600 mb-4 italic">"{request.remark || 'No additional message'}"</p>
                     <div className="flex gap-3">
                       <button
-                        onClick={() => {
-                          console.log('Accept button clicked for request:', request._id);
-                          handleTransferResponse(request._id, 'Accepted');
-                        }}
+                        onClick={() => handleTransferResponse(request._id, 'Accepted')}
                         className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-xl flex items-center justify-center gap-2 transition-all text-sm"
                       >
                         <UserCheck className="w-4 h-4" /> Accept Transfer
                       </button>
                       <button
-                        onClick={() => {
-                          console.log('Reject button clicked for request:', request._id);
-                          handleTransferResponse(request._id, 'Rejected');
-                        }}
+                        onClick={() => handleTransferResponse(request._id, 'Rejected')}
                         className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-black py-3 rounded-xl flex items-center justify-center gap-2 transition-all text-sm"
                       >
                         <UserX className="w-4 h-4" /> Reject
@@ -206,7 +189,6 @@ const ResidentDashboard = () => {
           </div>
         )}
 
-        {/* Quick Actions */}
         <Card className="p-8">
           <h2 className="text-xl font-black text-slate-800 mb-8 uppercase tracking-tight">Quick Actions</h2>
           <div className="grid grid-cols-2 gap-4">
@@ -230,7 +212,6 @@ const ResidentDashboard = () => {
           </div>
         </Card>
 
-        {/* Info Card */}
         <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-10 rounded-[3rem] shadow-xl shadow-indigo-100 text-white relative overflow-hidden flex flex-col justify-center">
           <div className="relative z-10 text-center">
             <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mb-8 backdrop-blur-md mx-auto">
@@ -247,13 +228,11 @@ const ResidentDashboard = () => {
               View Announcements
             </button>
           </div>
-          {/* Decorative elements */}
           <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
           <div className="absolute -left-20 -top-20 w-64 h-64 bg-indigo-400/20 rounded-full blur-3xl" />
         </div>
       </div>
 
-      {/* Monthly Overview */}
       <Card className="mt-8 p-10 overflow-hidden relative">
         <h2 className="text-xl font-black text-slate-800 mb-8 uppercase tracking-tight">Monthly Health Check</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 relative z-10">

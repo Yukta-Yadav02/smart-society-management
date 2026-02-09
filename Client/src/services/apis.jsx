@@ -77,6 +77,7 @@ export const NOTICE_API = {
   CREATE: BASE_URL + "/notice",
   GET_ALL: BASE_URL + "/notice",
   GET_MY: BASE_URL + "/notice/my",
+  UPDATE: (id) => BASE_URL + `/notice/${id}`,
   RESPOND: (id) =>
     BASE_URL + `/notice/${id}/respond`,
   DELETE: (id) =>

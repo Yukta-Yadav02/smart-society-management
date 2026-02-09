@@ -7,6 +7,7 @@ const {
   respondToNotice,
   getAllNotices,
   deleteNotice,
+  updateNotice,
 } = require("../controllers/Notice");
 
 const { protect, authorizeRoles } = require("../middelware/auth");
@@ -19,6 +20,7 @@ router.get("/test", (req, res) => {
 // Admin
 router.post("/", protect, authorizeRoles("ADMIN"), createNotice);
 router.get("/", protect, authorizeRoles("ADMIN"), getAllNotices);
+router.put("/:id", protect, authorizeRoles("ADMIN"), updateNotice);
 router.delete("/:id", protect, authorizeRoles("ADMIN"), deleteNotice);
 
 // Resident
