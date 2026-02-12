@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   User,
-  Edit3,
-  Save,
   Home,
   Phone,
   Mail,
   UserCircle
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 
 import { apiConnector } from '../../services/apiConnector';
@@ -21,13 +18,10 @@ import { updateProfile } from '../../store/store';
 import PageHeader from '../../components/common/PageHeader';
 import Card from '../../components/common/Card';
 import Input from '../../components/common/Input';
-import Button from '../../components/common/Button';
 
 const Profile = () => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.profile.data);
-
-  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,54 +42,12 @@ const Profile = () => {
     }
   };
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    defaultValues: user || {}
-  });
-
-  useEffect(() => {
-    if (user) {
-      // Flatten user data for form
-      const formData = {
-        ...user,
-        wing: user.flat?.wing?.name || user.wing || '-',
-        flat: user.flat?.flatNumber || user.flatCode || '-',
-      };
-      reset(formData);
-    }
-  }, [user, reset]);
-
-  const onSubmit = async (data) => {
-    try {
-      // Assume update-profile exists
-      // const res = await apiConnector("PUT", "/api/auth/update-resident-profile", data);
-      dispatch(updateProfile(data));
-      toast.success('Profile settings updated! ✨');
-      setIsEditing(false);
-    } catch (err) {
-      toast.error(err.message || "Failed to update profile");
-    }
-  };
-
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
       <PageHeader
         title="Account Settings"
-        subtitle="Manage your personal information and preferences."
-        actionLabel={!isEditing ? "Edit Profile" : "Save Profile"}
-        onAction={!isEditing ? () => setIsEditing(true) : handleSubmit(onSubmit)}
-        icon={!isEditing ? Edit3 : Save}
+        subtitle="View your personal information and preferences."
       />
-
-      {isEditing && (
-        <div className="mb-6 flex justify-end">
-          <button
-            onClick={() => setIsEditing(false)}
-            className="text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-600 px-4 py-2"
-          >
-            Discard Changes
-          </button>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         {/* Profile Snapshot */}
@@ -129,12 +81,12 @@ const Profile = () => {
               Identity Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <Input label="Full Name" register={register('name')} disabled={!isEditing} icon={User} />
-              <Input label="Email Address" register={register('email')} disabled={!isEditing} icon={Mail} />
-              <Input label="Phone Number" register={register('phone')} disabled={!isEditing} icon={Phone} />
+              <Input label="Full Name" value={user?.name || ''} disabled={true} icon={User} />
+              <Input label="Email Address" value={user?.email || ''} disabled={true} icon={Mail} />
+              <Input label="Phone Number" value={user?.phone || ''} disabled={true} icon={Phone} />
               <Input label="Role" value={user?.role || 'RESIDENT'} disabled={true} icon={UserCircle} />
-              <Input label="Assigned Wing" register={register('wing')} disabled={true} icon={Home} />
-              <Input label="Flat Number" register={register('flat')} disabled={true} icon={Home} />
+              <Input label="Assigned Wing" value={user?.flat?.wing?.name || '-'} disabled={true} icon={Home} />
+              <Input label="Flat Number" value={user?.flat?.flatNumber || '-'} disabled={true} icon={Home} />
             </div>
           </Card>
         </div>
