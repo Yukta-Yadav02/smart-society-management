@@ -32,11 +32,25 @@ const Profile = () => {
   const user = useSelector((state) => state.profile.data);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Already fetched during login/auth context likely, 
-    // but can re-fetch if needed.
+    fetchProfile();
   }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const response = await apiConnector('GET', AUTH_API.GET_PROFILE);
+      if (response.success) {
+        dispatch(updateProfile(response.data));
+      }
+    } catch (error) {
+      toast.error('Failed to load profile');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: user || {}

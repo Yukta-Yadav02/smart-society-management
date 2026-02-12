@@ -8,7 +8,8 @@ const {
   getAllResidents,
   updateResident,
   deleteUser,
-  updateResidentTypes
+  updateResidentTypes,
+  getProfile
 } = require("../controllers/Auth");
 const { protect, authorizeRoles } = require("../middelware/auth");
 
@@ -24,6 +25,9 @@ router.post(
 );
 
 router.put("/toggle-status/", protect, authorizeRoles("ADMIN"), toggleUserStatus);
+
+// Get current user profile
+router.get("/profile", protect, getProfile);
 
 // Get all residents (ADMIN only)
 router.get("/residents", protect, authorizeRoles("ADMIN"), getAllResidents);
