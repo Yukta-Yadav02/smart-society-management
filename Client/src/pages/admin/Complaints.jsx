@@ -28,7 +28,7 @@ const Complaints = () => {
     const dispatch = useDispatch();
     const complaints = useSelector((state) => state.complaints.items);
 
-    const [filter, setFilter] = useState('OPEN');
+    const [filter, setFilter] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(new Set());

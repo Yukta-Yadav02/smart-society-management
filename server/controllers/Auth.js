@@ -275,9 +275,26 @@ exports.getProfile = async (req, res) => {
       });
     }
 
+    let phone = user.phone;
+    if (!phone && user.flat) {
+      const FlatRequest = require("../models/flatRequest");
+      const approvedRequest = await FlatRequest.findOne({
+        user: user._id,
+        flat: user.flat._id,
+        status: "Approved"
+      }).sort({ createdAt: -1 });
+      
+      if (approvedRequest && approvedRequest.contactNumber) {
+        phone = approvedRequest.contactNumber;
+      }
+    }
+
     return res.status(200).json({
       success: true,
-      data: user
+      data: {
+        ...user.toObject(),
+        phone: phone
+      }
     });
   } catch (error) {
     return res.status(500).json({

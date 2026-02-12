@@ -3,6 +3,7 @@ import { LayoutDashboard, Home, AlertTriangle, Wrench, Bell, TrendingUp, UserChe
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
 
 import { apiConnector } from '../../services/apiConnector';
 import { DASHBOARD_API, FLAT_REQUEST_API } from '../../services/apis';
@@ -15,7 +16,8 @@ import Card from '../../components/common/Card';
 const ResidentDashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user } = useSelector(state => state.profile);
+  const { user } = useAuth();
+  const userName = user?.name || 'Resident';
 
   const [statsData, setStatsData] = useState({
     flatNumber: '-',
@@ -36,7 +38,7 @@ const ResidentDashboard = () => {
           const { stats, flatInfo } = res.data;
           setStatsData({
             flatNumber: flatInfo?.flatNumber || '-',
-            wingName: flatInfo?.wing || '-',
+            wingName: flatInfo?.wing?.name || flatInfo?.wingName || '-',
             pendingComplaints: stats?.pendingComplaints || 0,
             totalDue: stats?.unpaidAmount || 0,
             newNotices: stats?.myNotices || 0,
@@ -129,7 +131,7 @@ const ResidentDashboard = () => {
   return (
     <div className="animate-in fade-in duration-700 pb-10">
       <PageHeader
-        title={`Welcome, ${user?.name || 'Resident'}`}
+        title={`Welcome, ${userName}`}
         subtitle="Here's what's happening in Gokuldham Society today."
         icon={LayoutDashboard}
       />

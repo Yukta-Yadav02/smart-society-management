@@ -1,14 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Sidebar from '../components/layout/Sidebar';
-import { Outlet, Navigate, useLocation } from 'react-router-dom';
+import { Outlet, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { UserCircle, Menu, X } from 'lucide-react';
+import { UserCircle, Menu, X, Home, LogOut, ChevronDown } from 'lucide-react';
 import { roleBgClass } from '../utils/userHelpers';
 
 const DashboardLayout = () => {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate();
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleHomeClick = () => {
+        setDropdownOpen(false);
+        navigate('/');
+    };
+
+    const handleLogoutClick = () => {
+        setDropdownOpen(false);
+        logout();
+    };
 
     console.log('Current user:', user);
     console.log('Current path:', location.pathname);
@@ -58,22 +82,48 @@ const DashboardLayout = () => {
                     </button>
 
                     {/* Right Side Header Content */}
-                    <div className="flex items-center gap-4 ml-auto">
-                        <div className="text-right hidden sm:block">
-                            <p className="text-sm font-semibold text-slate-800">
-                                {user?.name || 'User'}
-                            </p>
-                            <p className="text-xs text-slate-500 capitalize">
-                                {user?.role?.toLowerCase() || 'Role'}
-                            </p>
-                        </div>
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold overflow-hidden shadow-sm ${roleBgClass(user?.role)}`}>
-                            {user?.name ? (
-                                user.name.charAt(0).toUpperCase()
-                            ) : (
-                                <UserCircle className="w-6 h-6" />
-                            )}
-                        </div>
+                    <div className="flex items-center gap-4 ml-auto relative" ref={dropdownRef}>
+                        <button
+                            onClick={() => setDropdownOpen(!dropdownOpen)}
+                            className="flex items-center gap-3 hover:bg-slate-50 rounded-lg px-3 py-2 transition-colors"
+                        >
+                            <div className="text-right hidden sm:block">
+                                <p className="text-sm font-semibold text-slate-800">
+                                    {user?.name || 'User'}
+                                </p>
+                                <p className="text-xs text-slate-500 capitalize">
+                                    {user?.role?.toLowerCase() || 'Role'}
+                                </p>
+                            </div>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold overflow-hidden shadow-sm ${roleBgClass(user?.role)}`}>
+                                {user?.name ? (
+                                    user.name.charAt(0).toUpperCase()
+                                ) : (
+                                    <UserCircle className="w-6 h-6" />
+                                )}
+                            </div>
+                            <ChevronDown className={`w-4 h-4 text-slate-600 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {dropdownOpen && (
+                            <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                                <button
+                                    onClick={handleHomeClick}
+                                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                >
+                                    <Home className="w-4 h-4" />
+                                    <span>Home</span>
+                                </button>
+                                <button
+                                    onClick={handleLogoutClick}
+                                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    <span>Logout</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </header>
 

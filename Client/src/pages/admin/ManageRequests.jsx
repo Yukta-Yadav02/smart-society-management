@@ -32,7 +32,7 @@ const ManageRequests = () => {
     const dispatch = useDispatch();
     const requests = useSelector((state) => state.requests.items);
 
-    const [filter, setFilter] = useState('Pending');
+    const [filter, setFilter] = useState('All');
     const [showRejectionModal, setShowRejectionModal] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [rejectionReason, setRejectionReason] = useState('');
@@ -208,7 +208,7 @@ const ManageRequests = () => {
                 </div>
 
                 <div className="flex bg-white p-1.5 rounded-[1.5rem] border border-slate-100 shadow-sm w-fit">
-                    {['Pending', 'Approved', 'Rejected', 'All'].map((tab) => (
+                    {['All', 'Approved', 'Pending', 'Rejected'].map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setFilter(tab)}
@@ -339,12 +339,6 @@ const ManageRequests = () => {
                                             <XSquare className="w-4 h-4" /> Reject
                                         </button>
                                     </div>
-                                )}
-
-                                {req.status !== 'Pending' && (
-                                    <button className="w-full py-4 border border-dashed border-slate-200 text-slate-300 rounded-2xl font-black text-[10px] uppercase tracking-widest cursor-default">
-                                        Review Completed
-                                    </button>
                                 )}
                             </div>
                         </div>

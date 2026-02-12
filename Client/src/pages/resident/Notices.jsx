@@ -3,10 +3,6 @@ import {
   Bell,
   Search,
   Calendar,
-  ChevronRight,
-  Pin,
-  AlertTriangle,
-  Info,
   Inbox
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
@@ -106,28 +102,10 @@ const Notices = () => {
                   <Calendar size={14} />
                   {notice.createdAt ? new Date(notice.createdAt).toLocaleDateString() : (notice.date || '-')}
                 </div>
-                <button className="text-indigo-600 font-black text-[10px] flex items-center gap-2 hover:translate-x-1 transition-all uppercase tracking-[0.2em] group/btn">
-                  Read Article
-                  <ChevronRight size={14} className="bg-indigo-50 rounded-full p-0.5" />
-                </button>
               </div>
             </Card>
           ))
         )}
-      </div>
-
-      {/* Help Note */}
-      <div className="mt-12 bg-white/50 border border-slate-100 p-8 rounded-[3rem] flex flex-col md:flex-row items-center gap-6">
-        <div className="w-16 h-16 bg-white rounded-2xl shrink-0 flex items-center justify-center shadow-sm">
-          <AlertTriangle size={32} className="text-amber-400" />
-        </div>
-        <div className="text-center md:text-left">
-          <p className="text-sm font-black text-slate-800 uppercase tracking-tight mb-1">Missed an announcement?</p>
-          <p className="text-xs text-slate-500 font-medium">Archived notices older than 6 months are moved to the building records. Contact the secretary for older archives.</p>
-        </div>
-        <button className="md:ml-auto px-8 py-4 bg-slate-800 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 transition-all">
-          Contact Secretary
-        </button>
       </div>
     </div>
   );

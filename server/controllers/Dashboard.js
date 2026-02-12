@@ -124,7 +124,13 @@ exports.getAdminStats = async (req, res) => {
 // Resident Dashboard Stats
 exports.getResidentStats = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).populate("flat");
+    const user = await User.findById(req.user.id).populate({
+      path: 'flat',
+      populate: {
+        path: 'wing',
+        select: 'name'
+      }
+    });
 
     if (!user.flat) {
       return res.status(400).json({
@@ -200,6 +206,7 @@ exports.getResidentStats = async (req, res) => {
         flatInfo: {
           flatNumber: user.flat.flatNumber,
           wing: user.flat.wing,
+          wingName: user.flat.wing?.name || '-',
           isOccupied: user.flat.isOccupied
         },
         recentNotices
