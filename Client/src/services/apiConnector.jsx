@@ -22,6 +22,12 @@ export const axiosInstance = axios.create({
 // Request interceptor for security
 axiosInstance.interceptors.request.use(
   (config) => {
+    // Add token from localStorage
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
     // Add CSRF protection
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     if (csrfToken) {
