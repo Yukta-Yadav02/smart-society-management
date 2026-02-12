@@ -35,31 +35,28 @@ const Profile = () => {
     const profileData = useSelector((state) => state.profile.data);
 
     const [isEditing, setIsEditing] = useState(false);
-
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchProfile = async () => {
-            try {
-                // Assuming GET /auth/profile exists or similar
-                const res = await apiConnector("GET", AUTH_API.GET_ALL_RESIDENTS + "/profile"); // Use profile endpoint
-                if (res.success) {
-                    dispatch(updateProfile(res.data));
-                }
-            } catch (err) {
-                console.error("Fetch Profile Error:", err);
-            }
-        };
         fetchProfile();
-    }, [dispatch]);
+    }, []);
+
+    const fetchProfile = async () => {
+        try {
+            setLoading(true);
+            const response = await apiConnector('GET', AUTH_API.GET_PROFILE);
+            if (response.success) {
+                dispatch(updateProfile(response.data));
+            }
+        } catch (error) {
+            toast.error('Failed to load profile');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm({
-        defaultValues: profileData || {
-            societyName: '',
-            regNumber: '',
-            address: '',
-            email: '',
-            phone: ''
-        }
+        defaultValues: profileData || {}
     });
 
     useEffect(() => {
@@ -115,9 +112,9 @@ const Profile = () => {
                                 </div>
                             )}
                         </div>
-                        <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase mb-2">{profileData?.societyName || 'Society Name'}</h2>
+                        <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase mb-2">{profileData?.name || 'Admin Name'}</h2>
                         <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full border border-emerald-100 text-[10px] font-black uppercase tracking-widest">
-                            <ShieldCheck size={14} /> Registered Society
+                            <ShieldCheck size={14} /> {profileData?.role || 'ADMIN'}
                         </div>
                     </Card>
 
@@ -147,39 +144,14 @@ const Profile = () => {
                 <div className="lg:col-span-2 space-y-8">
                     <Card className="p-10">
                         <h3 className="text-xl font-black text-slate-800 mb-8 flex items-center gap-3 uppercase tracking-tight">
-                            <Globe className="text-indigo-600" size={20} />
-                            Core Records
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <Input label="Society Name" register={register('societyName')} disabled={!isEditing} icon={Building2} />
-                            <Input label="Registration ID" register={register('regNumber')} disabled={!isEditing} icon={ShieldCheck} />
-                            <div className="md:col-span-2">
-                                <Input label="Registered Address" register={register('address')} disabled={!isEditing} icon={MapPin} />
-                            </div>
-                            <Input label="Society Email" register={register('email')} disabled={!isEditing} icon={Mail} />
-                            <Input label="Society Phone" register={register('phone')} disabled={!isEditing} icon={Phone} />
-                        </div>
-                    </Card>
-
-                    <Card className="p-10">
-                        <h3 className="text-xl font-black text-slate-800 mb-8 flex items-center gap-3 uppercase tracking-tight">
                             <User className="text-indigo-600" size={20} />
-                            Administrative Authority
+                            Admin Information
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <Input label="Secretary Name" register={register('secretaryName')} disabled={!isEditing} icon={User} />
-                            <Input label="Secretary Phone" register={register('secretaryPhone')} disabled={!isEditing} icon={Phone} />
-                            <Input label="Admin Email" register={register('secretaryEmail')} disabled={!isEditing} icon={Mail} />
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Account Security</label>
-                                <div className="relative">
-                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"><Lock size={18} /></div>
-                                    <div className="w-full pl-14 pr-6 py-4.5 rounded-2xl bg-slate-50 border border-transparent text-slate-400 font-mono tracking-tighter flex items-center justify-between text-xs">
-                                        <span>••••••••••••</span>
-                                        <button type="button" className="text-indigo-600 font-black uppercase text-[9px] tracking-widest hover:underline">Reset</button>
-                                    </div>
-                                </div>
-                            </div>
+                            <Input label="Full Name" register={register('name')} disabled={!isEditing} icon={User} />
+                            <Input label="Email Address" register={register('email')} disabled={!isEditing} icon={Mail} />
+                            <Input label="Phone Number" register={register('phone')} disabled={!isEditing} icon={Phone} />
+                            <Input label="Role" value={profileData?.role || 'ADMIN'} disabled={true} icon={ShieldCheck} />
                         </div>
                     </Card>
                 </div>

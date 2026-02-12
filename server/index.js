@@ -25,8 +25,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://smart-society-management.vercel.app",
-      "https://smart-society-managem-git-893add-yukta-yadavs-projects-ba8a39bb.vercel.app",
-      "https://smart-society-management-kh74mtbmm.vercel.app"
+    
     ],
     credentials: true,
   })
