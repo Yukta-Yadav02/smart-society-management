@@ -95,10 +95,7 @@ const Complaints = () => {
   };
 
   const filteredComplaints = (complaints || []).filter(c => {
-    const statusMap = { 'Open': 'Pending', 'In Progress': 'Active', 'Resolved': 'Resolved' };
-    const displayStatus = c.status === 'OPEN' ? 'Pending' : (c.status === 'IN PROGRESS' ? 'Active' : c.status);
-
-    const matchesStatus = filterStatus === 'All' || displayStatus === filterStatus;
+    const matchesStatus = filterStatus === 'All' || c.status === filterStatus;
     const matchesSearch = (c.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.description || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
@@ -117,8 +114,8 @@ const Complaints = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <StatCard
-          label="Active"
-          value={(complaints || []).filter(c => c.status === 'OPEN' || c.status === 'IN PROGRESS').length}
+          label="Pending"
+          value={(complaints || []).filter(c => c.status === 'OPEN' || c.status === 'PENDING').length}
           icon={Clock}
           colorClass="bg-amber-50 text-amber-600"
           delay={0.1}
@@ -131,10 +128,10 @@ const Complaints = () => {
           delay={0.2}
         />
         <StatCard
-          label="In Progress"
-          value={(complaints || []).filter(c => c.status === 'IN PROGRESS').length}
-          icon={Inbox}
-          colorClass="bg-blue-50 text-blue-600"
+          label="Rejected"
+          value={(complaints || []).filter(c => c.status === 'REJECTED').length}
+          icon={XCircle}
+          colorClass="bg-red-50 text-red-600"
           delay={0.3}
         />
         <StatCard
@@ -155,7 +152,7 @@ const Complaints = () => {
           className="flex-1 max-w-xl"
         />
         <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm shrink-0">
-          {['All', 'OPEN', 'RESOLVED'].map(s => (
+          {['All', 'REJECTED', 'RESOLVED'].map(s => (
             <button
               key={s}
               onClick={() => setFilterStatus(s)}
@@ -195,12 +192,13 @@ const Complaints = () => {
 
                 <div className="lg:w-1/4 flex flex-col justify-center items-center lg:items-end border-t lg:border-t-0 lg:border-l border-slate-100 pt-8 lg:pt-0 lg:pl-8">
                   <Badge
-                    variant={c.status === 'RESOLVED' ? 'success' : c.status === 'OPEN' ? 'warning' : 'info'}
+                    variant={c.status === 'RESOLVED' ? 'success' : c.status === 'REJECTED' ? 'danger' : 'warning'}
                     className="mb-4 py-2 px-6 rounded-xl shadow-sm text-sm"
                   >
-                    {c.status === 'OPEN' ? 'Pending' : c.status}
+                    {c.status === 'OPEN' || c.status === 'PENDING' ? 'PENDING' : c.status}
                   </Badge>
                   {c.status === 'RESOLVED' && <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-2 flex items-center gap-1"><CheckCircle2 size={12} /> Verified by Admin</p>}
+                  {c.status === 'REJECTED' && <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mt-2 flex items-center gap-1"><XCircle size={12} /> Declined by Admin</p>}
                 </div>
               </div>
             </Card>

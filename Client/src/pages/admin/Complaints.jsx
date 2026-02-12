@@ -68,9 +68,9 @@ const Complaints = () => {
             if (res.success) {
                 dispatch(updateComplaint({ id, status }));
                 if (status === 'RESOLVED') {
-                    toast.success(`Complaint "${title}" resolved!`, { icon: '✅' });
+                    toast.success('Resolved successfully!', { icon: '✅' });
                 } else {
-                    toast.error(`Complaint "${title}" rejected.`, { icon: '❌' });
+                    toast.success('Rejected successfully!', { icon: '❌' });
                 }
             } else {
                 toast.error("Failed to update complaint status");
@@ -128,11 +128,11 @@ const Complaints = () => {
                 />
 
                 <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm w-fit self-start">
-                    {['OPEN', 'RESOLVED', 'REJECTED', 'All'].map((tab) => (
+                    {['All', 'PENDING', 'RESOLVED', 'REJECTED'].map((tab) => (
                         <button
                             key={tab}
-                            onClick={() => setFilter(tab)}
-                            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === tab
+                            onClick={() => setFilter(tab === 'PENDING' ? 'OPEN' : tab)}
+                            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${(filter === 'OPEN' && tab === 'PENDING') || filter === tab
                                 ? 'bg-indigo-600 text-white shadow-lg'
                                 : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
                                 }`}
@@ -154,7 +154,7 @@ const Complaints = () => {
                                 <Badge variant={complaint.status === 'RESOLVED' ? 'success' : complaint.status === 'OPEN' ? 'warning' : 'danger'}>
                                     <div className="flex items-center gap-1.5">
                                         {complaint.status === 'OPEN' ? <Clock size={12} /> : complaint.status === 'RESOLVED' ? <CheckCircle2 size={12} /> : <XSquare size={12} />}
-                                        {complaint.status}
+                                        {complaint.status === 'OPEN' ? 'PENDING' : complaint.status}
                                     </div>
                                 </Badge>
                                 <span className="text-[10px] font-black text-slate-300 flex items-center gap-1.5 uppercase tracking-widest">
