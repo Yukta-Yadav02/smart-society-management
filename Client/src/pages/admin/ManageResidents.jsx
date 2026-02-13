@@ -140,10 +140,18 @@ const ManageResidents = () => {
     };
 
     const handleDelete = async (id, name) => {
+        console.log("Attempting to delete user with ID:", id, "Type:", typeof id);
         if (window.confirm(`Are you sure you want to remove ${name}?`)) {
-            // Just remove from frontend since backend endpoints don't exist
-            dispatch(deleteResident(id));
-            toast.success(`${name} removed from directory`, { icon: '🗑️' });
+            try {
+                const res = await apiConnector("DELETE", AUTH_API.DELETE_USER(id));
+                if (res.success) {
+                    dispatch(deleteResident(id));
+                    toast.success(`${name} removed successfully`, { icon: '🗑️' });
+                }
+            } catch (err) {
+                console.error("Delete error:", err);
+                toast.error(err.message || 'Failed to remove resident');
+            }
         }
     };
 
