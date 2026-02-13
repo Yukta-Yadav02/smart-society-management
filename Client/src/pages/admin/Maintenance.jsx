@@ -54,8 +54,11 @@ const Maintenance = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [selectedFlats, setSelectedFlats] = useState([]);
-    const [isAllFlats, setIsAllFlats] = useState(false);
+    const [isAllFlats, setIsAllFlats] = useState(true);
     const [wingSearch, setWingSearch] = useState('All');
+    const [commonWingSearch, setCommonWingSearch] = useState('All');
+    const [selectedCommonFlats, setSelectedCommonFlats] = useState([]);
+    const [isAllCommonFlats, setIsAllCommonFlats] = useState(true);
 
     useEffect(() => {
         // Force clear maintenance data first
@@ -115,33 +118,39 @@ const Maintenance = () => {
     const specialForm = useForm({ resolver: yupResolver(specialSchema) });
 
     const onGenerateCommon = async (data) => {
-        try {
-            console.log('Using bulk generate endpoint...');
+        if (!isAllCommonFlats && selectedCommonFlats.length === 0) {
+            toast.error("Please select at least one flat");
+            return;
+        }
 
-            // NEW COMMENT: includeVacant flag determines if empty flats get the bill or not
+        try {
+            console.log('Generating common maintenance...');
+
             const payload = {
                 amount: Number(data.amount),
                 period: data.period,
-                includeVacant: data.includeVacant // Taken from the checkbox in modal
+                flat: isAllCommonFlats ? "ALL" : (selectedCommonFlats.length === 1 ? selectedCommonFlats[0] : selectedCommonFlats),
+                type: 'Common'
             };
 
-            console.log('Bulk generate payload:', payload);
-            const res = await apiConnector("POST", MAINTENANCE_API.GENERATE, payload);
+            console.log('Common maintenance payload:', payload);
+            const res = await apiConnector("POST", MAINTENANCE_API.CREATE, payload);
 
             if (res.success) {
                 toast.success(`✅ Maintenance generated!`, {
                     duration: 4000
                 });
-                // Refresh data
                 const maintenanceRes = await apiConnector("GET", MAINTENANCE_API.GET_ALL);
                 if (maintenanceRes.success) dispatch(setMaintenance(maintenanceRes.data));
                 setShowCommonModal(false);
+                setSelectedCommonFlats([]);
+                setIsAllCommonFlats(true);
                 commonForm.reset();
             } else {
                 toast.error(res.message || "Failed to generate maintenance");
             }
         } catch (err) {
-            console.error('Bulk generate error:', err);
+            console.error('Generate error:', err);
             toast.error(`Error: ${err.message || 'Unknown error'}`);
         }
     };
@@ -186,9 +195,21 @@ const Maintenance = () => {
         );
     };
 
+    const toggleCommonFlatSelection = (id) => {
+        if (isAllCommonFlats) setIsAllCommonFlats(false);
+        setSelectedCommonFlats(prev =>
+            prev.includes(id) ? prev.filter(fId => fId !== id) : [...prev, id]
+        );
+    };
+
     const handleSelectAllChanged = (checked) => {
         setIsAllFlats(checked);
         if (checked) setSelectedFlats([]);
+    };
+
+    const handleCommonSelectAllChanged = (checked) => {
+        setIsAllCommonFlats(checked);
+        if (checked) setSelectedCommonFlats([]);
     };
 
     const toggleStatus = async (id, currentStatus) => {
@@ -635,6 +656,57 @@ const Maintenance = () => {
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Monthly Amount (₹)</label>
                                     <input {...commonForm.register('amount')} placeholder="e.g. 2500" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-transparent font-bold text-slate-700 focus:bg-white focus:border-indigo-100 outline-none" />
                                     {commonForm.formState.errors.amount && <p className="text-rose-500 text-[10px] font-bold">{commonForm.formState.errors.amount.message}</p>}
+                                </div>
+
+                                {/* Flat Selection */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-2xl border border-indigo-100">
+                                        <span className="text-sm font-bold text-indigo-900">Send to All Occupied Flats</span>
+                                        <input
+                                            type="checkbox"
+                                            checked={isAllCommonFlats}
+                                            onChange={(e) => handleCommonSelectAllChanged(e.target.checked)}
+                                            className="w-5 h-5 accent-indigo-600 rounded-lg"
+                                        />
+                                    </div>
+
+                                    {!isAllCommonFlats && (
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">🏠 Select Flats ({selectedCommonFlats.length} selected)</label>
+                                                <div className="flex gap-2">
+                                                    {['All', 'A', 'B', 'C', 'D'].map(w => (
+                                                        <button
+                                                            key={w}
+                                                            type="button"
+                                                            onClick={() => setCommonWingSearch(w)}
+                                                            className={`px-2 py-1 rounded-lg text-[9px] font-black transition-all ${commonWingSearch === w ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}
+                                                        >
+                                                            {w}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                                                {flats
+                                                    .filter(f => commonWingSearch === 'All' || f.wing?.name === commonWingSearch)
+                                                    .map(f => (
+                                                        <button
+                                                            key={f._id || f.id}
+                                                            type="button"
+                                                            onClick={() => toggleCommonFlatSelection(f._id || f.id)}
+                                                            className={`py-2 rounded-xl text-xs font-bold transition-all border ${
+                                                                selectedCommonFlats.includes(f._id || f.id)
+                                                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md scale-95'
+                                                                    : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'
+                                                            }`}
+                                                        >
+                                                            {f.flatNumber}
+                                                        </button>
+                                                    ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                                 
                                 {/* Calendar Month/Year Selector */}

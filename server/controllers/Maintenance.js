@@ -39,7 +39,7 @@ exports.createMaintenance = async (req, res) => {
     // 1. Determine targets (which flats)
     let targetFlats = [];
     if (flat === "ALL") {
-      targetFlats = await Flat.find();
+      targetFlats = await Flat.find({ isOccupied: true });
     } else if (Array.isArray(flat)) {
       targetFlats = await Flat.find({ _id: { $in: flat } });
     } else if (flat) {
@@ -51,8 +51,25 @@ exports.createMaintenance = async (req, res) => {
       return res.status(404).json({ success: false, message: "No valid flats selected" });
     }
 
-    // 2. Prepare records
-    const recordsToCreate = targetFlats.map(f => ({
+    // 2. Check for existing records to avoid duplicates
+    const existingRecords = await Maintenance.find({
+      flat: { $in: targetFlats.map(f => f._id) },
+      period: cleanPeriod,
+      type: type || "Common"
+    });
+
+    const existingFlatIds = new Set(existingRecords.map(r => r.flat.toString()));
+    const newTargetFlats = targetFlats.filter(f => !existingFlatIds.has(f._id.toString()));
+
+    if (newTargetFlats.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Maintenance for ${cleanPeriod} already exists for selected flat(s)` 
+      });
+    }
+
+    // 3. Prepare records for new flats only
+    const recordsToCreate = newTargetFlats.map(f => ({
       title: title || (type === "Special" ? "Special Charge" : "Maintenance"),
       amount: Number(amount),
       month: month || parsedMonth,
@@ -68,7 +85,7 @@ exports.createMaintenance = async (req, res) => {
       createdBy: req.user.id,
     }));
 
-    // 3. Save
+    // 4. Save
     let result;
     try {
       if (recordsToCreate.length === 1) {
@@ -77,11 +94,15 @@ exports.createMaintenance = async (req, res) => {
         result = await Maintenance.insertMany(recordsToCreate);
       }
 
-      console.log(`Successfully created ${recordsToCreate.length} maintenance record(s)`);
+      const message = existingFlatIds.size > 0 
+        ? `Created ${recordsToCreate.length} record(s). Skipped ${existingFlatIds.size} duplicate(s).`
+        : `${recordsToCreate.length} maintenance record(s) created`;
+
+      console.log(message);
 
       res.status(201).json({
         success: true,
-        message: `${recordsToCreate.length} maintenance record(s) created`,
+        message,
         data: result,
       });
     } catch (saveError) {
