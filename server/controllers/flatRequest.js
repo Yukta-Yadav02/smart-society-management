@@ -308,7 +308,8 @@ exports.adminDecision = async (req, res) => {
       await User.findByIdAndUpdate(request.user._id, {
         flat: flat._id,
         status: "ACTIVE",
-        residentType: request.ownershipType
+        residentType: request.ownershipType,
+        flatAssignedDate: new Date()
       });
     }
 

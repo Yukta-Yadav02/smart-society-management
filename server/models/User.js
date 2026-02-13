@@ -41,6 +41,11 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
     
+    flatAssignedDate: {
+      type: Date,
+      default: null,
+    },
+    
     residentType: {
       type: String,
       enum: ["OWNER", "TENANT"],

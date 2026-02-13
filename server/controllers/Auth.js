@@ -229,7 +229,11 @@ exports.toggleUserStatus = async (req, res) => {
 // Get all residents
 exports.getAllResidents = async (req, res) => {
   try {
-    const residents = await User.find({ role: "RESIDENT" })
+    const residents = await User.find({ 
+      role: "RESIDENT",
+      status: "ACTIVE",
+      flat: { $ne: null }
+    })
       .populate('flat', 'flatNumber wing')
       .populate({
         path: 'flat',
