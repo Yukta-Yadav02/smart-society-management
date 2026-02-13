@@ -262,11 +262,6 @@ const ManageRequests = () => {
                                         <p className="font-black text-slate-700 text-sm">
                                             {req.flat?.wing?.name || req.wing || '-'} - {req.flat?.flatNumber || req.flat || '-'}
                                         </p>
-                                        {req.residentOpinion === 'Pending' && (
-                                            <span className="inline-flex items-center gap-1 mt-2 px-2 py-1 bg-amber-50 text-amber-600 rounded-lg text-[9px] font-black uppercase">
-                                                <Users className="w-3 h-3" /> Occupied - Approval Pending
-                                            </span>
-                                        )}
                                     </div>
                                     <div>
                                         <p className="text-[9px] uppercase font-black text-slate-300 tracking-widest mb-1">Stay Type</p>

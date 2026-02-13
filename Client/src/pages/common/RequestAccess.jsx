@@ -216,7 +216,9 @@ const RequestAccess = () => {
                     />
                   </div>
 
-                  <Button onClick={nextStep} fullWidth size="lg" className="py-5 text-lg font-black" icon={ChevronRight}>Next Step</Button>
+                  <Button onClick={nextStep} fullWidth size="lg" className="py-5 text-lg font-black" icon={ChevronRight}>
+                    {flatStatus?.isOccupied ? 'Request Transfer' : 'Next Step'}
+                  </Button>
                 </div>
               )}
 
@@ -342,7 +344,7 @@ const RequestAccess = () => {
                       className="bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-200"
                       icon={Send}
                     >
-                      {loading ? "Processing..." : "Submit Application"}
+                      {loading ? "Processing..." : flatStatus?.isOccupied ? "Submit Transfer Request" : "Submit Application"}
                     </Button>
                   </div>
                 </div>

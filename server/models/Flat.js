@@ -45,12 +45,6 @@ const flatSchema = new mongoose.Schema(
       type: String,
       default: "1"
     },
-
-
-    capacity: {
-      type: Number,
-      default: 4
-    },
   },
   { timestamps: true }
 );
