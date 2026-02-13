@@ -54,8 +54,11 @@ const Maintenance = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [selectedFlats, setSelectedFlats] = useState([]);
-    const [isAllFlats, setIsAllFlats] = useState(false);
+    const [isAllFlats, setIsAllFlats] = useState(true);
     const [wingSearch, setWingSearch] = useState('All');
+    const [commonWingSearch, setCommonWingSearch] = useState('All');
+    const [selectedCommonFlats, setSelectedCommonFlats] = useState([]);
+    const [isAllCommonFlats, setIsAllCommonFlats] = useState(true);
 
     useEffect(() => {
         // Force clear maintenance data first
@@ -115,33 +118,39 @@ const Maintenance = () => {
     const specialForm = useForm({ resolver: yupResolver(specialSchema) });
 
     const onGenerateCommon = async (data) => {
-        try {
-            console.log('Using bulk generate endpoint...');
+        if (!isAllCommonFlats && selectedCommonFlats.length === 0) {
+            toast.error("Please select at least one flat");
+            return;
+        }
 
-            // NEW COMMENT: includeVacant flag determines if empty flats get the bill or not
+        try {
+            console.log('Generating common maintenance...');
+
             const payload = {
                 amount: Number(data.amount),
                 period: data.period,
-                includeVacant: data.includeVacant // Taken from the checkbox in modal
+                flat: isAllCommonFlats ? "ALL" : (selectedCommonFlats.length === 1 ? selectedCommonFlats[0] : selectedCommonFlats),
+                type: 'Common'
             };
 
-            console.log('Bulk generate payload:', payload);
-            const res = await apiConnector("POST", MAINTENANCE_API.GENERATE, payload);
+            console.log('Common maintenance payload:', payload);
+            const res = await apiConnector("POST", MAINTENANCE_API.CREATE, payload);
 
             if (res.success) {
                 toast.success(`✅ Maintenance generated!`, {
                     duration: 4000
                 });
-                // Refresh data
                 const maintenanceRes = await apiConnector("GET", MAINTENANCE_API.GET_ALL);
                 if (maintenanceRes.success) dispatch(setMaintenance(maintenanceRes.data));
                 setShowCommonModal(false);
+                setSelectedCommonFlats([]);
+                setIsAllCommonFlats(true);
                 commonForm.reset();
             } else {
                 toast.error(res.message || "Failed to generate maintenance");
             }
         } catch (err) {
-            console.error('Bulk generate error:', err);
+            console.error('Generate error:', err);
             toast.error(`Error: ${err.message || 'Unknown error'}`);
         }
     };
@@ -186,9 +195,21 @@ const Maintenance = () => {
         );
     };
 
+    const toggleCommonFlatSelection = (id) => {
+        if (isAllCommonFlats) setIsAllCommonFlats(false);
+        setSelectedCommonFlats(prev =>
+            prev.includes(id) ? prev.filter(fId => fId !== id) : [...prev, id]
+        );
+    };
+
     const handleSelectAllChanged = (checked) => {
         setIsAllFlats(checked);
         if (checked) setSelectedFlats([]);
+    };
+
+    const handleCommonSelectAllChanged = (checked) => {
+        setIsAllCommonFlats(checked);
+        if (checked) setSelectedCommonFlats([]);
     };
 
     const toggleStatus = async (id, currentStatus) => {
@@ -436,7 +457,17 @@ const Maintenance = () => {
                                     <div>
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Year</label>
                                         <div className="flex gap-2 flex-wrap">
-                                            {['All', '2024', '2025', '2026', '2027', '2028'].map(year => (
+                                            {(() => {
+                                                const currentYear = new Date().getFullYear();
+                                                const startYear = 2026;
+                                                const years = ['All'];
+                                                // Show from 2026 to current year + 3 years ahead
+                                                const endYear = Math.max(currentYear + 3, startYear + 3);
+                                                for (let year = startYear; year <= endYear; year++) {
+                                                    years.push(year.toString());
+                                                }
+                                                return years;
+                                            })().map(year => (
                                                 <button
                                                     key={year}
                                                     onClick={() => {
@@ -607,9 +638,9 @@ const Maintenance = () => {
             {/* MODALS */}
             {showCommonModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
-                        <form onSubmit={commonForm.handleSubmit(onGenerateCommon)}>
-                            <div className="p-10 pb-6 relative text-center">
+                    <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
+                        <form onSubmit={commonForm.handleSubmit(onGenerateCommon)} className="flex flex-col max-h-[90vh]">
+                            <div className="p-10 pb-6 relative text-center flex-shrink-0">
                                 <button type="button" onClick={() => setShowCommonModal(false)} className="absolute right-8 top-8 w-10 h-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-400">
                                     <X className="w-6 h-6" />
                                 </button>
@@ -617,32 +648,111 @@ const Maintenance = () => {
                                     <Users className="w-8 h-8" />
                                 </div>
                                 <h2 className="text-3xl font-black text-slate-800">Common Bill</h2>
-                                <p className="text-slate-500 font-medium mt-1">Generate maintenance for ALL flats in your society.</p>
+                                <p className="text-slate-500 font-medium mt-1">Generate maintenance for ALL occupied flats</p>
                             </div>
 
-                            <div className="p-8 pt-4 space-y-6">
+                            <div className="p-8 pt-4 space-y-6 overflow-y-auto flex-1">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Monthly Amount (₹)</label>
                                     <input {...commonForm.register('amount')} placeholder="e.g. 2500" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-transparent font-bold text-slate-700 focus:bg-white focus:border-indigo-100 outline-none" />
                                     {commonForm.formState.errors.amount && <p className="text-rose-500 text-[10px] font-bold">{commonForm.formState.errors.amount.message}</p>}
                                 </div>
+
+                                {/* Flat Selection */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-2xl border border-indigo-100">
+                                        <span className="text-sm font-bold text-indigo-900">Send to All Occupied Flats</span>
+                                        <input
+                                            type="checkbox"
+                                            checked={isAllCommonFlats}
+                                            onChange={(e) => handleCommonSelectAllChanged(e.target.checked)}
+                                            className="w-5 h-5 accent-indigo-600 rounded-lg"
+                                        />
+                                    </div>
+
+                                    {!isAllCommonFlats && (
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">🏠 Select Flats ({selectedCommonFlats.length} selected)</label>
+                                                <div className="flex gap-2">
+                                                    {['All', 'A', 'B', 'C', 'D'].map(w => (
+                                                        <button
+                                                            key={w}
+                                                            type="button"
+                                                            onClick={() => setCommonWingSearch(w)}
+                                                            className={`px-2 py-1 rounded-lg text-[9px] font-black transition-all ${commonWingSearch === w ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}
+                                                        >
+                                                            {w}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                                                {flats
+                                                    .filter(f => commonWingSearch === 'All' || f.wing?.name === commonWingSearch)
+                                                    .map(f => (
+                                                        <button
+                                                            key={f._id || f.id}
+                                                            type="button"
+                                                            onClick={() => toggleCommonFlatSelection(f._id || f.id)}
+                                                            className={`py-2 rounded-xl text-xs font-bold transition-all border ${
+                                                                selectedCommonFlats.includes(f._id || f.id)
+                                                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md scale-95'
+                                                                    : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'
+                                                            }`}
+                                                        >
+                                                            {f.flatNumber}
+                                                        </button>
+                                                    ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* Calendar Month/Year Selector */}
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Period (Month / Year)</label>
-                                    <input {...commonForm.register('period')} placeholder="e.g. March 2024" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-transparent font-bold text-slate-700 focus:bg-white focus:border-indigo-100 outline-none" />
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">📅 Select Month & Year</label>
+                                    <div className="grid grid-cols-4 gap-2 p-4 bg-gradient-to-br from-slate-50 to-indigo-50/30 rounded-2xl border border-slate-200 max-h-64 overflow-y-auto">
+                                        {(() => {
+                                            const now = new Date();
+                                            const currentYear = now.getFullYear();
+                                            const currentMonth = now.getMonth();
+                                            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                            const startYear = 2026;
+                                            const endYear = Math.max(currentYear + 2, startYear + 2);
+                                            const options = [];
+                                            
+                                            for (let year = startYear; year <= endYear; year++) {
+                                                const startMonth = (year === currentYear) ? currentMonth : 0;
+                                                for (let month = startMonth; month < 12; month++) {
+                                                    options.push({ month: months[month], year, display: `${months[month].slice(0, 3)} ${year}` });
+                                                }
+                                            }
+                                            
+                                            return options.map((opt, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => commonForm.setValue('period', `${opt.month} ${opt.year}`)}
+                                                    className="px-4 py-3 rounded-xl text-xs font-bold bg-white hover:bg-indigo-600 hover:text-white border border-slate-200 hover:border-indigo-600 transition-all shadow-sm hover:shadow-md hover:scale-105 active:scale-95"
+                                                >
+                                                    {opt.display}
+                                                </button>
+                                            ));
+                                        })()}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Selected Period</label>
+                                    <input {...commonForm.register('period')} placeholder="Click a month above" className="w-full px-6 py-4 rounded-2xl bg-indigo-50 border border-indigo-200 font-bold text-indigo-700 focus:bg-white focus:border-indigo-300 outline-none" readOnly />
                                     {commonForm.formState.errors.period && <p className="text-rose-500 text-[10px] font-bold">{commonForm.formState.errors.period.message}</p>}
                                 </div>
-                                <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                    <input
-                                        type="checkbox"
-                                        id="includeVacant"
-                                        {...commonForm.register('includeVacant')}
-                                        className="w-4 h-4 accent-indigo-600 rounded"
-                                    />
-                                    <label htmlFor="includeVacant" className="text-xs font-bold text-slate-600 cursor-pointer">
-                                        Include Vacant Flats
-                                    </label>
-                                </div>                                <button type="submit" className="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all uppercase tracking-widest text-xs">
-                                    Generate Bills
+                            </div>
+                            
+                            <div className="p-8 pt-4 flex-shrink-0">
+                                <button type="submit" className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-indigo-200 hover:shadow-2xl hover:from-indigo-700 hover:to-purple-700 transition-all uppercase tracking-widest text-xs">
+                                    ⚡ Generate Bills for All Flats
                                 </button>
                             </div>
                         </form>

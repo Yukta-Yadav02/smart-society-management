@@ -14,6 +14,7 @@ const parsePeriod = (period) => {
       year = parseInt(part);
     } else if (/^[a-zA-Z]+$/.test(part)) {
       month = part;
+      
     }
   });
 
@@ -38,7 +39,7 @@ exports.createMaintenance = async (req, res) => {
     // 1. Determine targets (which flats)
     let targetFlats = [];
     if (flat === "ALL") {
-      targetFlats = await Flat.find();
+      targetFlats = await Flat.find({ isOccupied: true });
     } else if (Array.isArray(flat)) {
       targetFlats = await Flat.find({ _id: { $in: flat } });
     } else if (flat) {
@@ -50,8 +51,25 @@ exports.createMaintenance = async (req, res) => {
       return res.status(404).json({ success: false, message: "No valid flats selected" });
     }
 
-    // 2. Prepare records
-    const recordsToCreate = targetFlats.map(f => ({
+    // 2. Check for existing records to avoid duplicates
+    const existingRecords = await Maintenance.find({
+      flat: { $in: targetFlats.map(f => f._id) },
+      period: cleanPeriod,
+      type: type || "Common"
+    });
+
+    const existingFlatIds = new Set(existingRecords.map(r => r.flat.toString()));
+    const newTargetFlats = targetFlats.filter(f => !existingFlatIds.has(f._id.toString()));
+
+    if (newTargetFlats.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Maintenance for ${cleanPeriod} already exists for selected flat(s)` 
+      });
+    }
+
+    // 3. Prepare records for new flats only
+    const recordsToCreate = newTargetFlats.map(f => ({
       title: title || (type === "Special" ? "Special Charge" : "Maintenance"),
       amount: Number(amount),
       month: month || parsedMonth,
@@ -67,7 +85,7 @@ exports.createMaintenance = async (req, res) => {
       createdBy: req.user.id,
     }));
 
-    // 3. Save
+    // 4. Save
     let result;
     try {
       if (recordsToCreate.length === 1) {
@@ -76,11 +94,15 @@ exports.createMaintenance = async (req, res) => {
         result = await Maintenance.insertMany(recordsToCreate);
       }
 
-      console.log(`Successfully created ${recordsToCreate.length} maintenance record(s)`);
+      const message = existingFlatIds.size > 0 
+        ? `Created ${recordsToCreate.length} record(s). Skipped ${existingFlatIds.size} duplicate(s).`
+        : `${recordsToCreate.length} maintenance record(s) created`;
+
+      console.log(message);
 
       res.status(201).json({
         success: true,
-        message: `${recordsToCreate.length} maintenance record(s) created`,
+        message,
         data: result,
       });
     } catch (saveError) {
@@ -106,7 +128,7 @@ exports.generateCommonMaintenance = async (req, res) => {
   try {
     console.log("Generating common maintenance - Request body:", req.body);
 
-    const { amount, period, includeVacant } = req.body;
+    const { amount, period } = req.body;
     const cleanPeriod = period ? period.trim() : null;
 
     if (!amount || !cleanPeriod) {
@@ -114,6 +136,34 @@ exports.generateCommonMaintenance = async (req, res) => {
         success: false,
         message: "Amount and period are required",
       });
+    }
+
+    // Validate year and month - only allow 2026 onwards, and current/future months only
+    const { year: parsedYear, month: parsedMonth } = parsePeriod(cleanPeriod);
+    const minYear = 2026;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.toLocaleString('en-US', { month: 'long' });
+    
+    if (parsedYear && parsedYear < minYear) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot create maintenance for year ${parsedYear}. System starts from ${minYear} onwards.`,
+      });
+    }
+
+    // If creating for current year, month must be current or future (no past months)
+    if (parsedYear && parsedYear === currentYear && parsedMonth) {
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const parsedMonthIndex = months.findIndex(m => m.toLowerCase() === parsedMonth.toLowerCase());
+      const currentMonthIndex = months.findIndex(m => m === currentMonth);
+      
+      if (parsedMonthIndex !== -1 && parsedMonthIndex < currentMonthIndex) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot create maintenance for past month. Current month is ${currentMonth} ${currentYear}. You can only create for ${currentMonth} or future months.`,
+        });
+      }
     }
 
     // 1. Fetch flats with occupancy info
@@ -134,8 +184,8 @@ exports.generateCommonMaintenance = async (req, res) => {
         // Skip if already has record
         if (existingFlatIds.has(flat._id.toString())) return false;
 
-        // Skip vacant if includeVacant is not explicitly true
-        if (includeVacant !== true && !flat.isOccupied) return false;
+        // Skip vacant flats - only generate for occupied flats
+        if (!flat.isOccupied) return false;
 
         return true;
       })
@@ -279,14 +329,21 @@ exports.updateMaintenanceStatus = async (req, res) => {
 
 // RESIDENT → my maintenance
 exports.getMyMaintenance = async (req, res) => {
-  const user = await User.findById(req.user.id).select("flat");
+  const user = await User.findById(req.user.id).select("flat flatAssignedDate");
 
-  const maintenance = await Maintenance.find({
+  const query = {
     $or: [
-      { flat: null },       // society-wide
-      { flat: user.flat },  // my flat
+      { flat: null },
+      { flat: user.flat },
     ],
-  })
+  };
+
+  // Only show maintenance created after user joined
+  if (user.flatAssignedDate) {
+    query.createdAt = { $gte: user.flatAssignedDate };
+  }
+
+  const maintenance = await Maintenance.find(query)
     .populate({
       path: "flat",
       select: "flatNumber wing",

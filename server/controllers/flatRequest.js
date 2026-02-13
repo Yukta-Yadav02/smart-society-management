@@ -82,6 +82,20 @@ exports.getAllFlatRequests = async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
+    // Clean up requests with non-existent residents
+    for (const request of requests) {
+      if (request.flat && request.flat.currentResident) {
+        const residentExists = await User.findById(request.flat.currentResident);
+        if (!residentExists) {
+          // Reset residentOpinion if resident doesn't exist
+          if (request.residentOpinion === 'Pending' && request.status === 'Pending') {
+            request.residentOpinion = 'Pending';
+            await request.save();
+          }
+        }
+      }
+    }
+
     console.log(requests);
 
     return res.status(200).json({
@@ -182,52 +196,41 @@ exports.adminDecision = async (req, res) => {
 
     const flat = await Flat.findById(request.flat._id);
 
-    /**
-     * CASE 1: FLAT OCCUPIED
-     * If resident rejected, admin MUST reject. If resident accepted, admin can approve.
-     */
+    // Check if currentResident actually exists
+    let actualResident = null;
     if (flat.currentResident) {
-      // Check if currentResident actually exists in database
-      const actualResident = await User.findById(flat.currentResident);
-
+      actualResident = await User.findById(flat.currentResident);
+      
       if (!actualResident) {
-        // If resident doesn't exist, clear the flat and allow approval
+        // Clear stale resident data
         await Flat.findByIdAndUpdate(flat._id, {
           currentResident: null,
-          isOccupied: false
+          isOccupied: false,
+          resident: null
         });
+        // Reset residentOpinion in request since no resident exists
+        request.residentOpinion = "Pending";
         console.log(`Cleared non-existent resident from flat ${flat.flatNumber}`);
-      } else {
-        // Allow admin override if specified
-        if (!req.body.adminOverride && request.residentOpinion === "Pending") {
-          return res.status(400).json({
-            success: false,
-            message: "Resident response required before decision",
-          });
-        }
-
-        // If resident rejected, admin MUST reject (no override allowed)
-        if (request.residentOpinion === "Rejected") {
-          if (decision === "Approved") {
-            return res.status(400).json({
-              success: false,
-              message: "Cannot approve when current resident has rejected",
-            });
-          }
-          // Force admin to reject
-          request.status = "Rejected";
-          request.decidedByAdmin = req.user.id;
-          if (adminMessage) {
-            request.adminMessage = adminMessage;
-          }
-          await request.save();
-          return res.status(200).json({
-            success: true,
-            message: "Request rejected as per resident's decision",
-            data: request
-          });
-        }
       }
+    }
+
+    // Only check resident opinion if actual resident exists
+    if (actualResident && request.residentOpinion === "Rejected") {
+      if (decision === "Approved") {
+        return res.status(400).json({
+          success: false,
+          message: "Cannot approve when current resident has rejected",
+        });
+      }
+      request.status = "Rejected";
+      request.decidedByAdmin = req.user.id;
+      if (adminMessage) request.adminMessage = adminMessage;
+      await request.save();
+      return res.status(200).json({
+        success: true,
+        message: "Request rejected as per resident's decision",
+        data: request
+      });
     }
 
     request.status = decision;
@@ -305,7 +308,8 @@ exports.adminDecision = async (req, res) => {
       await User.findByIdAndUpdate(request.user._id, {
         flat: flat._id,
         status: "ACTIVE",
-        residentType: request.ownershipType
+        residentType: request.ownershipType,
+        flatAssignedDate: new Date()
       });
     }
 

@@ -1,6 +1,6 @@
 const express = require("express");
 const { protect, authorizeRoles } = require("../middelware/auth");
-const { createFlat, getFlatsByBlock, assignFlat, vacateFlat, getAllFlats, updateOldRequests, initializeOwnership, deleteFlat } = require("../controllers/flat");
+const { createFlat, getFlatsByBlock, assignFlat, vacateFlat, getAllFlats, updateOldRequests, initializeOwnership, deleteFlat, getOwners } = require("../controllers/flat");
 
 const router = express.Router();
 
@@ -9,9 +9,10 @@ router.post("/",
     authorizeRoles("ADMIN"),
     createFlat);
 
+router.get("/owners", getOwners);
+
 router.get("/wing/:wingId", getFlatsByBlock);
 
-// Get all flats
 router.get("/", getAllFlats);
 
 // Get single flat by ID

@@ -9,7 +9,7 @@ exports.createFlat = async (req, res) => {
 
 
     try {
-        const { wingId, flatNumber, kitchen, capacity } = req.body;
+        const { wingId, flatNumber, kitchen } = req.body;
         if (!wingId || !flatNumber) {
             return res.status(400).json({
                 success: false,
@@ -26,37 +26,35 @@ exports.createFlat = async (req, res) => {
             });
         }
 
-        // [OWNERSHIP FLOW] - Naya flat banate waqt automatic wing-wise owner assign karna
-        let finalOwnerId = req.body.ownerId || null;
+        // Owner assignment logic
+        let finalOwnerId = null;
+        const { ownerName } = req.body;
 
-        if (!finalOwnerId) {
-            const wingName = block.name.toUpperCase();
-            let targetName = "";
-
-            if (wingName.includes('A')) targetName = "Ram";
-            else if (wingName.includes('B')) targetName = "Riya";
-            else if (wingName.includes('C')) targetName = "Priya";
-            else if (wingName.includes('D')) targetName = "Himanshu";
-
-            if (targetName) {
-                const ownerUser = await User.findOne({
-                    name: { $regex: targetName, $options: 'i' },
-                    role: "ADMIN"
+        if (ownerName && ownerName.trim()) {
+            let ownerUser = await User.findOne({
+                name: { $regex: `^${ownerName.trim()}$`, $options: 'i' },
+                role: "ADMIN"
+            });
+            
+            if (!ownerUser) {
+                ownerUser = await User.create({
+                    name: ownerName.trim(),
+                    email: `${ownerName.trim().toLowerCase().replace(/\s+/g, '')}@society.com`,
+                    password: 'password123',
+                    role: 'ADMIN',
+                    status: 'ACTIVE'
                 });
-                if (ownerUser) finalOwnerId = ownerUser._id;
             }
-
-            // Still null? Default to the admin creating the flat
-            if (!finalOwnerId) {
-                finalOwnerId = req.user.id;
-            }
+            
+            finalOwnerId = ownerUser._id;
+        } else {
+            finalOwnerId = req.user.id;
         }
 
         const flat = await Flat.create({
             wing: wingId,
             flatNumber,
             kitchen: kitchen || "1",
-            capacity: capacity || 4,
             owner: finalOwnerId
         })
 
@@ -291,10 +289,10 @@ exports.initializeOwnership = async (req, res) => {
             const wingName = wing.name.toUpperCase();
             let targetName = "";
 
-            if (wingName.includes('A')) targetName = "Ram";
-            else if (wingName.includes('B')) targetName = "Riya";
-            else if (wingName.includes('C')) targetName = "Priya";
-            else if (wingName.includes('D')) targetName = "Himanshu";
+            if (wingName.endsWith('A')) targetName = "Ram";
+            else if (wingName.endsWith('B')) targetName = "Riya";
+            else if (wingName.endsWith('C')) targetName = "Priya";
+            else if (wingName.endsWith('D')) targetName = "Himanshu";
 
             if (targetName) {
                 // Check if this owner already exists
@@ -390,6 +388,45 @@ exports.deleteFlat = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Failed to delete flat",
+            error: error.message
+        });
+    }
+};
+
+exports.getOwners = async (req, res) => {
+    try {
+        const defaultOwners = [
+            { name: 'Ram', email: 'ram@society.com' },
+            { name: 'Riya', email: 'riya@society.com' },
+            { name: 'Priya', email: 'priya@society.com' },
+            { name: 'Himanshu', email: 'himanshu@society.com' }
+        ];
+
+        for (const ownerData of defaultOwners) {
+            const exists = await User.findOne({ email: ownerData.email });
+            if (!exists) {
+                await User.create({
+                    name: ownerData.name,
+                    email: ownerData.email,
+                    password: 'password123',
+                    role: 'ADMIN',
+                    status: 'ACTIVE'
+                });
+            }
+        }
+
+        const owners = await User.find({ 
+            email: { $in: ['ram@society.com', 'riya@society.com', 'priya@society.com', 'himanshu@society.com'] }
+        }).select("name email");
+        
+        return res.status(200).json({
+            success: true,
+            data: owners
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch owners",
             error: error.message
         });
     }

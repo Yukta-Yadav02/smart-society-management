@@ -42,7 +42,7 @@ const schema = yup.object().shape({
     flatNumber: yup.string().required('Flat number is required'),
     wingId: yup.string().required('Wing is required'),
     kitchen: yup.string().default('1'),
-    capacity: yup.number().typeError('Must be a number').min(1, 'At least 1 person').max(20, 'Too many people').default(4),
+    ownerName: yup.string().required('Owner name is required'),
 });
 
 const ManageFlats = () => {
@@ -66,26 +66,24 @@ const ManageFlats = () => {
     const [showOwnershipModal, setShowOwnershipModal] = useState(false);
     const [ownershipSummary, setOwnershipSummary] = useState(null);
     const [isInitializing, setIsInitializing] = useState(false);
+    const [owners, setOwners] = useState([]);
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Fetch Wings
                 const wingRes = await apiConnector("GET", WING_API.GET_ALL);
-                if (wingRes.success) {
-                    setWings(wingRes.data);
-                }
+                if (wingRes.success) setWings(wingRes.data);
 
-                // Fetch Flats
+                const ownerRes = await apiConnector("GET", FLAT_API.GET_OWNERS);
+                if (ownerRes.success) setOwners(ownerRes.data);
+
                 const flatRes = await apiConnector("GET", FLAT_API.CREATE);
                 if (flatRes.success) {
-                    const cleanedFlats = flatRes.data.map(flat => ({
+                    dispatch(setFlats(flatRes.data.map(flat => ({
                         ...flat,
                         residentName: flat.resident?.name || flat.currentResident?.name || null
-                    }));
-
-                    dispatch(setFlats(cleanedFlats));
+                    }))));
                 }
             } catch (err) {
                 console.error("Fetch Error:", err);
@@ -97,23 +95,20 @@ const ManageFlats = () => {
 
         fetchData();
 
-        // Listen for flat assignment events
         const handleFlatAssigned = (event) => {
-            console.log('Flat assigned event received:', event.detail);
             fetchData();
         };
 
         window.addEventListener('flatAssigned', handleFlatAssigned);
-
-        return () => {
-            window.removeEventListener('flatAssigned', handleFlatAssigned);
-        };
+        return () => window.removeEventListener('flatAssigned', handleFlatAssigned);
     }, [dispatch]);
 
     // 📝 REACT HOOK FORM SETUP
-    const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
+    const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm({
         resolver: yupResolver(schema)
     });
+
+    const watchWing = watch('wingId');
 
     const onSubmit = async (data) => {
         try {
@@ -121,14 +116,14 @@ const ManageFlats = () => {
                 flatNumber: data.flatNumber,
                 wingId: data.wingId,
                 kitchen: data.kitchen,
-                capacity: data.capacity
+                ownerName: data.ownerName
             });
 
             if (res.success) {
-                dispatch(addFlat(res.data));
                 showToast.created(`Flat ${data.flatNumber} created successfully!`);
                 reset();
                 setShowAddModal(false);
+                window.location.reload();
             }
         } catch (err) {
             showToast.error(err.message || 'Failed to create flat');
@@ -147,10 +142,10 @@ const ManageFlats = () => {
     // [OWNERSHIP FLOW] - Get default owner name based on wing for display fallback
     const getExpectedOwner = (wingName) => {
         const name = wingName?.toUpperCase() || '';
-        if (name.includes('A')) return 'Ram';
-        if (name.includes('B')) return 'Riya';
-        if (name.includes('C')) return 'Priya';
-        if (name.includes('D')) return 'Himanshu';
+        if (name.endsWith('A')) return 'Ram';
+        if (name.endsWith('B')) return 'Riya';
+        if (name.endsWith('C')) return 'Priya';
+        if (name.endsWith('D')) return 'Himanshu';
         return 'Society Admin';
     };
 
@@ -368,9 +363,6 @@ const ManageFlats = () => {
                             <BarChart3 className="w-4 h-4" />
                         </button>
                     </div>
-                    <Button onClick={() => setShowOwnershipModal(true)} variant="secondary" icon={ShieldCheck}>
-                        Init Owners
-                    </Button>
                     <Button onClick={() => setShowAddModal(true)} icon={Plus}>
                         Add New Flat
                     </Button>
@@ -677,33 +669,34 @@ const ManageFlats = () => {
                                     )}
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700">Kitchen Type</label>
-                                        <div className="relative">
-                                            <Soup className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                            <select
-                                                {...register('kitchen')}
-                                                className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all font-medium text-slate-700"
-                                            >
-                                                <option value="1 Kitchen">1 Kitchen</option>
-                                                <option value="2 Kitchen">2 Kitchen</option>
-                                                <option value="Modular">Modular</option>
-                                                <option value="Open">Open</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700">Can stay (Max)</label>
-                                        <div className="relative">
-                                            <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                            <input
-                                                type="number"
-                                                {...register('capacity')}
-                                                placeholder="e.g. 4"
-                                                className={`w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border ${errors.capacity ? 'border-rose-300' : 'border-transparent'} focus:bg-white focus:border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all font-medium text-slate-700`}
-                                            />
-                                        </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-700">Owner Name</label>
+                                    <input
+                                        {...register('ownerName')}
+                                        placeholder="e.g. Yuvraj, Vivek"
+                                        className={`w-full px-4 py-3 rounded-xl bg-slate-50 border ${errors.ownerName ? 'border-rose-300 focus:border-rose-400' : 'border-transparent focus:border-indigo-200'} focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all font-medium text-slate-700`}
+                                    />
+                                    {errors.ownerName && (
+                                        <p className="text-rose-500 text-sm flex items-center gap-1">
+                                            <AlertCircle className="w-4 h-4" />
+                                            {errors.ownerName.message}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-700">Kitchen Type</label>
+                                    <div className="relative">
+                                        <Soup className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                        <select
+                                            {...register('kitchen')}
+                                            className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all font-medium text-slate-700"
+                                        >
+                                            <option value="1 Kitchen">1 Kitchen</option>
+                                            <option value="2 Kitchen">2 Kitchen</option>
+                                            <option value="Modular">Modular</option>
+                                            <option value="Open">Open</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -769,19 +762,12 @@ const ManageFlats = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                                 <div className="space-y-1">
                                     <p className="text-[10px] uppercase tracking-widest text-slate-400 font-black">Kitchen Type</p>
                                     <div className="flex items-center gap-2 text-slate-700">
                                         <Soup className="w-4 h-4 text-orange-500" />
                                         <p className="font-bold">{selectedFlatForDetails.kitchen || 'Standard'}</p>
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-[10px] uppercase tracking-widest text-slate-400 font-black">Max Capacity</p>
-                                    <div className="flex items-center gap-2 text-slate-700">
-                                        <Users className="w-4 h-4 text-blue-500" />
-                                        <p className="font-bold">{selectedFlatForDetails.capacity || '4'} Persons</p>
                                     </div>
                                 </div>
                             </div>

@@ -225,7 +225,7 @@ const WingsLayout = () => {
                         className="py-4 flex items-center justify-center gap-2 group-hover:scale-105"
                       >
                         {user ? <UserCheck size={18} /> : <Lock size={18} />}
-                        {user ? "Request Access" : "Sign Up"}
+                        {user ? (flat.isOccupied ? "Request Transfer" : "Request Access") : "Sign Up"}
                       </Button>
                     </Link>
                   </Card>

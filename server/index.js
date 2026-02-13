@@ -34,7 +34,7 @@ app.use(
 
 
 /* ================= MIDDLEWARE ================= */
-app.use(express.json());
+app.use(express.json({ strict: false }));
 app.use(cookieParser());
 
 /* ================= ROUTES ================= */
