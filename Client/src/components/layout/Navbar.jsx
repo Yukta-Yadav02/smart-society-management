@@ -158,7 +158,7 @@ const Navbar = () => {
                                     </div>
                                     <div className="hidden sm:flex flex-col items-start ml-2">
                                         <span className={`text-xs font-black tracking-tight ${(scrolled || !isHomePage) ? 'text-gray-900' : 'text-white'}`}>
-                                            {user.name.split(' ')[0]}
+                                            {user?.name?.split(' ')[0]}
                                         </span>
                                         <span className={`text-[10px] font-bold uppercase tracking-widest ${(scrolled || !isHomePage) ? 'text-primary-400' : 'text-white/70'}`}>
                                             {user.role ? (user.role.charAt(0) + user.role.slice(1).toLowerCase()) : ''}
