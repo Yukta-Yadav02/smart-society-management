@@ -45,7 +45,7 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 pt-24 pb-8">
             <div className="max-w-md w-full">
                 <div className="text-center mb-10">
                     <div className="inline-flex items-center justify-center p-3 bg-primary-600 rounded-2xl shadow-xl shadow-primary-200 mb-4">

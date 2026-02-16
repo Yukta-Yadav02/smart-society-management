@@ -255,49 +255,49 @@ const Maintenance = () => {
         icon={CreditCard}
         maxWidth="max-w-lg"
       >
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Bill Details Card */}
-          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-8 rounded-3xl border-2 border-indigo-100 shadow-lg">
-            <div className="text-center mb-6">
-              <p className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-2">You are paying for</p>
-              <h3 className="text-3xl font-black text-indigo-900 uppercase tracking-tight">{selectedBill?.period || `${selectedBill?.month || ''} ${selectedBill?.year || ''}`}</h3>
+          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-4 sm:p-8 rounded-3xl border-2 border-indigo-100 shadow-lg">
+            <div className="text-center mb-4 sm:mb-6">
+              <p className="text-[10px] sm:text-xs font-black text-indigo-400 uppercase tracking-widest mb-2">You are paying for</p>
+              <h3 className="text-xl sm:text-3xl font-black text-indigo-900 uppercase tracking-tight">{selectedBill?.period || `${selectedBill?.month || ''} ${selectedBill?.year || ''}`}</h3>
             </div>
             
-            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-indigo-200/50">
-              <div className="flex justify-between items-baseline">
-                <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Total Amount</span>
+            <div className="bg-white/80 backdrop-blur-sm p-4 sm:p-6 rounded-2xl border border-indigo-200/50">
+              <div className="flex justify-between items-baseline gap-2">
+                <span className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wider">Total Amount</span>
                 <div className="text-right">
-                  <span className="text-5xl font-black text-indigo-600 tracking-tighter">₹{selectedBill?.amount}</span>
+                  <span className="text-3xl sm:text-5xl font-black text-indigo-600 tracking-tighter">₹{selectedBill?.amount}</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Warning Notice */}
-          <div className="bg-amber-50 p-5 rounded-2xl flex gap-4 items-start border-2 border-amber-200">
-            <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center shrink-0">
-              <Clock className="text-white" size={20} />
+          <div className="bg-amber-50 p-3 sm:p-5 rounded-2xl flex gap-3 sm:gap-4 items-start border-2 border-amber-200">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-amber-500 flex items-center justify-center shrink-0">
+              <Clock className="text-white" size={18} />
             </div>
             <div>
-              <p className="text-sm font-black text-amber-900 mb-1">Important Notice</p>
-              <p className="text-xs text-amber-700 font-medium leading-relaxed">
+              <p className="text-xs sm:text-sm font-black text-amber-900 mb-1">Important Notice</p>
+              <p className="text-[10px] sm:text-xs text-amber-700 font-medium leading-relaxed">
                 By clicking "Confirm Payment", your payment will be processed instantly and the admin will be notified automatically. This action cannot be undone.
               </p>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4 pt-2">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2">
             <button
               onClick={() => setShowPaymentModal(false)}
-              className="flex-1 py-4 px-6 font-black text-slate-500 hover:bg-slate-100 rounded-2xl transition-all uppercase tracking-widest text-xs border-2 border-slate-200"
+              className="flex-1 py-3 sm:py-4 px-4 sm:px-6 font-black text-slate-500 hover:bg-slate-100 rounded-2xl transition-all uppercase tracking-widest text-[10px] sm:text-xs border-2 border-slate-200"
             >
               ✕ Cancel
             </button>
             <button
               onClick={confirmPayment}
               disabled={!selectedBill}
-              className="flex-[2] py-4 px-6 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-black rounded-2xl shadow-xl shadow-emerald-200 hover:shadow-2xl transition-all uppercase tracking-widest text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 sm:flex-[2] py-3 sm:py-4 px-4 sm:px-6 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-black rounded-2xl shadow-xl shadow-emerald-200 hover:shadow-2xl transition-all uppercase tracking-widest text-[10px] sm:text-xs disabled:opacity-50 disabled:cursor-not-allowed"
             >
               ✓ Confirm Payment
             </button>
