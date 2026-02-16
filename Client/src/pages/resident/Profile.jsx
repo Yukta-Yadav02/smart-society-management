@@ -4,7 +4,10 @@ import {
   Home,
   Phone,
   Mail,
-  UserCircle
+  UserCircle,
+  Edit2,
+  Check,
+  X
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
@@ -23,10 +26,19 @@ const Profile = () => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.profile.data);
   const [loading, setLoading] = useState(true);
+  const [phone, setPhone] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  useEffect(() => {
+    if (user?.phone) {
+      setPhone(user.phone);
+    }
+  }, [user]);
 
   const fetchProfile = async () => {
     try {
@@ -39,6 +51,29 @@ const Profile = () => {
       toast.error('Failed to load profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdatePhone = async () => {
+    if (!phone || phone === user?.phone) {
+      setIsEditing(false);
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      const response = await apiConnector('PUT', AUTH_API.UPDATE_PROFILE, { phone });
+      if (response.success) {
+        dispatch(updateProfile(response.data));
+        toast.success('Phone number updated successfully!');
+        setIsEditing(false);
+      } else {
+        toast.error(response.message || 'Failed to update phone');
+      }
+    } catch (error) {
+      toast.error('Failed to update phone number');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -83,7 +118,50 @@ const Profile = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <Input label="Full Name" value={user?.name || ''} disabled={true} icon={User} />
               <Input label="Email Address" value={user?.email || ''} disabled={true} icon={Mail} />
-              <Input label="Phone Number" value={user?.phone || ''} disabled={true} icon={Phone} />
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Phone Number</label>
+                <div className="relative flex gap-2">
+                  <div className="relative flex-1">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      disabled={!isEditing}
+                      className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-100 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                  {!isEditing ? (
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="px-4 py-3 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all flex items-center gap-2 font-bold"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleUpdatePhone}
+                        disabled={updating}
+                        className="px-4 py-3 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 transition-all flex items-center gap-2 font-bold disabled:opacity-50"
+                      >
+                        <Check size={16} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsEditing(false);
+                          setPhone(user?.phone || '');
+                        }}
+                        className="px-4 py-3 bg-slate-600 text-white rounded-2xl hover:bg-slate-700 transition-all flex items-center gap-2 font-bold"
+                      >
+                        <X size={16} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+              
               <Input label="Role" value={user?.role || 'RESIDENT'} disabled={true} icon={UserCircle} />
               <Input label="Assigned Wing" value={user?.flat?.wing?.name || '-'} disabled={true} icon={Home} />
               <Input label="Flat Number" value={user?.flat?.flatNumber || '-'} disabled={true} icon={Home} />

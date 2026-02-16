@@ -11,6 +11,7 @@ export const AUTH_API = {
   REGISTER_RESIDENT: BASE_URL + "/auth/register",
   CREATE_SECURITY: BASE_URL + "/auth/create-security",
   GET_PROFILE: BASE_URL + "/auth/profile",
+  UPDATE_PROFILE: BASE_URL + "/auth/profile",
   GET_ALL_RESIDENTS: BASE_URL + "/auth/residents",
   UPDATE_RESIDENT: (id) => BASE_URL + `/auth/update-resident/${id}`,
   DELETE_USER: (id) => BASE_URL + `/auth/delete-user/${id}`,

@@ -45,34 +45,25 @@ const AddVisitor = () => {
         // Active visitors count
         const activeCount = activeVisitors.length;
 
-        // Peak hours calculation from today's history
+        // Peak hours - show exact time of most recent entry
         const todayEntries = allVisitors.filter(v =>
           new Date(v.entryTime).toDateString() === today
         );
 
-        const hourCounts = {};
-        todayEntries.forEach(v => {
-          const hour = new Date(v.entryTime).getHours();
-          hourCounts[hour] = (hourCounts[hour] || 0) + 1;
-        });
-
         let peakHours = '-';
-        if (Object.keys(hourCounts).length > 0) {
-          const peakHour = Object.keys(hourCounts).reduce((a, b) =>
-            hourCounts[a] > hourCounts[b] ? a : b
+        if (todayEntries.length > 0) {
+          const latestEntry = todayEntries.reduce((latest, v) => 
+            new Date(v.entryTime) > new Date(latest.entryTime) ? v : latest
           );
-
-          const maxCount = hourCounts[peakHour];
           
-          // Convert to 12-hour format
-          const formatHour = (hour) => {
-            const h = parseInt(hour);
-            const period = h >= 12 ? 'PM' : 'AM';
-            const displayHour = h === 0 ? 12 : h > 12 ? h - 12 : h;
-            return `${displayHour}:00 ${period}`;
-          };
-
-          peakHours = `${formatHour(peakHour)} - ${formatHour(parseInt(peakHour) + 1)} (${maxCount})`;
+          const entryDate = new Date(latestEntry.entryTime);
+          const hours = entryDate.getHours();
+          const minutes = entryDate.getMinutes();
+          const period = hours >= 12 ? 'PM' : 'AM';
+          const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+          const displayMinutes = minutes.toString().padStart(2, '0');
+          
+          peakHours = `${displayHour}:${displayMinutes} ${period} (${todayEntries.length})`;
         }
 
         setVisitorStats({ todayVisitors, activeVisitors: activeCount, peakHours });

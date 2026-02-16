@@ -51,8 +51,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
   ];
 
   const securityMenuItems = [
-    { name: 'Add Visitor', icon: UserPlus, path: '/security/add-visitor' },
-    { name: 'Exit Visitor', icon: UserMinus, path: '/security/exit-visitor' },
+    { name: 'Visitor Management', icon: UserPlus, path: '/security/visitors' },
     { name: 'Visitor History', icon: History, path: '/security/visitor-history' },
     { name: 'Profile', icon: UserCircle, path: '/security/profile' },
   ];
@@ -68,7 +67,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     dashboardPath = '/resident/dashboard';
   } else if (isSecurity) {
     menuItems = securityMenuItems;
-    dashboardPath = '/security/add-visitor';
+    dashboardPath = '/security/visitors';
   }
 
   // Handle link click on mobile

@@ -309,6 +309,47 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+// Update user profile (phone number)
+exports.updateProfile = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    if (phone) user.phone = phone;
+    await user.save();
+
+    const updatedUser = await User.findById(req.user.id)
+      .populate('flat', 'flatNumber wing')
+      .populate({
+        path: 'flat',
+        populate: {
+          path: 'wing',
+          select: 'name'
+        }
+      })
+      .select("-password");
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      data: updatedUser
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update profile",
+      error: error.message
+    });
+  }
+};
+
 // Update old RENTAL or other values to TENANT
 exports.updateResidentTypes = async (req, res) => {
   try {

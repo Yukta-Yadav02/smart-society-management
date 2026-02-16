@@ -25,8 +25,7 @@ import AdminNotices from '../pages/admin/Notices';
 import AdminProfile from '../pages/admin/Profile'; // Original Rich Admin Profile
 
 // Security Pages
-import AddVisitor from '../pages/security/AddVisitor';
-import ExitVisitor from '../pages/security/ExitVisitor';
+import VisitorManagement from '../pages/security/VisitorManagement';
 import VisitorHistory from '../pages/security/VisitorHistory';
 import SecurityProfile from '../pages/security/Profile';
 
@@ -68,10 +67,9 @@ const router = createBrowserRouter([
         path: '/security',
         element: <DashboardLayout />,
         children: [
-            { index: true, element: <Navigate to="/security/add-visitor" replace /> },
-            { path: 'dashboard', element: <Navigate to="/security/add-visitor" replace /> },
-            { path: 'add-visitor', element: <AddVisitor /> },
-            { path: 'exit-visitor', element: <ExitVisitor /> },
+            { index: true, element: <Navigate to="/security/visitors" replace /> },
+            { path: 'dashboard', element: <Navigate to="/security/visitors" replace /> },
+            { path: 'visitors', element: <VisitorManagement /> },
             { path: 'visitor-history', element: <VisitorHistory /> },
             { path: 'profile', element: <SecurityProfile /> },
         ],
