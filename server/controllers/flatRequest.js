@@ -1,8 +1,7 @@
-// controllers/flatRequestController.js
-// [OWNERSHIP FLOW] - Correct model import
 const FlatRequest = require("../models/flatRequest");
 const Flat = require("../models/Flat");
 const User = require("../models/User");
+const Maintenance = require("../models/Maintenance");
 
 /* 1. User applies for flat */
 exports.createFlatRequest = async (req, res) => {
@@ -147,6 +146,21 @@ exports.residentOpinion = async (req, res) => {
         success: false,
         message: "Already responded",
       });
+    }
+
+    // Check pending maintenance before accepting
+    if (response === "Accepted") {
+      const pendingMaintenance = await Maintenance.countDocuments({
+        flat: request.flat._id,
+        status: "UNPAID"
+      });
+
+      if (pendingMaintenance > 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Please clear all pending maintenance payments before accepting transfer request",
+        });
+      }
     }
 
     request.residentOpinion = response;
