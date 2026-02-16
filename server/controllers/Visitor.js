@@ -121,27 +121,36 @@ exports.getActiveVisitors = async (req, res) => {
   }
 };
 
-// optional
-// exports.getMyFlatVisitors = async (req, res) => {
-//   try {
-//     if (!req.user.flat) {
-//       return res.status(403).json({
-//         success: false,
-//         message: "Flat not assigned",
-//       });
-//     }
+// Get peak hours
+exports.getPeakHours = async (req, res) => {
+  try {
+    const visitors = await Visitor.find();
+    const hourlyCount = {};
 
-//     const visitors = await Visitor.find({ flat: req.user.flat })
-//       .sort({ createdAt: -1 });
+    visitors.forEach((visitor) => {
+      const hour = new Date(visitor.entryTime).getHours();
+      if (hour >= 12 && hour < 13) {
+        hourlyCount[hour] = (hourlyCount[hour] || 0) + 1;
+      }
+    });
 
-//     res.status(200).json({
-//       success: true,
-//       data: visitors,
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       message: "Failed to fetch visitors",
-//     });
-//   }
-// };
+    const peakHours = Object.entries(hourlyCount).map(([hour, count]) => {
+      const h = parseInt(hour);
+      if (count === 1) {
+        const period = h >= 12 ? "PM" : "AM";
+        const displayHour = h > 12 ? h - 12 : h === 0 ? 12 : h;
+        return { time: `${displayHour}:00 ${period}`, count };
+      } else {
+        const period1 = h >= 12 ? "PM" : "AM";
+        const period2 = (h + 1) >= 12 ? "PM" : "AM";
+        const displayHour1 = h > 12 ? h - 12 : h === 0 ? 12 : h;
+        const displayHour2 = (h + 1) > 12 ? (h + 1) - 12 : (h + 1) === 0 ? 12 : (h + 1);
+        return { time: `${displayHour1}:00 ${period1} - ${displayHour2}:00 ${period2}`, count };
+      }
+    });
+
+    res.status(200).json({ success: true, data: peakHours });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to fetch peak hours" });
+  }
+};

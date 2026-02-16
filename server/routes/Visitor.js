@@ -7,6 +7,7 @@ const {
   markVisitorExit,
   getAllVisitorsHistory,
   getActiveVisitors,
+  getPeakHours,
 } = require("../controllers/Visitor");
 
 const { protect, authorizeRoles } = require("../middelware/auth");
@@ -40,6 +41,14 @@ router.get(
   protect,
   authorizeRoles("SECURITY"),
   getActiveVisitors
+);
+
+// Get peak hours
+router.get(
+  "/peak-hours",
+  protect,
+  authorizeRoles("SECURITY"),
+  getPeakHours
 );
 
 // // RESIDENT
