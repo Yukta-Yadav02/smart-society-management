@@ -27,34 +27,55 @@ const AddVisitor = () => {
 
   const updateVisitorStats = async () => {
     try {
-      const res = await apiConnector("GET", VISITOR_API.GET_ACTIVE);
+      // Fetch active visitors
+      const activeRes = await apiConnector("GET", VISITOR_API.GET_ACTIVE);
+      // Fetch history for peak hours calculation
+      const historyRes = await apiConnector("GET", VISITOR_API.GET_HISTORY);
 
-      if (res.success) {
-        const visitors = res.data || [];
+      if (activeRes.success) {
+        const activeVisitors = activeRes.data || [];
+        const allVisitors = historyRes.success ? historyRes.data || [] : [];
         const today = new Date().toDateString();
 
-        // Today's visitors
-        const todayVisitors = visitors.filter(v =>
+        // Today's visitors from history
+        const todayVisitors = allVisitors.filter(v =>
           new Date(v.entryTime).toDateString() === today
         ).length;
 
-        // Active visitors (all visitors in localStorage are active)
-        const activeVisitors = visitors.length;
+        // Active visitors count
+        const activeCount = activeVisitors.length;
 
-        // Peak hours calculation
+        // Peak hours calculation from today's history
+        const todayEntries = allVisitors.filter(v =>
+          new Date(v.entryTime).toDateString() === today
+        );
+
         const hourCounts = {};
-        visitors.forEach(v => {
+        todayEntries.forEach(v => {
           const hour = new Date(v.entryTime).getHours();
           hourCounts[hour] = (hourCounts[hour] || 0) + 1;
         });
 
-        const peakHour = Object.keys(hourCounts).reduce((a, b) =>
-          hourCounts[a] > hourCounts[b] ? a : b, '0'
-        );
+        let peakHours = '-';
+        if (Object.keys(hourCounts).length > 0) {
+          const peakHour = Object.keys(hourCounts).reduce((a, b) =>
+            hourCounts[a] > hourCounts[b] ? a : b
+          );
 
-        const peakHours = visitors.length > 0 ? `${peakHour}:00-${parseInt(peakHour) + 1}:00` : '-';
+          const maxCount = hourCounts[peakHour];
+          
+          // Convert to 12-hour format
+          const formatHour = (hour) => {
+            const h = parseInt(hour);
+            const period = h >= 12 ? 'PM' : 'AM';
+            const displayHour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+            return `${displayHour}:00 ${period}`;
+          };
 
-        setVisitorStats({ todayVisitors, activeVisitors, peakHours });
+          peakHours = `${formatHour(peakHour)} - ${formatHour(parseInt(peakHour) + 1)} (${maxCount})`;
+        }
+
+        setVisitorStats({ todayVisitors, activeVisitors: activeCount, peakHours });
       }
     } catch (error) {
       console.error('Failed to fetch visitor stats:', error);

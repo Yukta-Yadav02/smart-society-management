@@ -28,6 +28,7 @@ import AdminProfile from '../pages/admin/Profile'; // Original Rich Admin Profil
 import AddVisitor from '../pages/security/AddVisitor';
 import ExitVisitor from '../pages/security/ExitVisitor';
 import VisitorHistory from '../pages/security/VisitorHistory';
+import SecurityProfile from '../pages/security/Profile';
 
 // Resident Pages
 import ResidentDashboard from '../pages/resident/ResidentDashboard';
@@ -72,7 +73,7 @@ const router = createBrowserRouter([
             { path: 'add-visitor', element: <AddVisitor /> },
             { path: 'exit-visitor', element: <ExitVisitor /> },
             { path: 'visitor-history', element: <VisitorHistory /> },
-            { path: 'profile', element: <ProfilePage /> }, // Unified Profile for Security
+            { path: 'profile', element: <SecurityProfile /> },
         ],
     },
     {
