@@ -68,14 +68,12 @@ export const MAINTENANCE_API = {
   GENERATE: BASE_URL + "/maintenance/generate",
   GET_ALL: BASE_URL + "/maintenance/all",
   MY: BASE_URL + "/maintenance/my",
-  PAY: (id) =>
-    BASE_URL + `/maintenance/pay/${id}`,
-  // NEW: Admin route to toggle status
-  UPDATE_STATUS: (id) =>
-    BASE_URL + `/maintenance/${id}/status`,
-  DELETE: (id) =>
-    BASE_URL + `/maintenance/${id}`,
+  PAY: (id) => BASE_URL + `/maintenance/pay/${id}`,
+  UPDATE_STATUS: (id) => BASE_URL + `/maintenance/${id}/status`,
+  DELETE: (id) => BASE_URL + `/maintenance/${id}`,
   DELETE_ALL: BASE_URL + "/maintenance/delete-all",
+  REMIND: BASE_URL + "/maintenance/remind",
+  MARK_OVERDUE: BASE_URL + "/maintenance/mark-overdue",
 };
 
 /* ================= NOTICE ================= */

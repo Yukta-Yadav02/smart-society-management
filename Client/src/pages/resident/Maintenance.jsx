@@ -189,13 +189,16 @@ const Maintenance = () => {
         ) : (
           filteredRecords.map((bill) => (
             <Card key={bill._id || bill.id} className="p-2 overflow-hidden flex flex-col group">
-              <div className={`rounded-[2rem] p-8 flex-1 ${bill.status === 'PAID' ? 'bg-emerald-50/20' : 'bg-rose-50/20'}`}>
+              <div className={`rounded-[2rem] p-8 flex-1 ${
+                bill.status === 'PAID' ? 'bg-emerald-50/20' :
+                bill.status === 'OVERDUE' ? 'bg-red-50/30' :
+                'bg-rose-50/20'}`}>
                 <div className="flex justify-between items-start mb-8">
                   <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
                     <Receipt size={24} />
                   </div>
-                  <Badge variant={bill.status === 'PAID' ? 'success' : 'warning'}>
-                    {bill.status === 'PAID' ? `PAID (${bill.paymentMode || 'ONLINE'})` : 'Unpaid'}
+                  <Badge variant={bill.status === 'PAID' ? 'success' : bill.status === 'OVERDUE' ? 'error' : 'warning'}>
+                    {bill.status === 'PAID' ? `PAID (${bill.paymentMode || 'ONLINE'})` : bill.status === 'OVERDUE' ? '🔴 OVERDUE' : 'Unpaid'}
                   </Badge>
                 </div>
 
@@ -226,14 +229,14 @@ const Maintenance = () => {
               </div>
 
               <div className="p-4">
-                {bill.status === 'UNPAID' ? (
+                {bill.status === 'UNPAID' || bill.status === 'OVERDUE' ? (
                   <Button
                     fullWidth
-                    className="py-4.5 shadow-xl shadow-indigo-100"
+                    className={`py-4.5 shadow-xl ${bill.status === 'OVERDUE' ? 'bg-red-500 hover:bg-red-600 shadow-red-100' : 'shadow-indigo-100'}`}
                     onClick={() => handlePaymentClick(bill)}
                     icon={CreditCard}
                   >
-                    Pay & Clear Due
+                    {bill.status === 'OVERDUE' ? '🔴 Pay Overdue Amount' : 'Pay & Clear Due'}
                   </Button>
                 ) : (
                   <button className="w-full py-4.5 rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600 font-bold text-[10px] uppercase tracking-widest cursor-default flex items-center justify-center gap-2">

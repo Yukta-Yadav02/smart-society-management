@@ -36,6 +36,25 @@ exports.createMaintenance = async (req, res) => {
     const cleanPeriod = period || `${month || ""} ${year || ""}`.trim();
     const { month: parsedMonth, year: parsedYear } = parsePeriod(cleanPeriod);
 
+    // Block future months only
+    if (parsedYear && parsedMonth) {
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonthIndex = now.getMonth();
+      const parsedMonthIndex = months.findIndex(m => m.toLowerCase() === parsedMonth.toLowerCase());
+
+      if (
+        parsedYear > currentYear ||
+        (parsedYear === currentYear && parsedMonthIndex > currentMonthIndex)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot create maintenance for future month. Current month is ${months[currentMonthIndex]} ${currentYear}.`
+        });
+      }
+    }
+
     // 1. Determine targets (which flats)
     let targetFlats = [];
     if (flat === "ALL") {
@@ -441,6 +460,73 @@ exports.payMaintenance = async (req, res) => {
       message: "Payment failed",
       error: error.message
     });
+  }
+};
+
+// ADMIN → Send payment reminder notices to all unpaid residents for a given period
+exports.sendPaymentReminders = async (req, res) => {
+  try {
+    const { period } = req.body;
+    if (!period) return res.status(400).json({ success: false, message: "Period required" });
+
+    const Notice = require("../models/Notice");
+
+    // Find all unpaid maintenance for this period
+    const unpaidRecords = await Maintenance.find({ period, status: "UNPAID" })
+      .populate({ path: "flat", select: "flatNumber currentResident", populate: { path: "currentResident", select: "name" } });
+
+    if (unpaidRecords.length === 0) {
+      return res.status(200).json({ success: true, message: "No unpaid records found for this period", count: 0 });
+    }
+
+    // Get unique flat IDs with unpaid bills
+    const flatIds = [...new Set(unpaidRecords.map(r => r.flat?._id?.toString()).filter(Boolean))];
+
+    // Create one notice per flat
+    const notices = flatIds.map(flatId => {
+      const record = unpaidRecords.find(r => r.flat?._id?.toString() === flatId);
+      return {
+        title: `⚠️ Payment Reminder - ${period}`,
+        message: `Dear Resident, your maintenance payment of ₹${record.amount} for ${period} is still pending. Please pay immediately to avoid any inconvenience.`,
+        flat: flatId,
+        createdBy: req.user.id,
+      };
+    });
+
+    await Notice.insertMany(notices);
+
+    res.status(200).json({
+      success: true,
+      message: `Reminder sent to ${flatIds.length} flat(s)`,
+      count: flatIds.length
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ADMIN → Mark previous month unpaid bills as OVERDUE
+exports.markOverdue = async (req, res) => {
+  try {
+    const now = new Date();
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const prevMonthIndex = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+    const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+    const prevPeriod = `${months[prevMonthIndex]} ${prevYear}`;
+
+    const result = await Maintenance.updateMany(
+      { period: prevPeriod, status: "UNPAID" },
+      { $set: { status: "OVERDUE" } }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: `${result.modifiedCount} record(s) marked as OVERDUE for ${prevPeriod}`,
+      count: result.modifiedCount,
+      period: prevPeriod
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

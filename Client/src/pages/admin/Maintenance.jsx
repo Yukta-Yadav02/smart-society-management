@@ -9,6 +9,7 @@ import {
     X,
     AlertCircle,
     IndianRupee,
+    Bell,
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
@@ -44,6 +45,7 @@ const Maintenance = () => {
     const records = useSelector((state) => state.maintenance.records);
     const flats = useSelector((state) => state.flats.items);
 
+    const [currentDateTime, setCurrentDateTime] = useState(new Date());
     const [showCommonModal, setShowCommonModal] = useState(false);
     const [showSpecialModal, setShowSpecialModal] = useState(false);
     const [filterStatus, setFilterStatus] = useState('All');
@@ -59,6 +61,12 @@ const Maintenance = () => {
     const [commonWingSearch, setCommonWingSearch] = useState('All');
     const [selectedCommonFlats, setSelectedCommonFlats] = useState([]);
     const [isAllCommonFlats, setIsAllCommonFlats] = useState(true);
+
+    // Real-time clock
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentDateTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     useEffect(() => {
         // Force clear maintenance data first
@@ -116,6 +124,16 @@ const Maintenance = () => {
 
     const commonForm = useForm({ resolver: yupResolver(commonSchema) });
     const specialForm = useForm({ resolver: yupResolver(specialSchema) });
+
+    // Auto-set current month when Common Bill modal opens
+    useEffect(() => {
+        if (showCommonModal) {
+            const now = new Date();
+            const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            const currentPeriod = `${months[now.getMonth()]} ${now.getFullYear()}`;
+            commonForm.setValue('period', currentPeriod);
+        }
+    }, [showCommonModal]);
 
     const onGenerateCommon = async (data) => {
         if (!isAllCommonFlats && selectedCommonFlats.length === 0) {
@@ -212,6 +230,54 @@ const Maintenance = () => {
         if (checked) setSelectedCommonFlats([]);
     };
 
+    // Deadline warning — days left in current month
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const daysLeft = daysInMonth - now.getDate();
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const currentPeriod = `${months[now.getMonth()]} ${now.getFullYear()}`;
+
+    // Unpaid count for current month
+    const currentMonthUnpaid = (records || []).filter(
+        r => r.period === currentPeriod && r.status === 'UNPAID'
+    );
+
+    const handleSendReminders = async () => {
+        if (currentMonthUnpaid.length === 0) {
+            toast.success('Sab residents ne payment kar di hai! 🎉');
+            return;
+        }
+        try {
+            const res = await apiConnector("POST", MAINTENANCE_API.REMIND, { period: currentPeriod });
+            if (res.success) {
+                toast.success(`✅ Reminder notice bhej di ${res.count} flat(s) ko!`, { duration: 4000 });
+            } else {
+                toast.error(res.message || 'Failed to send reminders');
+            }
+        } catch (err) {
+            toast.error('Failed to send reminders');
+        }
+    };
+
+    // Overdue records (previous months unpaid)
+    const overdueRecords = (records || []).filter(r => r.status === 'OVERDUE');
+
+    const handleMarkOverdue = async () => {
+        if (!window.confirm('Pichle month ke saare unpaid bills OVERDUE mark ho jayenge. Confirm?')) return;
+        try {
+            const res = await apiConnector("POST", MAINTENANCE_API.MARK_OVERDUE, {});
+            if (res.success) {
+                toast.success(`🔴 ${res.count} bill(s) OVERDUE mark ho gaye (${res.period})`, { duration: 4000 });
+                const maintenanceRes = await apiConnector("GET", MAINTENANCE_API.GET_ALL);
+                if (maintenanceRes.success) dispatch(setMaintenance(maintenanceRes.data));
+            } else {
+                toast.error(res.message || 'Failed to mark overdue');
+            }
+        } catch (err) {
+            toast.error('Failed to mark overdue');
+        }
+    };
+
     const toggleStatus = async (id, currentStatus) => {
         try {
             const newStatus = currentStatus.toUpperCase() === 'PAID' ? 'UNPAID' : 'PAID';
@@ -229,6 +295,7 @@ const Maintenance = () => {
         const matchesStatus = filterStatus === 'All' ||
             (filterStatus === 'Paid' && r.status === 'PAID') ||
             (filterStatus === 'Unpaid' && r.status === 'UNPAID') ||
+            (filterStatus === 'Overdue' && r.status === 'OVERDUE') ||
             (filterStatus === 'Vacant' && !r.flat?.resident?.name);
 
         const matchesMonth = filterMonth === 'All' ||
@@ -314,8 +381,24 @@ const Maintenance = () => {
                 <div>
                     <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Maintenance Management</h1>
                     <p className="text-slate-500 mt-1">Generate bills and track payment status for society records.</p>
+                    <div className="mt-2 flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-xl">
+                            📅 {currentDateTime.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-xl">
+                            🕐 {currentDateTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-xl">
+                            🗓️ Current Month: {currentDateTime.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
+                        </span>
+                    </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                    {overdueRecords.length === 0 && (
+                        <button onClick={handleMarkOverdue} className="bg-red-50 hover:bg-red-100 text-red-600 px-5 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all border border-red-200 text-sm shadow-sm">
+                            🔴 Mark Overdue
+                        </button>
+                    )}
                     <button onClick={() => setShowCommonModal(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-100 border border-indigo-500 text-sm">
                         <Users className="w-4 h-4" /> Common Bill
                     </button>
@@ -324,6 +407,64 @@ const Maintenance = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Deadline Warning Banner */}
+            {daysLeft <= 3 && currentMonthUnpaid.length > 0 && (
+                <div className={`mb-6 p-5 rounded-2xl border-2 flex flex-col md:flex-row items-start md:items-center justify-between gap-4
+                    ${daysLeft === 0 ? 'bg-red-50 border-red-300' : daysLeft === 1 ? 'bg-orange-50 border-orange-300' : 'bg-amber-50 border-amber-200'}`}>
+                    <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-lg
+                            ${daysLeft === 0 ? 'bg-red-500' : daysLeft === 1 ? 'bg-orange-500' : 'bg-amber-500'}`}>
+                            {daysLeft === 0 ? '🔴' : '⚠️'}
+                        </div>
+                        <div>
+                            <p className={`font-black text-sm
+                                ${daysLeft === 0 ? 'text-red-800' : daysLeft === 1 ? 'text-orange-800' : 'text-amber-800'}`}>
+                                {daysLeft === 0
+                                    ? `🔴 Aaj ${currentPeriod} ka last day hai!`
+                                    : `⚠️ Sirf ${daysLeft} din bacha hai — ${currentPeriod} khatam hone wala hai!`}
+                            </p>
+                            <p className={`text-xs font-medium mt-0.5
+                                ${daysLeft === 0 ? 'text-red-600' : daysLeft === 1 ? 'text-orange-600' : 'text-amber-600'}`}>
+                                {currentMonthUnpaid.length} flat(s) ka payment abhi bhi pending hai
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleSendReminders}
+                        className={`flex items-center gap-2 px-5 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-white shadow-lg transition-all hover:scale-105 active:scale-95 shrink-0
+                            ${daysLeft === 0 ? 'bg-red-500 hover:bg-red-600 shadow-red-200' : daysLeft === 1 ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-200' : 'bg-amber-500 hover:bg-amber-600 shadow-amber-200'}`}
+                    >
+                        <Bell className="w-4 h-4" />
+                        Send Reminder to {currentMonthUnpaid.length} Unpaid Flat(s)
+                    </button>
+                </div>
+            )}
+
+            {/* Overdue Banner */}
+            {overdueRecords.length > 0 && (
+                <div className="mb-6 p-5 rounded-2xl border-2 bg-red-50 border-red-300 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-red-500 text-white flex items-center justify-center text-lg shadow-lg">
+                            🔴
+                        </div>
+                        <div>
+                            <p className="font-black text-sm text-red-800">
+                                {overdueRecords.length} flat(s) ka payment OVERDUE hai!
+                            </p>
+                            <p className="text-xs text-red-600 font-medium mt-0.5">
+                                Pichle month ka payment abhi tak nahi hua — turant action lo
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setFilterStatus('Overdue')}
+                        className="flex items-center gap-2 px-5 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-200 transition-all hover:scale-105 shrink-0"
+                    >
+                        🔴 View Overdue Flats
+                    </button>
+                </div>
+            )}
 
             {/* Type Selector Tabs */}
             <div className="flex p-1.5 bg-slate-100/80 rounded-2xl w-fit mb-8 backdrop-blur-sm border border-slate-200/50">
@@ -405,7 +546,7 @@ const Maintenance = () => {
                                     <div>
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Status</label>
                                         <div className="flex gap-2">
-                                            {['All', 'Paid', 'Unpaid'].map(status => (
+                                            {['All', 'Paid', 'Unpaid', 'Overdue'].map(status => (
                                                 <button
                                                     key={status}
                                                     onClick={() => setFilterStatus(status)}
@@ -538,13 +679,13 @@ const Maintenance = () => {
                     {filteredRecords.map((r) => (
                         <div key={r._id || r.id} className="group relative bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-indigo-100/50 transition-all duration-500 overflow-hidden hover:-translate-y-1">
                             {/* Top Accent Bar */}
-                            <div className={`h-1.5 w-full ${r.status === 'PAID' ? 'bg-gradient-to-r from-emerald-400 to-teal-500' : 'bg-gradient-to-r from-amber-400 to-orange-500'}`} />
+                            <div className={`h-1.5 w-full ${r.status === 'PAID' ? 'bg-gradient-to-r from-emerald-400 to-teal-500' : r.status === 'OVERDUE' ? 'bg-gradient-to-r from-red-500 to-rose-600' : 'bg-gradient-to-r from-amber-400 to-orange-500'}`} />
 
                             <div className="p-6">
                                 {/* Card Header */}
                                 <div className="flex justify-between items-start mb-5">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shadow-inner ${r.status === 'PAID' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shadow-inner ${r.status === 'PAID' ? 'bg-emerald-50 text-emerald-600' : r.status === 'OVERDUE' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
                                             {r.flat?.flatNumber || '-'}
                                         </div>
                                         <div>
@@ -586,10 +727,15 @@ const Maintenance = () => {
                                     <button
                                         onClick={() => toggleStatus(r._id || r.id, r.status === 'PAID' ? 'Paid' : 'Unpaid')}
                                         title={r.status === 'PAID' ? "Mark as UNPAID" : "Mark as PAID"}
-                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 ${r.status === 'PAID' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600 border border-amber-200/50'}`}
+                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 ${
+                                            r.status === 'PAID' ? 'bg-emerald-50 text-emerald-600' :
+                                            r.status === 'OVERDUE' ? 'bg-red-50 text-red-600 border border-red-200' :
+                                            'bg-amber-50 text-amber-600 border border-amber-200/50'}`}
                                     >
                                         {r.status === 'PAID' ? (
                                             <><CheckCircle2 className="w-3 h-3" /> PAID ({r.paymentMode || 'ONLINE'})</>
+                                        ) : r.status === 'OVERDUE' ? (
+                                            <><AlertCircle className="w-3 h-3" /> OVERDUE</>
                                         ) : (
                                             <><Clock className="w-3 h-3" /> Pending</>
                                         )}
@@ -606,12 +752,14 @@ const Maintenance = () => {
                                 )}
 
                                 {/* Quick Action Section */}
-                                {r.status === 'UNPAID' ? (
+                                {r.status === 'UNPAID' || r.status === 'OVERDUE' ? (
                                     <button
                                         onClick={() => toggleStatus(r._id || r.id, 'Unpaid')}
-                                        className="w-full mt-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-100 transition-all flex items-center justify-center gap-2"
+                                        className={`w-full mt-4 py-3 text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg transition-all flex items-center justify-center gap-2
+                                            ${r.status === 'OVERDUE' ? 'bg-red-500 hover:bg-red-600 shadow-red-100' : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-100'}`}
                                     >
-                                        <IndianRupee className="w-3 h-3" /> Collect Cash
+                                        <IndianRupee className="w-3 h-3" />
+                                        {r.status === 'OVERDUE' ? 'Collect Overdue Cash' : 'Collect Cash'}
                                     </button>
                                 ) : (
                                     <div className="w-full mt-4 py-3 bg-emerald-50 border border-emerald-100 text-emerald-600 font-black text-[10px] uppercase tracking-widest rounded-xl flex items-center justify-center gap-2">
@@ -716,31 +864,46 @@ const Maintenance = () => {
                                         {(() => {
                                             const now = new Date();
                                             const currentYear = now.getFullYear();
-                                            const currentMonth = now.getMonth();
+                                            const currentMonth = now.getMonth(); // 0-based
                                             const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                                            const startYear = 2026;
-                                            const endYear = Math.max(currentYear + 2, startYear + 2);
+                                            const startYear = currentYear;
+                                            const endYear = currentYear + 2;
                                             const options = [];
-                                            
+
+                                            // Show current month + all future months (up to 2 years ahead)
                                             for (let year = startYear; year <= endYear; year++) {
                                                 const startMonth = (year === currentYear) ? currentMonth : 0;
                                                 for (let month = startMonth; month < 12; month++) {
-                                                    options.push({ month: months[month], year, display: `${months[month].slice(0, 3)} ${year}` });
+                                                    const isFuture = year > currentYear || (year === currentYear && month > currentMonth);
+                                                    options.push({ month: months[month], year, display: `${months[month].slice(0, 3)} ${year}`, isFuture });
                                                 }
                                             }
-                                            
-                                            return options.map((opt, idx) => (
-                                                <button
-                                                    key={idx}
-                                                    type="button"
-                                                    onClick={() => commonForm.setValue('period', `${opt.month} ${opt.year}`)}
-                                                    className="px-4 py-3 rounded-xl text-xs font-bold bg-white hover:bg-indigo-600 hover:text-white border border-slate-200 hover:border-indigo-600 transition-all shadow-sm hover:shadow-md hover:scale-105 active:scale-95"
-                                                >
-                                                    {opt.display}
-                                                </button>
-                                            ));
+
+                                            return options.map((opt, idx) => {
+                                                const isCurrentMonth = !opt.isFuture;
+                                                const isSelected = commonForm.watch('period') === `${opt.month} ${opt.year}`;
+                                                return (
+                                                    <button
+                                                        key={idx}
+                                                        type="button"
+                                                        disabled={opt.isFuture}
+                                                        onClick={() => !opt.isFuture && commonForm.setValue('period', `${opt.month} ${opt.year}`)}
+                                                        title={opt.isFuture ? `🔒 Available from ${opt.display}` : `Select ${opt.display}`}
+                                                        className={`px-4 py-3 rounded-xl text-xs font-bold transition-all relative
+                                                            ${opt.isFuture
+                                                                ? 'bg-slate-100 text-slate-300 border border-slate-200 cursor-not-allowed'
+                                                                : isSelected
+                                                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md scale-95'
+                                                                    : 'bg-emerald-500 text-white border-emerald-500 shadow-md ring-2 ring-emerald-300 hover:scale-105'}`}
+                                                    >
+                                                        {opt.isFuture && <span className="absolute -top-1 -right-1 text-[8px]">🔒</span>}
+                                                        {opt.display}
+                                                    </button>
+                                                );
+                                            });
                                         })()}
                                     </div>
+                                    <p className="text-[10px] text-emerald-600 font-bold ml-1">🟢 Green = Current Month &nbsp;|&nbsp; 🔒 Grey = Future (not yet available)</p>
                                 </div>
 
                                 <div className="space-y-2">

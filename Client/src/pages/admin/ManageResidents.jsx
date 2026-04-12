@@ -282,12 +282,18 @@ const ManageResidents = () => {
                                         </div>
                                         <div>
                                             <h3 className="text-lg font-black text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{res.name}</h3>
-                                            <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest mt-1 inline-block ${((res.residentType || '').toUpperCase() === 'TENANT' || (res.type || '').toLowerCase() === 'tenant' || (res.residentType || '').toUpperCase() === 'RENTAL')
-                                                ? 'bg-amber-100 text-amber-600'
-                                                : 'bg-indigo-100 text-indigo-600'
+                                            <div className="flex gap-1 mt-1 flex-wrap">
+                                                {res.role === 'ADMIN' && (
+                                                    <span className="text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest bg-purple-100 text-purple-600">Secretary</span>
+                                                )}
+                                                <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${
+                                                    ((res.residentType || '').toUpperCase() === 'TENANT' || (res.type || '').toLowerCase() === 'tenant' || (res.residentType || '').toUpperCase() === 'RENTAL')
+                                                    ? 'bg-amber-100 text-amber-600'
+                                                    : 'bg-indigo-100 text-indigo-600'
                                                 }`}>
-                                                {((res.residentType || '').toUpperCase() === 'TENANT' || (res.type || '').toLowerCase() === 'tenant' || (res.residentType || '').toUpperCase() === 'RENTAL') ? 'Tenant' : 'Owner'}
-                                            </span>
+                                                    {((res.residentType || '').toUpperCase() === 'TENANT' || (res.type || '').toLowerCase() === 'tenant' || (res.residentType || '').toUpperCase() === 'RENTAL') ? 'Tenant' : 'Owner'}
+                                                </span>
+                                            </div>
 
                                         </div>
                                     </div>

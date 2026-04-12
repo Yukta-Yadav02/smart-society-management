@@ -178,6 +178,12 @@ exports.assignFlat = async (req, res) => {
             { new: true }
         ).populate("currentResident", "name email").populate("owner", "name email");
 
+        // Save flatAssignedDate on User so getMyMaintenance filter works correctly
+        await User.findByIdAndUpdate(residentId, {
+            flat: flatId,
+            flatAssignedDate: new Date()
+        });
+
         return res.status(200).json({
             success: true,
             message: "Flat assigned successfully",
@@ -215,6 +221,14 @@ exports.vacateFlat = async (req, res) => {
             },
             { new: true }
         );
+
+        // Reset flatAssignedDate on the previous resident
+        if (flat.currentResident) {
+            await User.findByIdAndUpdate(flat.currentResident, {
+                flat: null,
+                flatAssignedDate: null
+            });
+        }
 
         return res.status(200).json({
             success: true,

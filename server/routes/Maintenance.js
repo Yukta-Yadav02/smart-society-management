@@ -9,8 +9,9 @@ const {
   createMaintenance,
   generateCommonMaintenance,
   deleteMaintenance,
-  // NEW: Manual status toggle for admin
   updateMaintenanceStatus,
+  sendPaymentReminders,
+  markOverdue,
 } = require("../controllers/Maintenance");
 
 const { protect, authorizeRoles } = require("../middelware/auth");
@@ -54,6 +55,22 @@ router.put(
   protect,
   authorizeRoles("ADMIN"),
   updateMaintenanceStatus
+);
+
+// ADMIN → Mark previous month unpaid as OVERDUE
+router.post(
+  "/mark-overdue",
+  protect,
+  authorizeRoles("ADMIN"),
+  markOverdue
+);
+
+// ADMIN → Send payment reminders to unpaid residents
+router.post(
+  "/remind",
+  protect,
+  authorizeRoles("ADMIN"),
+  sendPaymentReminders
 );
 
 // Delete maintenance record (ADMIN only)

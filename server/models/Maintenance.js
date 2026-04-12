@@ -35,7 +35,7 @@ const maintenanceSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["UNPAID", "PAID"],
+      enum: ["UNPAID", "PAID", "OVERDUE"],
       default: "UNPAID",
     },
 

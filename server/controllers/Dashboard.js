@@ -8,7 +8,7 @@ const Notice = require("../models/Notice");
 exports.getAdminStats = async (req, res) => {
   try {
     // Count statistics
-    const totalResidents = await User.countDocuments({ role: "RESIDENT" });
+    const totalResidents = await User.countDocuments({ flat: { $ne: null } });
     const totalFlats = await Flat.countDocuments();
     const occupiedFlats = await Flat.countDocuments({ isOccupied: true });
     const totalComplaints = await Complaint.countDocuments();
