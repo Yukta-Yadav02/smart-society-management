@@ -286,7 +286,40 @@ const ManageRequests = () => {
                                         </p>
                                     </div>
                                 </div>
-                            </div>
+
+                                {/* Resident Opinion Status — clearly visible to admin */}
+                                {req.status === 'Pending' && req.flat?.currentResident && (
+                                    <div className={`mt-4 p-4 rounded-2xl border flex items-center gap-3
+                                        ${
+                                            req.residentOpinion === 'Accepted' ? 'bg-emerald-50 border-emerald-200' :
+                                            req.residentOpinion === 'Rejected' ? 'bg-rose-50 border-rose-200' :
+                                            'bg-amber-50 border-amber-200'
+                                        }`}>
+                                        <span className="text-lg">
+                                            {req.residentOpinion === 'Accepted' ? '✅' : req.residentOpinion === 'Rejected' ? '❌' : '⏳'}
+                                        </span>
+                                        <div>
+                                            <p className={`text-[10px] font-black uppercase tracking-widest
+                                                ${
+                                                    req.residentOpinion === 'Accepted' ? 'text-emerald-700' :
+                                                    req.residentOpinion === 'Rejected' ? 'text-rose-700' :
+                                                    'text-amber-700'
+                                                }`}>
+                                                Current Resident Opinion: {req.residentOpinion || 'Pending'}
+                                            </p>
+                                            <p className={`text-[10px] font-medium mt-0.5
+                                                ${
+                                                    req.residentOpinion === 'Accepted' ? 'text-emerald-600' :
+                                                    req.residentOpinion === 'Rejected' ? 'text-rose-600' :
+                                                    'text-amber-600'
+                                                }`}>
+                                                {req.residentOpinion === 'Accepted' ? 'Current resident has approved this request — you can now proceed with approval.' :
+                                                 req.residentOpinion === 'Rejected' ? 'The current resident has declined this transfer request. Please reject this application.' :
+                                                 'Waiting for the current resident to respond — you may wait or reject this request.'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}                            </div>
 
                             {/* Message & Action Buttons Section */}
                             <div className="lg:w-1/3 flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-slate-200 lg:pl-8 pt-8 lg:pt-0">
